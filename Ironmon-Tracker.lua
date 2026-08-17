@@ -20,6 +20,15 @@ function IronmonTracker.startTracker()
 	if IronmonTracker.tryLoad() then
 		-- Then verify the remainder of the Tracker files were able to be setup and initialized
 		if Main.Initialize() then
+			local supportFilePath = (IronmonTracker.workingDir or "") .. "ironmon_tracker/YellowFRSupport.lua"
+			local supportFile = io.open(supportFilePath, "r")
+			if supportFile ~= nil then
+				io.close(supportFile)
+				local yellowFRSupport = dofile(supportFilePath)
+				if yellowFRSupport ~= nil and yellowFRSupport.apply ~= nil then
+					yellowFRSupport.apply()
+				end
+			end
 			Main.Run()
 		end
 	end
