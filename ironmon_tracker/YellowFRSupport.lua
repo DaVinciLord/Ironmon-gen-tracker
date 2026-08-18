@@ -34,11 +34,12 @@ function YellowFRSupport.apply()
 			-- French Yellow WRAM map.
 			--
 			-- Runtime-confirmed on a clean French Yellow dump in BizHawk:
-			--   wPartyMon1   = D16F
-			--   wPartyCount  = D167
-			--   wEnemyMon    = CFE9
-			--   wEnemyMoveNum= CFD0
-			--   wIsInBattle  = D05B
+			--   wPartyMon1    = D16F
+			--   wPartyCount   = D167
+			--   wEnemyMon     = CFE9
+			--   wEnemyMoveNum = CFD0
+			--   wEnemyMonType = CFEE
+			--   wIsInBattle   = D05B (0=none, 1=wild, 2=trainer)
 			--
 			-- The remaining entries below are derived from the French Red
 			-- disassembly (einstein95/pokered-fr), adjusted by the exact
@@ -47,7 +48,7 @@ function YellowFRSupport.apply()
 			GameSettings.pstats = 0x0200116F -- wPartyMon1 (confirmed)
 			GameSettings.estats = 0x02000FE9 -- wEnemyMon (confirmed)
 			GameSettings.eMove = 0x02000FD0 -- wEnemyMoveNum (confirmed)
-			GameSettings.eType = 0x02000FEE -- wEnemyMonType1 (derived; probe v4 validates)
+			GameSettings.eType = 0x02000FEE -- wEnemyMonType1 (confirmed by probe v4)
 			GameSettings.StatChange = 0x02000D1A -- wPlayerMonStatMods (same in US/FR, Red/Yellow)
 
 			-- The legacy tracker uses this field as if it were a battler-party-index
@@ -56,13 +57,13 @@ function YellowFRSupport.apply()
 			GameSettings.gBattlerPartyIndexes = 0x02001167 -- wPartyCount
 
 			-- Despite its legacy GBA-style name, this is wIsInBattle in Gen 1.
-			GameSettings.gBattleTypeFlags = 0x0200105B -- 0=none, 1=wild, 2=trainer (confirmed trainer)
-			GameSettings.gMapHeader = 0x02001362 -- wCurMap (derived)
+			GameSettings.gBattleTypeFlags = 0x0200105B -- confirmed: 0=none, 1=wild, 2=trainer
+			GameSettings.gMapHeader = 0x02001362 -- wCurMap (validated by probe v4)
 			GameSettings.gPlayerPartyCount = 0x02001167 -- wPartyCount (confirmed)
 
-			GameSettings.badgeOffset = 0x0200135A -- wObtainedBadges (derived)
-			GameSettings.bagPocket_Items_Size = 0x02001321 -- wNumBagItems (derived)
-			GameSettings.bagPocket_Items_offset = 0x02001322 -- wBagItems (derived)
+			GameSettings.badgeOffset = 0x0200135A -- wObtainedBadges (validated by probe v4)
+			GameSettings.bagPocket_Items_Size = 0x02001321 -- wNumBagItems (validated by probe v4)
+			GameSettings.bagPocket_Items_offset = 0x02001322 -- wBagItems (validated by probe v4)
 			GameSettings.bagPocket_Berries_offset = 0x02001322 -- Gen 1 has one item bag list
 
 			-- Keep the historical gTurn value for now. It maps to
@@ -84,6 +85,25 @@ function YellowFRSupport.apply()
 			GameSettings.gEvo_move = 0x0803B1DB
 			GameSettings.trainnerpoke = 0x08039D9C
 		end
+	end
+
+	-- The upstream Gen 1 implementation currently stubs encounter counters to 0,
+	-- so Battle.isWildEncounter never becomes true. Yellow exposes the distinction
+	-- directly through wIsInBattle: 1=wild, 2=trainer. Use that authoritative
+	-- value for the French Yellow compatibility path and leave other games alone.
+	local originalUpdateBattleEncounterType = Program.updateBattleEncounterType
+	Program.updateBattleEncounterType = function()
+		if GameSettings.isFrenchYellow and GameSettings.gBattleTypeFlags ~= nil then
+			local battleState = Memory.readbyte(GameSettings.gBattleTypeFlags)
+			if battleState == 1 then
+				Battle.isWildEncounter = true
+			elseif battleState == 2 then
+				Battle.isWildEncounter = false
+			end
+			return
+		end
+
+		originalUpdateBattleEncounterType()
 	end
 end
 
