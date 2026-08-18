@@ -15,6 +15,7 @@ L'objectif de la phase actuelle est de rendre la compatibilité mémoire fiable 
   - base stats : `0x383DE`
 - Première memory map WRAM française intégrée dans `YellowFRSupport.lua`.
 - Combat dresseur et combat sauvage validés en runtime.
+- Affichage de l'adversaire, révélation progressive de ses attaques et stat stages ennemis validés en runtime.
 - Interface du tracker encore en anglais ; le jeu reste en français.
 
 Les offsets ROM proviennent de la configuration Gen 1 d'Universal Pokémon Randomizer ZX pour `Yellow (F)`.
@@ -122,17 +123,19 @@ wObtainedBadges       = D35A  -> WRAM:135A
 wCurMap               = D362  -> WRAM:1362
 ```
 
-## Affichage de l'adversaire dans le tracker
+## Affichage de l'adversaire dans le tracker — validé
 
 Le tracker ne bascule **pas automatiquement** sur l'adversaire avec les réglages par défaut : `Auto swap to enemy = false`.
 
-Pendant un combat :
+Avec `Auto swap to enemy` activé puis le script redémarré, un Pidgey sauvage a été affiché correctement dans le vrai tracker : sprite, espèce, niveau et types `NORMAL / FLYING` cohérents.
 
-- cliquer sur le bouton `Toggle`, ou
-- utiliser le raccourci `Start` (valeur par défaut de `Toggle view`), ou
-- activer `Auto swap to enemy` dans les réglages.
+Le tracker respecte aussi la révélation progressive des informations IronMON :
 
-Le fait de rester sur Pikachu pendant un combat n'indique donc pas, à lui seul, une erreur de lecture de l'adversaire.
+- les attaques adverses ne sont pas affichées avant d'avoir été observées ;
+- après utilisation de `Gust`, l'attaque apparaît correctement dans la liste des moves connus ;
+- après `Growl` / Rugissement lancé par le joueur, la baisse d'ATK adverse est correctement reflétée dans le tracker.
+
+Cela valide en runtime le chemin `wEnemyMoveNum -> Tracker.TrackMove()` ainsi que la lecture des stat stages ennemis utilisée par `Battle.updateStatStages()`.
 
 ## Détection sauvage / dresseur
 
@@ -170,9 +173,11 @@ Ce dépôt ne distribue aucune ROM ni aucun contenu propriétaire Pokémon.
 - [x] Valider un combat sauvage et les selected moves avec le probe v4.
 - [x] Intégrer une première memory map Jaune FR dans le vrai tracker.
 - [x] Corriger la détection sauvage/dresseur pour Jaune FR.
-- [ ] Confirmer l'affichage manuel/auto de l'adversaire dans le vrai tracker.
+- [x] Confirmer l'affichage auto de l'adversaire dans le vrai tracker.
+- [x] Confirmer la révélation des attaques adverses après utilisation.
+- [x] Valider au moins un stat stage ennemi en runtime (ATK abaissée par Rugissement/Growl).
 - [ ] Remplacer la fausse notion `gTurn` par une logique Gen 1 fiable.
-- [ ] Valider changements de Pokémon, combats dresseur multi-Pokémon, statut/stat stages et menus sur une session plus longue.
+- [ ] Valider changements de Pokémon, combats dresseur multi-Pokémon, statuts et menus sur une session plus longue.
 - [ ] Vérifier une seed randomisée complète avec le tracker.
 - [ ] Vérifier la procédure officielle Kaizo en deux passes sur ROM FR.
 - [ ] Corriger les écarts de données/noms liés à la localisation française si nécessaire.
