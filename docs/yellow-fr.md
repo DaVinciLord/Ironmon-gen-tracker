@@ -6,8 +6,7 @@ Ce fork ajoute un premier support de **Pokémon Version Jaune — Édition Spéc
 
 Le support est volontairement minimal afin de stabiliser la compatibilité avant de rattraper les fonctionnalités des trackers GBA/DS.
 
-- Détection du header français `POKEMON YELAPSF` (`YELA` à l'offset utilisé par le tracker).
-- Réutilisation de la logique WRAM déjà appliquée à Pokémon Jaune par le tracker.
+- Détection du header français `POKEMON YELAPSF` (`YELA` à l'offset utilisé par le tracker) : **validée en runtime sur BizHawk/Linux**.
 - Correction des deux offsets ROM spécifiques à Yellow (F) nécessaires au tracker :
   - movesets : `0x3B1E5 -> 0x3B1E8` (+3)
   - trainers : `0x39DD1 -> 0x39DD4` (+3)
@@ -20,21 +19,32 @@ Les offsets ROM proviennent de la configuration Gen 1 d'Universal Pokémon Rando
 
 ## Validation WRAM
 
-La cartographie RAM complète de Jaune FR n'étant pas documentée de manière suffisamment fiable, le support WRAM doit être validé en runtime.
+Le premier test runtime a invalidé l'hypothèse consistant à réutiliser directement les constantes WRAM historiques du fork.
 
-Utiliser `tools/yellow_fr_probe.lua` dans BizHawk :
+En particulier, le tracker upstream définit `gPlayerPartyCount` depuis `0x189C` (puis `-1` pour Yellow), mais le test avec Pikachu présent dans l'équipe retourne `0` à cette adresse. Cette constante semble provenir d'une confusion avec le code Gen 2 et ne doit pas être utilisée pour le port FR sans validation.
 
-1. Charger un dump propre de Pokémon Jaune FR.
-2. Ouvrir `Tools -> Lua Console`.
-3. Charger `tools/yellow_fr_probe.lua`.
-4. Vérifier :
+`tools/yellow_fr_probe.lua` v2 découvre donc la structure d'équipe directement dans la WRAM au lieu de faire confiance à ces constantes.
+
+Avec Pikachu comme unique Pokémon, la signature recherchée est :
+
+- `01` : un Pokémon dans l'équipe ;
+- `54` : index interne Gen 1 de Pikachu ;
+- `FF` : terminateur de la liste d'espèces ;
+- `54` à `+8` : premier octet de la structure du premier Pokémon.
+
+### Procédure
+
+1. Charger un dump propre de Pokémon Jaune FR dans BizHawk.
+2. Garder Pikachu comme unique Pokémon de l'équipe.
+3. Ouvrir `Tools -> Lua Console`.
+4. Charger `tools/yellow_fr_probe.lua` depuis la branche `agent/yellow-fr-support` la plus récente.
+5. Vérifier :
    - `ROM title @0134: POKEMON YELAPSF`
    - `Tracker detector @013C: YELA`
    - `HEADER: OK`
-5. Récupérer le starter et vérifier que `partyCount @189B` devient `1`.
-6. Déclencher un combat sauvage et observer les changements sur les valeurs de combat.
+6. Copier la section `Party layout scan` et le résultat `PARTY SIGNATURE`.
 
-Le script est strictement en lecture seule.
+Le script est strictement en lecture seule et s'arrête volontairement après la découverte de la structure d'équipe. Les adresses de combat seront recherchées dans une seconde étape une fois cette base confirmée.
 
 ## Kaizo IronMON
 
@@ -46,7 +56,10 @@ Ce dépôt ne distribue aucune ROM ni aucun contenu propriétaire Pokémon.
 
 ### Phase 1 — stabilisation Jaune FR
 
+- [x] Valider la détection du header français dans BizHawk.
+- [ ] Localiser et valider la structure d'équipe en WRAM.
 - [ ] Valider toutes les adresses WRAM utilisées pendant exploration, combat et menus.
+- [ ] Corriger les constantes Gen 1 upstream manifestement erronées avant d'ajouter les overrides FR.
 - [ ] Vérifier une seed randomisée complète avec le tracker.
 - [ ] Vérifier la procédure officielle Kaizo en deux passes sur ROM FR.
 - [ ] Corriger les écarts de données/noms liés à la localisation française si nécessaire.
