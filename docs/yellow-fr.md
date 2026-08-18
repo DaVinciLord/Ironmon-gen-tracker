@@ -21,30 +21,44 @@ Les offsets ROM proviennent de la configuration Gen 1 d'Universal Pokémon Rando
 
 Le premier test runtime a invalidé l'hypothèse consistant à réutiliser directement les constantes WRAM historiques du fork.
 
-En particulier, le tracker upstream définit `gPlayerPartyCount` depuis `0x189C` (puis `-1` pour Yellow), mais le test avec Pikachu présent dans l'équipe retourne `0` à cette adresse. Cette constante semble provenir d'une confusion avec le code Gen 2 et ne doit pas être utilisée pour le port FR sans validation.
+En particulier, le tracker upstream définit `gPlayerPartyCount` depuis `0x189C` (puis `-1` pour Yellow), mais le test avec Pikachu présent dans l'équipe retourne `0` à cette adresse. Cette constante ne correspond donc pas à la structure d'équipe Gen 1 utilisée ici.
 
-`tools/yellow_fr_probe.lua` v2 découvre donc la structure d'équipe directement dans la WRAM au lieu de faire confiance à ces constantes.
+### Structure d'équipe — validée
 
-Avec Pikachu comme unique Pokémon, la signature recherchée est :
+`tools/yellow_fr_probe.lua` v2 a localisé sans ambiguïté la structure d'équipe sur un dump français propre, avec Pikachu comme unique Pokémon :
 
-- `01` : un Pokémon dans l'équipe ;
-- `54` : index interne Gen 1 de Pikachu ;
-- `FF` : terminateur de la liste d'espèces ;
-- `54` à `+8` : premier octet de la structure du premier Pokémon.
+- `partyCount = WRAM:1167`
+- `partySpecies = WRAM:1168`
+- `partyMon1 = WRAM:116F`
 
-### Procédure
+Signature observée :
+
+```text
+WRAM:1167  01 54 FF 00 00 00 00 00 54 ...
+```
+
+La version US documentée par `pret/pokeyellow` place `wPartyCount` à `$D162`, soit `WRAM:1162` dans BizHawk. Le bloc d'équipe français observé est donc décalé de **+5 octets**, mais ce delta ne doit pas être appliqué aveuglément aux autres blocs WRAM.
+
+### Structure de combat — probe v3
+
+`tools/yellow_fr_probe.lua` v3 part de la structure d'équipe confirmée et cherche dynamiquement la copie de Pikachu dans `BattleMon` lors de l'entrée en combat.
+
+Le probe compare les champs stables communs à `PartyMon` et `BattleMon` : espèce, HP, statut, types, catch rate, attaques, niveau et HP max. Une fois `BattleMon` identifié, les autres adresses de combat sont dérivées par leurs distances relatives dans le layout officiel Pokémon Jaune US de `pret/pokeyellow` : `EnemyMon`, `wIsInBattle`, `wBattleType`, `wPlayerMoveNum`, `wEnemyMoveNum`, `wPlayerSelectedMove`, `wEnemySelectedMove` et `wPlayerMonNumber`.
+
+### Procédure v3
 
 1. Charger un dump propre de Pokémon Jaune FR dans BizHawk.
 2. Garder Pikachu comme unique Pokémon de l'équipe.
-3. Ouvrir `Tools -> Lua Console`.
-4. Charger `tools/yellow_fr_probe.lua` depuis la branche `agent/yellow-fr-support` la plus récente.
-5. Vérifier :
-   - `ROM title @0134: POKEMON YELAPSF`
-   - `Tracker detector @013C: YELA`
-   - `HEADER: OK`
-6. Copier la section `Party layout scan` et le résultat `PARTY SIGNATURE`.
+3. Être **hors combat**.
+4. Ouvrir `Tools -> Lua Console`.
+5. Charger la dernière version de `tools/yellow_fr_probe.lua`.
+6. Attendre `PARTY CHECK: OK`.
+7. Déclencher un combat sauvage normal.
+8. Attendre `BATTLE MON: UNIQUE MATCH`.
+9. Utiliser quelques attaques puis terminer ou fuir le combat.
+10. Copier la sortie complète jusqu'à `BATTLE END DETECTED`.
 
-Le script est strictement en lecture seule et s'arrête volontairement après la découverte de la structure d'équipe. Les adresses de combat seront recherchées dans une seconde étape une fois cette base confirmée.
+Le script est strictement en lecture seule.
 
 ## Kaizo IronMON
 
@@ -57,7 +71,8 @@ Ce dépôt ne distribue aucune ROM ni aucun contenu propriétaire Pokémon.
 ### Phase 1 — stabilisation Jaune FR
 
 - [x] Valider la détection du header français dans BizHawk.
-- [ ] Localiser et valider la structure d'équipe en WRAM.
+- [x] Localiser et valider la structure d'équipe en WRAM.
+- [ ] Localiser et valider le bloc de combat en WRAM.
 - [ ] Valider toutes les adresses WRAM utilisées pendant exploration, combat et menus.
 - [ ] Corriger les constantes Gen 1 upstream manifestement erronées avant d'ajouter les overrides FR.
 - [ ] Vérifier une seed randomisée complète avec le tracker.
