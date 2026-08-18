@@ -14,6 +14,7 @@ L'objectif de la phase actuelle est de rendre la compatibilité mémoire fiable 
   - move data : `0x38000`
   - base stats : `0x383DE`
 - Première memory map WRAM française intégrée dans `YellowFRSupport.lua`.
+- Combat dresseur et combat sauvage validés en runtime.
 - Interface du tracker encore en anglais ; le jeu reste en français.
 
 Les offsets ROM proviennent de la configuration Gen 1 d'Universal Pokémon Randomizer ZX pour `Yellow (F)`.
@@ -39,7 +40,7 @@ Formule :
 YellowFR(symbol) = RedFR(symbol) + (YellowUS(symbol) - RedUS(symbol))
 ```
 
-Cette méthode reproduit exactement toutes les adresses Jaune FR déjà trouvées indépendamment par les probes runtime (`wPartyCount`, `wPartyMon1`, `wEnemyMon`, `wEnemyMoveNum`, `wIsInBattle`). Elle est donc utilisée pour compléter la première memory map, tout en conservant une distinction entre **runtime confirmé** et **dérivé**.
+Cette méthode reproduit exactement toutes les adresses Jaune FR trouvées indépendamment par les probes runtime (`wPartyCount`, `wPartyMon1`, `wEnemyMon`, `wEnemyMoveNum`, `wIsInBattle`). Elle est donc utilisée pour compléter la première memory map, tout en conservant une distinction entre **runtime confirmé** et **dérivé**.
 
 ## Structure d'équipe — validée
 
@@ -55,11 +56,11 @@ WRAM:1167  01 54 FF 00 00 00 00 00 54 ...
 
 Pour comparaison, `pret/pokeyellow` place `wPartyCount` à `$D162` et `wPartyMon1` à `$D16A`. Dans ce bloc, Jaune FR est donc à **+5** par rapport à Jaune US.
 
-## Structure de combat — validée sur Rival 1
+## Structure de combat — validée
+
+### Rival 1 (combat dresseur)
 
 Le probe v3 a été exécuté lors du premier combat contre le rival au laboratoire (Pikachu niveau 5 contre Évoli niveau 5).
-
-Adresses et comportements observés :
 
 | Symbole | WRAM Jaune FR | Observation |
 |---|---:|---|
@@ -67,88 +68,91 @@ Adresses et comportements observés :
 | `wEnemyMon` | `0FE9` | Évoli, niveau/HP/moves cohérents |
 | `wIsInBattle` | `105B` | `2` pendant le combat dresseur, puis `0` à la fin |
 | `wBattleType` | `105E` | `0`, combat normal |
-| `wEnemyMoveNum` | `0FD0` | `0x21` observé lors d'une attaque d'Évoli |
-| `wPlayerMoveNum` | `0FD6` | `0x54` puis `0x2D`, correspondant aux moves de Pikachu |
+| `wEnemyMoveNum` | `0FD0` | attaque d'Évoli observée |
+| `wPlayerMoveNum` | `0FD6` | moves de Pikachu observés |
 | `wBattleMonHP` | `1019..101A` | `19 -> 13 -> 5 -> 0` pendant la défaite |
 | `wEnemyMonHP` | `0FEA..0FEB` | `21 -> 16 -> 11 -> 6` |
 
-Le moteur officiel Jaune utilise `wIsInBattle = 1` pour un combat sauvage et `2` pour un combat dresseur. Le résultat `2 -> 0` du test Rival 1 valide donc fortement `WRAM:105B`.
+### Combats sauvages (probe v4)
 
-### Correction d'une hypothèse du probe v3
+Deux combats sauvages ont ensuite validé la sémantique et les adresses corrigées :
 
-Le probe v3 supposait temporairement que tout le bloc inférieur suivait le même décalage `+5`. Cela donnait :
+- `wIsInBattle = 1` pendant un sauvage puis `0` à la fin : **confirmé**.
+- `wPlayerSelectedMove = CCDC` : **confirmé**.
+- `wEnemySelectedMove = CCDD` : **confirmé**.
+- `wPlayerMoveNum = CFD6` : **confirmé**.
+- `wEnemyMoveNum = CFD0` : **confirmé** sur le second combat.
+- `wEnemyMonType1 = CFEE` : valeurs cohérentes (Pidgey Normal/Vol, Rattata Normal).
+- `wCurMap = D362`, `wNumBagItems = D321`, `wBagItems = D322`, `wObtainedBadges = D35A` : snapshots cohérents en runtime.
 
-- `playerSelectedMove = CCE1`
-- `enemySelectedMove = CCE2`
-- `playerMonNumber = CC34`
+Les adversaires observés correspondaient correctement aux IDs internes Gen 1 : `0x24 = Pidgey` et `0xA5 = Rattata`.
 
-Le runtime a montré que `CCE2` variait comme un **index de move** (`1 -> 0`) plutôt que comme un identifiant d'attaque. La symbol map de Rouge FR confirme que cette zone basse n'est pas décalée :
+## Correction d'une hypothèse du probe v3
+
+Le probe v3 supposait temporairement que tout le bloc inférieur suivait le même décalage `+5`. Le runtime a montré que `CCE2` variait comme un **index de move** plutôt que comme un identifiant d'attaque.
+
+La zone correcte est :
 
 - `wPlayerSelectedMove = CCDC`
 - `wEnemySelectedMove = CCDD`
 - `wEnemyMoveListIndex = CCE2`
 - `wPlayerMonNumber = CC2F`
 
-Le probe v4 utilise maintenant ces adresses corrigées.
+Le probe v4 a validé cette correction.
 
 ## Première memory map utilisée par le tracker
 
-### Runtime confirmé
-
 ```text
-wPartyCount      = D167  -> WRAM:1167
-wPartyMon1       = D16F  -> WRAM:116F
-wEnemyMon        = CFE9  -> WRAM:0FE9
-wEnemyMoveNum    = CFD0  -> WRAM:0FD0
-wBattleMon       = D018  -> WRAM:1018
-wIsInBattle      = D05B  -> WRAM:105B
+wPlayerMonNumber      = CC2F  -> WRAM:0C2F
+wPlayerSelectedMove   = CCDC  -> WRAM:0CDC
+wEnemySelectedMove    = CCDD  -> WRAM:0CDD
+wPlayerMonStatMods    = CD1A  -> WRAM:0D1A
+wEnemyMoveNum         = CFD0  -> WRAM:0FD0
+wPlayerMoveNum        = CFD6  -> WRAM:0FD6
+wEnemyMon             = CFE9  -> WRAM:0FE9
+wEnemyMonType1        = CFEE  -> WRAM:0FEE
+wBattleMon            = D018  -> WRAM:1018
+wIsInBattle           = D05B  -> WRAM:105B
+wBattleType           = D05E  -> WRAM:105E
+wPartyCount           = D167  -> WRAM:1167
+wPartyMon1            = D16F  -> WRAM:116F
+wNumBagItems          = D321  -> WRAM:1321
+wBagItems             = D322  -> WRAM:1322
+wObtainedBadges       = D35A  -> WRAM:135A
+wCurMap               = D362  -> WRAM:1362
 ```
 
-### Dérivé par symbol maps, à valider progressivement
+## Affichage de l'adversaire dans le tracker
+
+Le tracker ne bascule **pas automatiquement** sur l'adversaire avec les réglages par défaut : `Auto swap to enemy = false`.
+
+Pendant un combat :
+
+- cliquer sur le bouton `Toggle`, ou
+- utiliser le raccourci `Start` (valeur par défaut de `Toggle view`), ou
+- activer `Auto swap to enemy` dans les réglages.
+
+Le fait de rester sur Pikachu pendant un combat n'indique donc pas, à lui seul, une erreur de lecture de l'adversaire.
+
+## Détection sauvage / dresseur
+
+La fonction Gen 1 upstream `Program.updateBattleEncounterType()` utilise actuellement des compteurs stubés à `0`, ce qui empêchait `Battle.isWildEncounter` de devenir vrai.
+
+Pour Jaune FR, `YellowFRSupport.lua` remplace maintenant cette logique par la valeur native de `wIsInBattle` :
 
 ```text
-wPlayerSelectedMove = CCDC  -> WRAM:0CDC
-wEnemySelectedMove  = CCDD  -> WRAM:0CDD
-wPlayerMonNumber    = CC2F  -> WRAM:0C2F
-wPlayerMonStatMods  = CD1A  -> WRAM:0D1A
-wEnemyMonType1      = CFEE  -> WRAM:0FEE
-wBattleType         = D05E  -> WRAM:105E
-wNumBagItems        = D321  -> WRAM:1321
-wBagItems           = D322  -> WRAM:1322
-wObtainedBadges     = D35A  -> WRAM:135A
-wCurMap             = D362  -> WRAM:1362
+0 = hors combat
+1 = combat sauvage
+2 = combat dresseur
 ```
+
+Cette sémantique est validée par les probes v3/v4.
 
 ## Dette connue : `gTurn`
 
 Le tracker historique utilise `WRAM:0CD5` sous le nom `gTurn`. La symbol map montre qu'en Gen 1 cette adresse correspond à `wAILayer2Encouragement`, **pas à un compteur de tours**.
 
 On conserve temporairement cette valeur pour ne pas mélanger un refactor de la logique de tracking avec le portage FR. Elle devra être remplacée par une détection de tour/action adaptée au moteur Gen 1.
-
-## Probe v4 — prochain test
-
-`tools/yellow_fr_probe.lua` v4 ne cherche plus les structures dynamiquement. Il valide directement la memory map utilisée par le tracker.
-
-Procédure recommandée :
-
-1. Charger la ROM Jaune FR propre dans BizHawk.
-2. Être hors combat.
-3. Charger `tools/yellow_fr_probe.lua` v4.
-4. Sortir du laboratoire et rejoindre la Route 1 ; les changements de `wCurMap` sont journalisés.
-5. Déclencher un **combat sauvage**.
-6. Utiliser au moins une attaque et laisser le Pokémon sauvage en utiliser au moins une.
-7. Terminer ou fuir le combat.
-8. Copier la sortie de `BATTLE START DETECTED` jusqu'au résumé final.
-
-Le test doit notamment confirmer :
-
-- `wIsInBattle = 1` en sauvage ;
-- `wPlayerSelectedMove = CCDC` ;
-- `wEnemySelectedMove = CCDD` ;
-- les moves exécutés à `CFD6` / `CFD0` ;
-- les adresses de map/bag utilisées hors combat.
-
-Le script est strictement en lecture seule.
 
 ## Kaizo IronMON
 
@@ -163,11 +167,12 @@ Ce dépôt ne distribue aucune ROM ni aucun contenu propriétaire Pokémon.
 - [x] Valider la détection du header français dans BizHawk.
 - [x] Localiser et valider la structure d'équipe en WRAM.
 - [x] Localiser et valider le bloc de combat principal en WRAM (Rival 1).
+- [x] Valider un combat sauvage et les selected moves avec le probe v4.
 - [x] Intégrer une première memory map Jaune FR dans le vrai tracker.
-- [ ] Valider combat sauvage + selected moves avec le probe v4.
-- [ ] Tester le vrai tracker de bout en bout sur ROM propre.
+- [x] Corriger la détection sauvage/dresseur pour Jaune FR.
+- [ ] Confirmer l'affichage manuel/auto de l'adversaire dans le vrai tracker.
 - [ ] Remplacer la fausse notion `gTurn` par une logique Gen 1 fiable.
-- [ ] Valider map, sac, badges et changements de Pokémon/ennemi sur une session plus longue.
+- [ ] Valider changements de Pokémon, combats dresseur multi-Pokémon, statut/stat stages et menus sur une session plus longue.
 - [ ] Vérifier une seed randomisée complète avec le tracker.
 - [ ] Vérifier la procédure officielle Kaizo en deux passes sur ROM FR.
 - [ ] Corriger les écarts de données/noms liés à la localisation française si nécessaire.
