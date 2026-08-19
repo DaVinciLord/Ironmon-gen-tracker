@@ -33,6 +33,9 @@ for dexId = 1, 151 do
 	local row = offset(address)
 	assert(byte(row) == dexId, string.format("Invalid base-stat row %d at %06X", dexId, row))
 	for stat = 1, 5 do assert(byte(row + stat) > 0, "Zero base stat for dex " .. dexId) end
+	assert(byte(row + 8) > 0, "Zero catch rate for dex " .. dexId)
+	assert(byte(row + 9) > 0, "Zero experience yield for dex " .. dexId)
+	assert(byte(row + 19) <= 5, "Invalid growth rate for dex " .. dexId)
 end
 
 -- RBY has exactly 165 six-byte move records. IDs and core fields must stay in

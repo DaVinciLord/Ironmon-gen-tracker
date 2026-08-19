@@ -22,8 +22,9 @@ local function put(address, ...)
 	for index, value in ipairs({ ... }) do bytes[address + index - 1] = value end
 end
 -- Base stat record: dex id, HP, Atk, Def, Spe, Special, type 1, type 2.
-put(GameSettings.baseStats, 1, 45, 49, 49, 45, 65, 0x16, 0x03)
-put(GameSettings.mewBaseStats, 151, 100, 100, 100, 100, 100, 0x18, 0x18)
+put(GameSettings.baseStats, 1, 45, 49, 49, 45, 65, 0x16, 0x03, 45, 64)
+put(GameSettings.baseStats + 19, 3)
+put(GameSettings.mewBaseStats, 151, 100, 100, 100, 100, 100, 0x18, 0x18, 45, 64)
 -- Move record: animation, effect, power, type, accuracy byte, PP.
 put(GameSettings.moveData + (56 - 1) * 6, 56, 0, 120, 0x15, 204, 5) -- Hydro Pump
 put(GameSettings.moveData + (59 - 1) * 6, 59, 0, 120, 0x19, 229, 5) -- Blizzard
@@ -38,8 +39,14 @@ MoveData.initialize()
 assert(PokemonData.Pokemon[1].bst == "253")
 assert(PokemonData.Pokemon[1].baseStats.special == 65)
 assert(PokemonData.Pokemon[1].types[1] == PokemonData.Types.GRASS)
+assert(PokemonData.Pokemon[1].catchRate == 45 and PokemonData.Pokemon[1].expYield == 64)
+assert(PokemonData.Pokemon[1].growthRate == 3)
 assert(PokemonData.Pokemon[151].bst == "500", "Red/Blue Mew must use its separate base-stat record")
 assert(not PokemonData.IsRand.types and not PokemonData.IsRand.stats)
+assert(Gen1DataAdapter.expForLevel(0, 10) == 1000)
+assert(Gen1DataAdapter.expForLevel(3, 10) == 560)
+assert(Gen1DataAdapter.expForLevel(4, 10) == 800)
+assert(Gen1DataAdapter.expForLevel(5, 10) == 1250)
 assert(MoveData.Moves[56].power == "120" and MoveData.Moves[56].accuracy == "80")
 assert(MoveData.Moves[59].type == PokemonData.Types.ICE and MoveData.Moves[59].accuracy == "90")
 assert(not MoveData.IsRand.moveType and not MoveData.IsRand.movePower and not MoveData.IsRand.moveAccuracy)

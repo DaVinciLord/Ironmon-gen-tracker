@@ -7,7 +7,14 @@ local function asTrackerPokemon(data, isEnemy)
 	data.nickname = Gen1SpeciesMap.getName(data.internalSpecies) or ""
 	data.trainerID = isEnemy and -1 or data.trainerID
 	data.currentExp = 0
-	data.totalExp = 0
+	data.totalExp = 100
+	if not isEnemy and data.experience and data.level and data.level < 100 then
+		local internal = PokemonData.Pokemon[data.pokemonID] or {}
+		local atLevel = Gen1DataAdapter.expForLevel(internal.growthRate, data.level)
+		local atNextLevel = Gen1DataAdapter.expForLevel(internal.growthRate, data.level + 1)
+		data.currentExp = math.max(0, math.min(data.experience - atLevel, atNextLevel - atLevel))
+		data.totalExp = math.max(1, atNextLevel - atLevel)
+	end
 	data.heldItem = nil
 	data.friendship = nil
 	data.isEgg = 0

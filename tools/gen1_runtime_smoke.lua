@@ -9,6 +9,8 @@ Gen1SpeciesMap = {
 	getDexId = function(internalId) return internalId == 0x54 and 25 or nil end,
 	getName = function(internalId) return internalId == 0x54 and "PIKACHU" or nil end,
 }
+PokemonData = { Pokemon = { [25] = { growthRate = 0 } } }
+Gen1DataAdapter = { expForLevel = function(_, level) return level ^ 3 end }
 GameSettings = {
 	partyCount = 0x200,
 	partyMon1 = 0x300,
@@ -45,6 +47,8 @@ local function pokemonAt(address, level, hp)
 	put(address, 0x54, 0, hp)
 	put(address + 8, 84, 98, 86, 129)
 	put(address + 12, 0x12, 0x34)
+	local experience = level == 25 and 16000 or level ^ 3
+	put(address + 14, math.floor(experience / 0x10000), math.floor(experience / 0x100) % 0x100, experience % 0x100)
 	put(address + 27, 0xA5, 0xC7)
 	put(address + 29, 30, 20, 10, 5)
 	put(address + 33, level)
@@ -57,6 +61,8 @@ pokemonAt(GameSettings.partyMon1 + 44, 26, 62)
 bytes[GameSettings.battleState] = 0
 Gen1Runtime.updatePokemonTeams()
 assert(Program.GameData.PlayerTeam[1].level == 25)
+assert(Program.GameData.PlayerTeam[1].currentExp == 375)
+assert(Program.GameData.PlayerTeam[1].totalExp == 1951)
 assert(Program.GameData.PlayerTeam[2].level == 26)
 assert(Program.GameData.PlayerTeam[3] == nil)
 assert(Program.GameData.EnemyTeam[1] == nil)

@@ -5,6 +5,22 @@ Gen1DataAdapter = {}
 Gen1DataAdapter.PokemonCount = 151
 Gen1DataAdapter.MoveCount = 165
 
+---Returns the cumulative experience required at a level for all six growth
+---curves implemented by RBY (two are normally unused but valid in ROM data).
+function Gen1DataAdapter.expForLevel(growthRate, level)
+	level = math.max(1, math.min(100, level or 1))
+	local cube, square = level * level * level, level * level
+	local formulas = {
+		[0] = cube,
+		[1] = cube * 3 / 4 + square * 10 - 30,
+		[2] = cube * 3 / 4 + square * 20 - 70,
+		[3] = cube * 6 / 5 - square * 15 + level * 100 - 140,
+		[4] = cube * 4 / 5,
+		[5] = cube * 5 / 4,
+	}
+	return math.max(0, math.floor(formulas[growthRate or 0] or cube))
+end
+
 Gen1DataAdapter.TypeIndexMap = {
 	[0x00] = PokemonData.Types.NORMAL,
 	[0x01] = PokemonData.Types.FIGHTING,
@@ -118,6 +134,9 @@ function Gen1DataAdapter.readPokemonInfo(pokemonId)
 	}
 	return {
 		stats = stats,
+		catchRate = Memory.readbyte(address + 8),
+		expYield = Memory.readbyte(address + 9),
+		growthRate = Memory.readbyte(address + 19),
 		types = {
 			Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 6)] or PokemonData.Types.UNKNOWN,
 			Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 7)] or PokemonData.Types.UNKNOWN,
@@ -130,7 +149,7 @@ function Gen1DataAdapter.initializePokemonData()
 	PokemonData.IsRand.types = bulbasaur.types[1] ~= PokemonData.Types.GRASS or bulbasaur.types[2] ~= PokemonData.Types.POISON
 	PokemonData.IsRand.stats = bulbasaur.stats.hp ~= 45 or bulbasaur.stats.atk ~= 49 or bulbasaur.stats.def ~= 49
 	PokemonData.IsRand.friendshipBase = false
-	PokemonData.IsRand.expYield = false
+	PokemonData.IsRand.expYield = bulbasaur.expYield ~= 64
 
 	for pokemonId = 1, Gen1DataAdapter.PokemonCount do
 		local pokemon = PokemonData.Pokemon[pokemonId]
@@ -138,6 +157,10 @@ function Gen1DataAdapter.initializePokemonData()
 		pokemon.pokemonID = pokemonId
 		pokemon.types = info.types
 		pokemon.baseStats = info.stats
+		pokemon.catchRate = info.catchRate
+		pokemon.expYield = info.expYield
+		pokemon.growthRate = info.growthRate
+		pokemon.friendshipBase = nil
 		pokemon.bst = tostring(info.stats.hp + info.stats.atk + info.stats.def + info.stats.spe + info.stats.special)
 	end
 	Gen1SpeciesMap.rebuildDexMap()
