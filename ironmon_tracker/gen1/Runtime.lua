@@ -112,6 +112,7 @@ function Gen1Runtime.update()
 end
 
 function Gen1Runtime.apply()
+	if Gen1TrainerData then Gen1TrainerData.applyRuntime() end
 	Program.Addresses.sizeofPokemonStruct = Gen1PokemonReader.PartyStructSize
 	Program.updatePokemonTeams = Gen1Runtime.updatePokemonTeams
 	Program.readNewPokemon = Gen1Runtime.readPartyPokemon

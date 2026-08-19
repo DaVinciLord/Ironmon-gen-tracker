@@ -39,7 +39,8 @@ assert(GameSettings.initialize())
 assert(GameSettings.currentProfile.id == "yellow_fr" and GameSettings.isFrenchYellow)
 assert(GameSettings.language == "French")
 assert(GameSettings.partyMon1 == 0x0200116F)
-assert(GameSettings.levelUpMoves == 0x0803B1DB)
+assert(GameSettings.levelUpMoves == 0x0803B1E8)
+assert(GameSettings.trainers == 0x08039DD4)
 
 Memory.gameCode = 0x42504545 -- Emerald
 assert(not GameSettings.initialize())

@@ -25,7 +25,8 @@ SCREEN.Buttons = {
 		image = nil,
 		getText = function(self)
 			if hasData() then
-				return string.format("# %s", SCREEN.Data.trainerGame.trainerId)
+				local info = SCREEN.Data.trainerInternal or {}
+				return string.format("#%s-%s", info.classId or "?", info.trainerNumber or "?")
 			else
 				return Constants.BLANKLINE
 			end
@@ -34,12 +35,12 @@ SCREEN.Buttons = {
 		isVisible = function(self) return true end,
 		onClick = function(self)
 			if hasData() then
-				local nextTrainerId = math.random(#TrainerData.OrderedIds)
+				local nextTrainerId = TrainerData.OrderedIds[math.random(#TrainerData.OrderedIds)]
 				for i = 1, 50, 1 do
 					if SCREEN.buildScreen(nextTrainerId) then
 						break
 					end
-					nextTrainerId = math.random(#TrainerData.OrderedIds)
+					nextTrainerId = TrainerData.OrderedIds[math.random(#TrainerData.OrderedIds)]
 				end
 				Program.redraw(true)
 			end
@@ -119,6 +120,7 @@ SCREEN.Buttons = {
 			return string.format("%s:", Resources.TrainerInfoScreen.LabelAvgIvs)
 		end,
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 2, Constants.SCREEN.MARGIN + 40, 90, 11 },
+		isVisible = function() return false end,
 		draw = function(self, shadowcolor)
 			if not hasData() then return end
 			local x, y = self.box[1], self.box[2]
@@ -132,6 +134,7 @@ SCREEN.Buttons = {
 			return string.format("%s:", Resources.TrainerInfoScreen.LabelAIScript)
 		end,
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 2, Constants.SCREEN.MARGIN + 50, 90, 11 },
+		isVisible = function() return false end,
 		draw = function(self, shadowcolor)
 			if not hasData() then return end
 			local x, y = self.box[1], self.box[2]
@@ -203,6 +206,7 @@ function TrainerInfoScreen.buildScreen(trainerId)
 
 	-- Game data about the trainer
 	local trainerGame = Program.readTrainerGameData(trainerId)
+	if not trainerGame or #(trainerGame.party or {}) == 0 then return false end
 	SCREEN.Data.trainerGame = trainerGame
 	SCREEN.Data.trainerInternal = trainerInternal
 	SCREEN.Buttons.TrainerIcon.image = TrainerData.getPortraitIcon(trainerInternal.class)
@@ -255,60 +259,9 @@ function TrainerInfoScreen.buildScreen(trainerId)
 		trainerGame.partyLvColor = SCREEN.Colors.highlight
 	end
 
-	-- TEAM IVS
-	local ivTotal = 0
-	for _, pokemon in ipairs(trainerGame.party) do
-		ivTotal = ivTotal + pokemon.ivs
-	end
-	trainerGame.avgIVs = math.max(math.floor(ivTotal / #trainerGame.party), 0) -- min of 0
-
-	if trainerGame.avgIVs > 0 then
-		trainerGame.avgIVsColor = SCREEN.Colors.highlight
-	else
-		trainerGame.avgIVsColor = SCREEN.Colors.text
-	end
-
-	-- SCRIPT AI LABEL
-	-- Note: Original was going to use different colors for higher AI, decided against it; leaving in code though
-	if Utils.getbits(trainerGame.aiFlags, 2, 1) == 1 then -- AI_SCRIPT_TRY_TO_FAINT
-		trainerGame.aiLabel = "Smart"
-		trainerGame.aiColor = SCREEN.Colors.highlight --SCREEN.Colors.goodValue
-	elseif Utils.getbits(trainerGame.aiFlags, 1, 1) == 1 then -- AI_SCRIPT_CHECK_VIABILITY
-		trainerGame.aiLabel = "Semi-Smart"
-		trainerGame.aiColor = SCREEN.Colors.highlight --SCREEN.Colors.goodValue
-	elseif Utils.getbits(trainerGame.aiFlags, 0, 1) == 1 then -- AI_SCRIPT_CHECK_BAD_MOVE
-		trainerGame.aiLabel = "Normal"
-		trainerGame.aiColor = SCREEN.Colors.text
-	elseif trainerGame.aiFlags == 0 then
-		trainerGame.aiLabel = "Dumb"
-		trainerGame.aiColor = SCREEN.Colors.highlight --SCREEN.Colors.badValue
-	else
-		trainerGame.aiLabel = "Complex"
-		trainerGame.aiColor = SCREEN.Colors.highlight --SCREEN.Colors.text
-	end
-
-	-- USABLE ITEMS
-	local itemCounts = {}
-	for _, itemId in ipairs(trainerGame.items) do
-		local itemName = Resources.Game.ItemNames[itemId]
-		if itemName then
-			itemCounts[itemId] = (itemCounts[itemId] or 0) + 1
-		end
-	end
-	local items = {}
-	for itemId, count in pairs(itemCounts) do
-		if count == 1 then
-			table.insert(items, Resources.Game.ItemNames[itemId])
-		else
-			table.insert(items, string.format("%s %s", count, Resources.Game.ItemNames[itemId]))
-		end
-	end
-	if #items > 0 then
-		table.sort(items, function(a,b) return a < b end) -- lazily sort alphabetically
-		trainerGame.itemList = table.concat(items, ", ")
-	else
-		trainerGame.itemList = nil
-	end
+	-- GBA IV summaries, held items, item arrays, and AI bitfields do not exist
+	-- in RBY's trainer records. The native view is intentionally party-focused.
+	trainerGame.itemList = nil
 
 	-- PARTY POKEMON, LEVELS, AND STATUS
 	local trainerIdCurrentBattle = TrackerAPI.getOpponentTrainerId()
@@ -359,10 +312,6 @@ function TrainerInfoScreen.buildScreen(trainerId)
 				end
 				-- Draw the Pokémon's level
 				Drawing.drawTransparentTextbox(x + centerX, y + h - 10, text, textColor, bgColor, shadowcolor)
-				-- Draw a little held item icon if the Pokémon is holding one (don't reveal actual item)
-				if pokemon.heldItem ~= 0 then
-					Drawing.drawImageAsPixels(Constants.PixelImages.HELD_ITEM, x + w - 6, y + 1)
-				end
 			end,
 		}
 

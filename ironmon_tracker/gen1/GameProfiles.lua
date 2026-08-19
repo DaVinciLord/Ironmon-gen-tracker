@@ -41,6 +41,9 @@ local RED_BLUE_WRAM = {
 	badges = 0x02001356,
 	bagCount = 0x0200131D,
 	bagItems = 0x0200131E,
+	trainerClass = 0x02001031,
+	currentOpponent = 0x02001059,
+	trainerNumber = 0x0200105D,
 }
 
 local YELLOW_US_WRAM = {
@@ -61,6 +64,9 @@ local YELLOW_US_WRAM = {
 	badges = 0x02001355,
 	bagCount = 0x0200131C,
 	bagItems = 0x0200131D,
+	trainerClass = 0x02001030,
+	currentOpponent = 0x02001058,
+	trainerNumber = 0x0200105C,
 }
 
 -- Runtime-confirmed on French Yellow in BizHawk. Do not replace these with a
@@ -83,6 +89,9 @@ local YELLOW_FR_WRAM = {
 	badges = 0x0200135A, -- wObtainedBadges / D35A
 	bagCount = 0x02001321, -- wNumBagItems / D321
 	bagItems = 0x02001322, -- wBagItems / D322
+	trainerClass = 0x02001035, -- wTrainerClass / D035
+	currentOpponent = 0x0200105D, -- wCurOpponent / D05D
+	trainerNumber = 0x02001061, -- wTrainerNo / D061
 }
 
 local function copyTable(source)
@@ -106,16 +115,16 @@ local function makeProfile(id, name, version, language, wram, rom)
 end
 
 local redBlueRom = copyTable(COMMON_ROM)
-redBlueRom.levelUpMoves = 0x0803B1D8
-redBlueRom.trainers = 0x08039D99
+redBlueRom.levelUpMoves = 0x0803B05C -- EvosMovesPointerTable
+redBlueRom.trainers = 0x08039D3B -- TrainerDataPointers
 
 local yellowUsRom = copyTable(COMMON_ROM)
-yellowUsRom.levelUpMoves = 0x0803B1D8 -- table begins at 0x3B1E5 (+0x0D)
-yellowUsRom.trainers = 0x08039D99 -- table begins at 0x39DD1 (+0x38)
+yellowUsRom.levelUpMoves = 0x0803B1E5 -- EvosMovesPointerTable
+yellowUsRom.trainers = 0x08039DD1 -- TrainerDataPointers
 
 local yellowFrRom = copyTable(COMMON_ROM)
-yellowFrRom.levelUpMoves = 0x0803B1DB -- table begins at 0x3B1E8 (+0x0D)
-yellowFrRom.trainers = 0x08039D9C -- table begins at 0x39DD4 (+0x38)
+yellowFrRom.levelUpMoves = 0x0803B1E8 -- EvosMovesPointerTable (+3 from Yellow US)
+yellowFrRom.trainers = 0x08039DD4 -- TrainerDataPointers (+3 from Yellow US)
 
 Gen1GameProfiles.Profiles = {
 	red_us = makeProfile("red_us", "Pokemon Red (US/EU)", "Red", "English", RED_BLUE_WRAM, redBlueRom),
