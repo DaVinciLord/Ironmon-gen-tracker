@@ -41,6 +41,7 @@ function Gen1BattleRuntime.begin(state, enemy)
 	Battle.inBattleScreen = true
 	Battle.dataReady = true
 	Battle.isWildEncounter = state == 1
+	Battle.opposingTrainerId = state == 2 and Gen1TrainerData and Gen1TrainerData.getCurrentTrainerId() or 0
 	Battle.numBattlers = 2
 	Battle.partySize = math.min(Memory.readbyte(GameSettings.partyCount) or 0, 6)
 	Battle.isViewingOwn = not Options["Auto swap to enemy"]
@@ -55,6 +56,7 @@ function Gen1BattleRuntime.begin(state, enemy)
 	Tracker.resetBattleNotes()
 	Input.StatHighlighter:resetSelectedStat()
 	Battle.trySwapScreenBackToMain()
+	if GameOverScreen and GameOverScreen.createTempSaveState then GameOverScreen.createTempSaveState() end
 	Gen1BattleRuntime.observeEnemy(enemy)
 	if BattleDetailsScreen then BattleDetailsScreen.clearBuiltData() end
 	CustomCode.afterBattleBegins()
@@ -62,6 +64,7 @@ end
 
 function Gen1BattleRuntime.finish()
 	if not Battle.inBattleScreen then return end
+	local lastTrainerId = Battle.opposingTrainerId
 	Battle.lastCompletedEnemySignature = signature(Tracker.getPokemon(1, false)) or Battle.lastEnemySignature
 	Tracker.recordLastLevelsSeen()
 	Battle.inBattleScreen = false
@@ -84,6 +87,7 @@ function Gen1BattleRuntime.finish()
 	Battle.trySwapScreenBackToMain()
 	Program.Frames.saveData = 70
 	CustomCode.afterBattleEnds()
+	if GameOverScreen and GameOverScreen.openIfEnded then GameOverScreen.openIfEnded(lastTrainerId) end
 end
 
 function Gen1BattleRuntime.observeEnemy(enemy)

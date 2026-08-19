@@ -252,8 +252,6 @@ function GameOverScreen.checkForGameOver(lastBattleStatus, lastTrainerId)
 	if lossConditionFunc() then
 		GameOverScreen.status = GameOverScreen.Statuses.LOST
 	else
-		lastBattleStatus = lastBattleStatus or Memory.readbyte(GameSettings.gBattleOutcome)
-		lastTrainerId = lastTrainerId or Memory.readword(GameSettings.gTrainerBattleOpponent_A)
 		if Battle.wonFinalBattle(lastBattleStatus, lastTrainerId) then
 			GameOverScreen.status = GameOverScreen.Statuses.WON
 		end
@@ -264,6 +262,21 @@ function GameOverScreen.checkForGameOver(lastBattleStatus, lastTrainerId)
 		EventHandler.triggerEvent(EventHandler.DefaultEvents.GE_GameOver.Key)
 	end
 	return isGameOver
+end
+
+---Checks the native RBY end state and opens the Game Over screen when needed.
+---@param lastTrainerId number? Native class/party trainer id
+---@return boolean opened
+function GameOverScreen.openIfEnded(lastTrainerId)
+	if not GameOverScreen.checkForGameOver(nil, lastTrainerId) then return false end
+	GameOverScreen.isDisplayed = true
+	LogOverlay.isGameOver = true
+	Program.GameTimer:pause()
+	GameOverScreen.randomizeAnnouncerQuote()
+	GameOverScreen.nextTeamPokemon()
+	GameOverScreen.updateDefeatedTrainersCount()
+	Program.changeScreenView(GameOverScreen)
+	return true
 end
 
 function GameOverScreen.nextTeamPokemon(startingIndex)

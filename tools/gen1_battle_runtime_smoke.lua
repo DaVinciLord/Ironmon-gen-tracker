@@ -4,6 +4,7 @@ local toolsDir = scriptPath:match("^(.*[/\\])") or ""
 local repoRoot = toolsDir:gsub("tools[/\\]$", "")
 
 local bytes, trackedMoves, encounters = {}, {}, {}
+local saveStatesCreated, endedTrainerId = 0, nil
 Memory = { readbyte = function(address) return bytes[address] or 0 end }
 GameSettings = { battleState = 0x100, enemyMove = 0x101, partyCount = 0x102, playerStatStages = 0x200 }
 local own = { pokemonID = 25, level = 30, curHP = 60, stats = {}, moves = {} }
@@ -27,6 +28,11 @@ Options = { ["Auto swap to enemy"] = true }
 Input = { StatHighlighter = { resetSelectedStat = function() end } }
 CustomCode = { afterBattleBegins = function() end, afterBattleEnds = function() end, afterBattleDataUpdate = function() end }
 RouteData = { EncounterArea = { LAND = "Land" } }
+Gen1TrainerData = { getCurrentTrainerId = function() return 0x2B02 end }
+GameOverScreen = {
+	createTempSaveState = function() saveStatesCreated = saveStatesCreated + 1 end,
+	openIfEnded = function(trainerId) endedTrainerId = trainerId end,
+}
 
 dofile(repoRoot .. "ironmon_tracker/gen1/BattleRuntime.lua")
 
@@ -37,6 +43,7 @@ Gen1BattleRuntime.updateBattleStatus()
 assert(Gen1BattleRuntime.inActiveBattle() and Battle.isWildEncounter)
 assert(Battle.isViewingOwn == false, "Auto swap must show the enemy")
 assert(#encounters == 1 and encounters[1][1] == 94 and encounters[1][2] == true)
+assert(saveStatesCreated == 1 and Battle.opposingTrainerId == 0)
 
 bytes[GameSettings.enemyMove] = 95
 Gen1BattleRuntime.processEnemyMove()
@@ -57,5 +64,12 @@ bytes[GameSettings.battleState] = 0
 Gen1BattleRuntime.updateBattleStatus()
 assert(not Gen1BattleRuntime.inActiveBattle() and Battle.isViewingOwn)
 assert(own.statStages.special == 6)
+assert(endedTrainerId == 0, "Wild battles must not retain a trainer id")
+
+bytes[GameSettings.battleState] = 2
+Gen1BattleRuntime.begin(2, enemy)
+assert(Battle.opposingTrainerId == 0x2B02 and saveStatesCreated == 2)
+Gen1BattleRuntime.finish()
+assert(endedTrainerId == 0x2B02, "Trainer id must survive until the native game-over check")
 
 print("Gen 1 battle runtime smoke tests passed")
