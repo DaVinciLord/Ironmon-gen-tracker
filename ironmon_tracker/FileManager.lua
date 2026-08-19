@@ -123,6 +123,7 @@ FileManager.LuaCode = {
 	{ name = "Gen1DataAdapter", filepath = "gen1" .. FileManager.slash .. "DataAdapter.lua", },
 	{ name = "AbilityData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "AbilityData.lua", },
 	{ name = "MiscData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "MiscData.lua", },
+	{ name = "Gen1ItemData", filepath = "gen1" .. FileManager.slash .. "ItemData.lua", },
 	{ name = "RouteData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "RouteData.lua", },
 	{ name = "Gen1RouteData", filepath = "gen1" .. FileManager.slash .. "RouteData.lua", },
 	{ name = "DataHelper", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "DataHelper.lua", },

@@ -16,13 +16,18 @@ GameSettings = {
 	enemyMon = 0x500,
 	currentMap = 0x600,
 	badges = 0x700,
+	bagCount = 0x800,
+	bagItems = 0x801,
 }
 Program = {
 	Addresses = {},
 	GameData = { PlayerTeam = {}, EnemyTeam = {} },
 	DefaultPokemon = { new = function(_, value) return value end },
 	validPokemonData = function(value) return value and value.pokemonID == 25 end,
-	Frames = {},
+	Frames = {}, recalcLeadPokemonHealingInfo = function() end,
+}
+MiscData = {
+	PokeBalls = { [4] = true }, HealingItems = { [20] = true }, PPItems = {}, StatusItems = {}, EvolutionStones = { [10] = true },
 }
 Tracker = { AutoSave = {} }
 CustomCode = {}
@@ -73,5 +78,12 @@ assert(Program.GameData.mapId == 0x0C)
 assert(Gen1Runtime.isValidMapLocation())
 bytes[GameSettings.badges] = 0x25
 assert(Gen1Runtime.readBadgeBits() == 0x25)
+
+bytes[GameSettings.bagCount] = 3
+put(GameSettings.bagItems, 4, 5, 20, 2, 10, 1)
+Gen1Runtime.updateBagItems()
+assert(Program.GameData.Items.PokeBalls[4] == 5)
+assert(Program.GameData.Items.HPHeals[20] == 2)
+assert(Program.GameData.Items.EvoStones[10] == 1)
 
 print("Gen 1 runtime smoke tests passed")

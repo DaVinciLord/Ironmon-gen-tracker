@@ -62,6 +62,31 @@ function Gen1Runtime.readBadgeBits()
 	return Memory.readbyte(GameSettings.badges) or 0
 end
 
+local function emptyItems()
+	return { healingTotal = 0, healingPercentage = 0, healingValue = 0,
+		PokeBalls = {}, HPHeals = {}, PPHeals = {}, StatusHeals = {}, EvoStones = {}, Other = {} }
+end
+
+function Gen1Runtime.updateBagItems()
+	local items = emptyItems()
+	local count = math.min(Memory.readbyte(GameSettings.bagCount) or 0, 20)
+	for slot = 0, count - 1 do
+		local itemId = Memory.readbyte(GameSettings.bagItems + slot * 2)
+		local quantity = Memory.readbyte(GameSettings.bagItems + slot * 2 + 1)
+		if itemId and itemId ~= 0 and itemId ~= 0xFF and quantity > 0 then
+			if MiscData.PokeBalls[itemId] then items.PokeBalls[itemId] = quantity end
+			if MiscData.HealingItems[itemId] then items.HPHeals[itemId] = quantity end
+			if MiscData.PPItems[itemId] then items.PPHeals[itemId] = quantity end
+			if MiscData.StatusItems[itemId] then items.StatusHeals[itemId] = quantity end
+			if MiscData.EvolutionStones[itemId] then items.EvoStones[itemId] = quantity end
+			if not (items.PokeBalls[itemId] or items.HPHeals[itemId] or items.PPHeals[itemId]
+				or items.StatusHeals[itemId] or items.EvoStones[itemId]) then items.Other[itemId] = quantity end
+		end
+	end
+	Program.GameData.Items = items
+	Program.recalcLeadPokemonHealingInfo()
+end
+
 function Gen1Runtime.update()
 	local forced = Program.updateRequired
 	if Program.Frames.highAccuracyUpdate == 0 or forced then
@@ -79,6 +104,7 @@ function Gen1Runtime.update()
 		if Program.currentScreen == StartupScreen then Program.currentScreen = TrackerScreen end
 	end
 	if Program.Frames.three_sec_update == 0 or forced then
+		Gen1Runtime.updateBagItems()
 		Program.updateBadgesObtained()
 	end
 	if Program.Frames.saveData == 0 then Tracker.AutoSave.saveToFile() end
@@ -92,6 +118,7 @@ function Gen1Runtime.apply()
 	Program.updateMapLocation = Gen1Runtime.updateMapLocation
 	Program.isValidMapLocation = Gen1Runtime.isValidMapLocation
 	Program.readBadgeBits = Gen1Runtime.readBadgeBits
+	Program.updateBagItems = Gen1Runtime.updateBagItems
 	Program.update = Gen1Runtime.update
 end
 
