@@ -24,6 +24,7 @@ GameSettings = {
 	badges = 0x700,
 	bagCount = 0x800,
 	bagItems = 0x801,
+	tmMoves = 0x900,
 }
 Program = {
 	Addresses = {},
@@ -34,6 +35,7 @@ Program = {
 }
 MiscData = {
 	PokeBalls = { [4] = true }, HealingItems = { [20] = true }, PPItems = {}, StatusItems = {}, EvolutionStones = { [10] = true },
+	TMs = { [0xC9] = true }, HMs = { [0xC4] = true },
 }
 Tracker = { AutoSave = {} }
 CustomCode = {}
@@ -95,11 +97,17 @@ assert(Gen1Runtime.isValidMapLocation())
 bytes[GameSettings.badges] = 0x25
 assert(Gen1Runtime.readBadgeBits() == 0x25)
 
-bytes[GameSettings.bagCount] = 3
-put(GameSettings.bagItems, 4, 5, 20, 2, 10, 1)
+bytes[GameSettings.bagCount] = 5
+put(GameSettings.bagItems, 4, 5, 20, 2, 10, 1, 0xC9, 1, 0xC4, 1)
 Gen1Runtime.updateBagItems()
 assert(Program.GameData.Items.PokeBalls[4] == 5)
 assert(Program.GameData.Items.HPHeals[20] == 2)
 assert(Program.GameData.Items.EvoStones[10] == 1)
+put(GameSettings.tmMoves, 33)
+put(GameSettings.tmMoves + 50, 15)
+assert(Gen1Runtime.getMoveIdFromTMHMNumber(1, false) == 33)
+assert(Gen1Runtime.getMoveIdFromTMHMNumber(1, true) == 15)
+local tms, hms = Gen1Runtime.getTMsHMsBagItems()
+assert(tms[1].id == 0xC9 and hms[1].id == 0xC4)
 
 print("Gen 1 runtime smoke tests passed")

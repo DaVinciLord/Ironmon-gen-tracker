@@ -810,7 +810,7 @@ function EventData.getTMsHMs(params)
 	if singleTmLookup then
 		if not canSeeTM then
 			for _, item in ipairs(tms or {}) do
-				local tmInBag = item.id - 289 + 1 -- 289 is the item ID of the first TM
+				local tmInBag = MiscData.getTMNumber and MiscData.getTMNumber(item.id) or item.id - 289 + 1
 				if singleTmLookup == tmInBag then
 					canSeeTM = true
 					break
@@ -836,7 +836,7 @@ function EventData.getTMsHMs(params)
 		local tmsObtained = {}
 		local otherTMs, gymTMs = {}, {}
 		for _, item in ipairs(tms or {}) do
-			local tmNumber = item.id - 289 + 1 -- 289 is the item ID of the first TM
+			local tmNumber = MiscData.getTMNumber and MiscData.getTMNumber(item.id) or item.id - 289 + 1
 			local moveId = Program.getMoveIdFromTMHMNumber(tmNumber)
 			if MoveData.isValid(moveId) then
 				tmsObtained[tmNumber] = string.format("#%02d %s", tmNumber, MoveData.Moves[moveId].name)
@@ -875,7 +875,7 @@ function EventData.getTMsHMs(params)
 	if displayHM then
 		local hmTexts = {}
 		for _, item in ipairs(hms or {}) do
-			local hmNumber = item.id - 339 + 1 -- 339 is the item ID of the first HM
+			local hmNumber = MiscData.getHMNumber and MiscData.getHMNumber(item.id) or item.id - 339 + 1
 			local moveId = Program.getMoveIdFromTMHMNumber(hmNumber, true)
 			if MoveData.isValid(moveId) then
 				local hmText = string.format("%s (HM%02d)", MoveData.Moves[moveId].name, hmNumber)

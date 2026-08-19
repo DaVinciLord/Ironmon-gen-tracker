@@ -117,14 +117,17 @@ end
 local redBlueRom = copyTable(COMMON_ROM)
 redBlueRom.levelUpMoves = 0x0803B05C -- EvosMovesPointerTable
 redBlueRom.trainers = 0x08039D3B -- TrainerDataPointers
+redBlueRom.tmMoves = 0x08013773
 
 local yellowUsRom = copyTable(COMMON_ROM)
 yellowUsRom.levelUpMoves = 0x0803B1E5 -- EvosMovesPointerTable
 yellowUsRom.trainers = 0x08039DD1 -- TrainerDataPointers
+yellowUsRom.tmMoves = 0x0801232D
 
 local yellowFrRom = copyTable(COMMON_ROM)
 yellowFrRom.levelUpMoves = 0x0803B1E8 -- EvosMovesPointerTable (+3 from Yellow US)
 yellowFrRom.trainers = 0x08039DD4 -- TrainerDataPointers (+3 from Yellow US)
+yellowFrRom.tmMoves = 0x0801233C
 
 Gen1GameProfiles.Profiles = {
 	red_us = makeProfile("red_us", "Pokemon Red (US/EU)", "Red", "English", RED_BLUE_WRAM, redBlueRom),

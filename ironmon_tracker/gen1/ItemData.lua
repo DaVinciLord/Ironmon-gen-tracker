@@ -54,6 +54,18 @@ function Gen1ItemData.apply()
 		[47]=item(47,"Leaf Stone",nil,nil,nil,"leaf-stone"),
 	}
 	MiscData.TMs, MiscData.HMs = {}, {}
+	for hm = 1, 5 do
+		local id = 0xC3 + hm
+		Gen1ItemData.Names[id] = string.format("HM%02d", hm)
+		MiscData.HMs[id] = { id = id, name = Gen1ItemData.Names[id], icon = "tiny-tm", pocket = MiscData.BagPocket.TMHM }
+	end
+	for tm = 1, 50 do
+		local id = 0xC8 + tm
+		Gen1ItemData.Names[id] = string.format("TM%02d", tm)
+		MiscData.TMs[id] = { id = id, name = Gen1ItemData.Names[id], icon = "tiny-tm", pocket = MiscData.BagPocket.TMHM }
+	end
+	MiscData.getTMNumber = function(itemId) return MiscData.TMs[itemId] and itemId - 0xC8 or nil end
+	MiscData.getHMNumber = function(itemId) return MiscData.HMs[itemId] and itemId - 0xC3 or nil end
 	MiscData.BattleItems, MiscData.OtherItems = {}, {}
 	MiscData.getTotalItems = function() return MiscData.Values.TotalItemsGen1 end
 end

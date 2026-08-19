@@ -77,6 +77,25 @@ function Gen1Runtime.getPokemonTypes(isOwn)
 	return { first, second }
 end
 
+function Gen1Runtime.getMoveIdFromTMHMNumber(number, isHM)
+	if type(number) ~= "number" or number < 1 or number > (isHM and 5 or 50) then return 0 end
+	return Memory.readbyte(GameSettings.tmMoves + number - 1 + (isHM and 50 or 0)) or 0
+end
+
+function Gen1Runtime.getTMsHMsBagItems()
+	local tms, hms = {}, {}
+	for itemId, quantity in pairs((Program.GameData.Items or {}).Other or {}) do
+		if MiscData.TMs[itemId] then table.insert(tms, { id = itemId, quantity = quantity }) end
+		if MiscData.HMs[itemId] then table.insert(hms, { id = itemId, quantity = quantity }) end
+	end
+	table.sort(tms, function(a, b) return a.id < b.id end)
+	table.sort(hms, function(a, b) return a.id < b.id end)
+	return tms, hms
+end
+
+function Gen1Runtime.getExtras() return { lefts = {}, rights = {}, bumps = {} } end
+function Gen1Runtime.getLearnedMoveInfoTable() return { pokemonID = nil, level = nil, moveId = nil } end
+
 local function emptyItems()
 	return { healingTotal = 0, healingPercentage = 0, healingValue = 0,
 		PokeBalls = {}, HPHeals = {}, PPHeals = {}, StatusHeals = {}, EvoStones = {}, Other = {} }
@@ -135,6 +154,10 @@ function Gen1Runtime.apply()
 	Program.isValidMapLocation = Gen1Runtime.isValidMapLocation
 	Program.readBadgeBits = Gen1Runtime.readBadgeBits
 	Program.getPokemonTypes = Gen1Runtime.getPokemonTypes
+	Program.getMoveIdFromTMHMNumber = Gen1Runtime.getMoveIdFromTMHMNumber
+	Program.getTMsHMsBagItems = Gen1Runtime.getTMsHMsBagItems
+	Program.getExtras = Gen1Runtime.getExtras
+	Program.getLearnedMoveInfoTable = Gen1Runtime.getLearnedMoveInfoTable
 	Program.updateBagItems = Gen1Runtime.updateBagItems
 	Program.update = Gen1Runtime.update
 end
