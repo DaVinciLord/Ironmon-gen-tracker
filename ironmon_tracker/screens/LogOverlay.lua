@@ -513,16 +513,16 @@ function LogOverlay.getLogFileAutodetected(postFix)
 			romname = prevRomName
 		end
 
-		rompath = Options.FILES["ROMs Folder"] .. romname .. FileManager.Extensions.GBA_ROM
+		rompath = FileManager.findRomPath(Options.FILES["ROMs Folder"] .. romname)
 		if not FileManager.fileExists(rompath) then
 			romname = romname:gsub(" ", "_")
-			rompath = Options.FILES["ROMs Folder"] .. romname .. FileManager.Extensions.GBA_ROM
+			rompath = FileManager.findRomPath(Options.FILES["ROMs Folder"] .. romname)
 		end
 	elseif Options["Generate ROM each time"] then
 		-- Filename of the AutoRandomized ROM is based on the settings file (for cases of playing Kaizo + Survival + Others)
 		local quickloadFiles = Main.GetQuickloadFiles()
 		local settingsFileName = FileManager.extractFileNameFromPath(quickloadFiles.settingsList[1] or "")
-		romname = string.format("%s %s%s", settingsFileName, postFix, FileManager.Extensions.GBA_ROM)
+		romname = string.format("%s %s%s", settingsFileName, postFix, FileManager.Extensions.DEFAULT_ROM)
 		rompath = FileManager.prependDir(romname)
 	end
 
@@ -532,17 +532,17 @@ function LogOverlay.getLogFileAutodetected(postFix)
 			-- strip out any auto appended postfixes
 			filename = filename:gsub(FileManager.PostFixes.AUTORANDOMIZED, "")
 			filename = filename:gsub(FileManager.PostFixes.PREVIOUSATTEMPT, "")
-			filename = filename:gsub("%.gba", "")
+			filename = filename:gsub("%.gbc?$", "")
 			filename = filename:gsub(" ", "_")
 			filename = filename:gsub("%d", "")
 			return filename:lower()
 		end
-		local loadedRomName = plainFormatter(GameSettings.getRomName() .. FileManager.Extensions.GBA_ROM)
+		local loadedRomName = plainFormatter(GameSettings.getRomName() .. FileManager.Extensions.DEFAULT_ROM)
 		local autodetectedName = plainFormatter(romname or "")
 		if loadedRomName ~= autodetectedName then
 			local filepath = FileManager.getLoadedRomPath() or ""
 			local basepath = filepath and filepath .. FileManager.slash or ""
-			local logfile = basepath .. GameSettings.getRomName() .. FileManager.Extensions.GBA_ROM .. FileManager.Extensions.RANDOMIZER_LOGFILE
+			local logfile = basepath .. GameSettings.getRomName() .. FileManager.Extensions.DEFAULT_ROM .. FileManager.Extensions.RANDOMIZER_LOGFILE
 			if FileManager.fileExists(logfile) then
 				return logfile
 			else

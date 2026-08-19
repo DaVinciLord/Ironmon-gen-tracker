@@ -617,7 +617,7 @@ function Main.GetNextRomFromFolder()
 	end
 
 	if nextRomName == nil or not FileManager.fileExists(nextRomPath) then
-		nextRomName = nextRomName or GameSettings.getRomName() .. FileManager.Extensions.GBA_ROM
+		nextRomName = nextRomName or GameSettings.getRomName() .. FileManager.Extensions.DEFAULT_ROM
 		print(string.format("> ERROR: Unable to find next ROM to load: %s", nextRomName))
 		Main.DisplayError(string.format("Unable to find next ROM to load: %s", nextRomName) .. "\n\nMake sure your ROMs are numbered sequentially and the ROMs folder is correct.")
 		return nil
@@ -643,7 +643,7 @@ function Main.GenerateNextRom()
 		Main.DisplayError("Files missing that are required for New Run to generate a new ROM.\n\nFix these at: Tracker Settings (gear icon) -> New Run")
 		return nil
 	elseif #files.jarList > 1 or #files.settingsList > 1 or #files.romList > 1 then
-		local msg1 = string.format("ERROR: Too many GBA/JAR/RNQS files found in the quickload folder.")
+		local msg1 = string.format("ERROR: Too many GB/GBC/JAR/RNQS files found in the quickload folder.")
 		local msg2 = string.format("Please remove all-but-one of each these types of files from the folder.")
 		print("> " .. msg1)
 		print("> " .. msg2)
@@ -660,7 +660,7 @@ function Main.GenerateNextRom()
 	local attemptsFileName = string.format("%s %s%s", settingsFileName, FileManager.PostFixes.ATTEMPTS_FILE, FileManager.Extensions.ATTEMPTS)
 	local attemptsFolder = FileManager.getPathOverride("Attempt Counts") or FileManager.dir
 
-	local nextRomName = string.format("%s %s%s", settingsFileName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.GBA_ROM)
+	local nextRomName = string.format("%s %s%s", settingsFileName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.DEFAULT_ROM)
 	local nextRomFolder = FileManager.getPathOverride("ROMs and Logs") or FileManager.dir
 	local nextRomPath = nextRomFolder .. nextRomName
 
@@ -776,7 +776,8 @@ function Main.GetQuickloadFiles()
 	local listsByExtension = {
 		["jar"] = fileLists.jarList,
 		["rnqs"] = fileLists.settingsList,
-		["gba"] = fileLists.romList,
+		["gb"] = fileLists.romList,
+		["gbc"] = fileLists.romList,
 	}
 
 	local quickloadFileNames = FileManager.getFilesFromDirectory(fileLists.quickloadPath)
@@ -821,13 +822,13 @@ function Main.GetNextBizhawkRomInfoLegacy()
 
 	-- Increment to the next ROM and determine its full file path
 	local nextRomName = string.format(currentRomPrefix .. "%0" .. string.len(currentRomNumber) .. "d", tonumber(currentRomNumber) + 1)
-	local nextRomPath = romsFolderPath .. nextRomName .. FileManager.Extensions.GBA_ROM
+	local nextRomPath = FileManager.findRomPath(romsFolderPath .. nextRomName)
 
 	-- First try loading the next rom as-is with spaces, otherwise replace spaces with underscores and try again
 	if not FileManager.fileExists(nextRomPath) then
 		-- File doesn't exist, try again with underscores instead of spaces (awkward Bizhawk issue)
 		nextRomName = nextRomName:gsub(" ", "_")
-		nextRomPath = romsFolderPath .. nextRomName .. FileManager.Extensions.GBA_ROM
+		nextRomPath = FileManager.findRomPath(romsFolderPath .. nextRomName)
 		if not FileManager.fileExists(nextRomPath) then
 			-- This means there doesn't exist a ROM file with spaces or underscores
 			return nil
@@ -945,7 +946,7 @@ function Main.GetAttemptsFile(forceUseSettingsFile)
 	-- Bizhawk can shortcut check this by getting the loaded rom name, then checking if a file exists with that name in the Roms Folder
 	if Main.IsOnBizhawk() and not Utils.isNilOrEmpty(romsFolder) then
 		local loadedRomName = GameSettings.getRomName()
-		if FileManager.fileExists(romsFolder .. loadedRomName .. FileManager.Extensions.GBA_ROM) then
+		if FileManager.findRomPath(romsFolder .. loadedRomName) then
 			quickloadRomName = loadedRomName
 		end
 	end

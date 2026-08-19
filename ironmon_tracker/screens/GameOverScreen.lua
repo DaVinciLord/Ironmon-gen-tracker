@@ -381,12 +381,12 @@ function GameOverScreen.saveCurrentGameFiles()
 	else
 		romnameToSave = romname
 	end
-	local rompathToSave = saveFolder .. romnameToSave .. FileManager.Extensions.GBA_ROM
+	local rompathToSave = saveFolder .. romnameToSave .. FileManager.Extensions.DEFAULT_ROM
 
 	-- Don't replace existing save games, instead make a new one based on current time
 	if FileManager.fileExists(rompathToSave) then
 		romnameToSave = string.format("%s %s", os.time(), romname)
-		rompathToSave = saveFolder .. romnameToSave .. FileManager.Extensions.GBA_ROM
+		rompathToSave = saveFolder .. romnameToSave .. FileManager.Extensions.DEFAULT_ROM
 	end
 	if not FileManager.CopyFile(rompath, rompathToSave, "overwrite") then
 		print("> ERROR: Unable to save a copy of your game's ROM file.")

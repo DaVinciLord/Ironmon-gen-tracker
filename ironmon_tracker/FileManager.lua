@@ -75,7 +75,9 @@ FileManager.PostFixes = {
 }
 
 FileManager.Extensions = {
-	GBA_ROM = ".gba",
+	GB_ROM = ".gb",
+	GBC_ROM = ".gbc",
+	DEFAULT_ROM = ".gbc",
 	RANDOMIZER_LOGFILE = ".log",
 	TRACKED_DATA = ".tdat",
 	GACHAMON = ".gccg",
@@ -89,6 +91,21 @@ FileManager.Extensions = {
 	TAR_GZ = ".tar.gz",
 	PNG = ".png",
 }
+
+FileManager.RomExtensions = { "gbc", "gb" }
+FileManager.RomExtensionSet = { gb = true, gbc = true }
+
+function FileManager.isRomExtension(extension)
+	return FileManager.RomExtensionSet[(extension or ""):lower()] == true
+end
+
+function FileManager.findRomPath(pathWithoutExtension)
+	for _, extension in ipairs(FileManager.RomExtensions) do
+		local candidatePath = pathWithoutExtension .. "." .. extension
+		if FileManager.fileExists(candidatePath) then return candidatePath, "." .. extension end
+	end
+	return nil, nil
+end
 
 FileManager.Urls = {
 	VERSION = "https://api.github.com/repos/besteon/Ironmon-Tracker/releases/latest",

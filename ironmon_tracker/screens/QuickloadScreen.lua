@@ -826,7 +826,7 @@ function QuickloadScreen.addEditProfilePrompt(profile)
 			ExternalUI.BizForms.setText(form.Controls.Generate.labelChosenSettings, chosenSettingsText)
 			local createdRomName = FileManager.extractFileNameFromPath(chosenSettingsText)
 			if not Utils.isNilOrEmpty(createdRomName) then
-				createdRomName = string.format("%s %s%s", createdRomName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.GBA_ROM)
+				createdRomName = string.format("%s %s%s", createdRomName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.DEFAULT_ROM)
 			end
 			ExternalUI.BizForms.setText(form.Controls.Generate.labelCreatedRomValue, createdRomName)
 		elseif ExternalUI.BizForms.isChecked(form.Controls.checkboxPremade) then
@@ -947,7 +947,7 @@ function QuickloadScreen.addEditProfilePrompt(profile)
 	lineY = lineY + 30
 
 	-- SOURCE ROM
-	form.Controls.Generate.labelROM = form:createLabel("Source ROM (a .GBA file):", X, lineY)
+	form.Controls.Generate.labelROM = form:createLabel("Source ROM (.gb or .gbc):", X, lineY)
 	form.Controls.Generate.labelChosenROM = form:createLabel("", X + 200, lineY)
 	ExternalUI.BizForms.setProperty(form.Controls.Generate.labelChosenROM, ExternalUI.BizForms.Properties.FORE_COLOR, "blue")
 	lineY = lineY + 20
@@ -955,7 +955,7 @@ function QuickloadScreen.addEditProfilePrompt(profile)
 	form.Controls.Generate.buttonROM = form:createButton("...", X + FILE_BOX_W + 10, lineY - 5, function()
 		local currentPath = ExternalUI.BizForms.getText(form.Controls.Generate.textboxROM)
 		currentPath = _extractFolderPath(currentPath)
-		local filterOptions = "GBA File (*.GBA)|*.gba|All files (*.*)|*.*"
+		local filterOptions = "Game Boy ROM (*.GB;*.GBC)|*.gb;*.gbc|All files (*.*)|*.*"
 		local newPath, success = ExternalUI.BizForms.openFilePrompt("SELECT A ROM", currentPath, filterOptions)
 		if success then
 			if FileManager.fileExists(newPath) then
@@ -980,7 +980,7 @@ function QuickloadScreen.addEditProfilePrompt(profile)
 	form.Controls.Premade.buttonFOLDER = form:createButton("...", X + FILE_BOX_W + 10, lineY - 4, function()
 		local currentPath = ExternalUI.BizForms.getText(form.Controls.Premade.textboxFOLDER)
 		currentPath = _extractFolderPath(currentPath)
-		local filterOptions = "ROM File (*.GBA)|*.gba|All files (*.*)|*.*"
+		local filterOptions = "Game Boy ROM (*.GB;*.GBC)|*.gb;*.gbc|All files (*.*)|*.*"
 		local newPath, success = ExternalUI.BizForms.openFilePrompt("SELECT A ROM", currentPath, filterOptions)
 		if success then
 			newPath = _extractFolderPath(newPath)
@@ -1189,17 +1189,17 @@ function QuickloadScreen.getGameProfileRomName(profile)
 	if profile.Mode == QuickloadScreen.Modes.GENERATE then
 		-- Filename of the AutoRandomized ROM is based on the settings file (for cases of playing Kaizo + Survival + Others)
 		local settingsFileName = FileManager.extractFileNameFromPath(profile.Paths.Settings or "")
-		filename = string.format("%s %s%s", settingsFileName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.GBA_ROM)
+		filename = string.format("%s %s%s", settingsFileName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.DEFAULT_ROM)
 	elseif profile.Mode == QuickloadScreen.Modes.PREMADE then
 		filename = GameSettings.getRomName()
-		local filepath = (profile.Paths.RomsFolder or "") .. filename .. FileManager.Extensions.GBA_ROM
+		local filepath = FileManager.findRomPath((profile.Paths.RomsFolder or "") .. filename)
 		if not FileManager.fileExists(filepath) then
 			-- File doesn't exist, try again with underscores instead of spaces (awkward Bizhawk issue)
 			filename = filename:gsub(" ", "_")
 		end
 	end
 
-	return filename or (GameSettings.getRomName() .. FileManager.Extensions.GBA_ROM)
+	return filename or (GameSettings.getRomName() .. FileManager.Extensions.DEFAULT_ROM)
 end
 
 ---Returns the full ROM filepath used by the specified `profile`
@@ -1211,18 +1211,18 @@ function QuickloadScreen.getGameProfileRomPath(profile)
 	if profile.Mode == SCREEN.Modes.GENERATE then
 		-- Filename of the AutoRandomized ROM is based on the settings file (for cases of playing Kaizo + Survival + Others)
 		local settingsFileName = FileManager.extractFileNameFromPath(profile.Paths.Settings or "")
-		local filename = string.format("%s %s%s", settingsFileName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.GBA_ROM)
+		local filename = string.format("%s %s%s", settingsFileName, FileManager.PostFixes.AUTORANDOMIZED, FileManager.Extensions.DEFAULT_ROM)
 		filepath = FileManager.prependDir(filename)
 	elseif profile.Mode == SCREEN.Modes.PREMADE then
 		local filename = GameSettings.getRomName()
-		filepath = (profile.Paths.RomsFolder or "") .. filename .. FileManager.Extensions.GBA_ROM
+		filepath = FileManager.findRomPath((profile.Paths.RomsFolder or "") .. filename)
 		if not FileManager.fileExists(filepath) then
 			-- File doesn't exist, try again with underscores instead of spaces (awkward Bizhawk issue)
 			filename = filename:gsub(" ", "_")
-			filepath = (profile.Paths.RomsFolder or "") .. filename .. FileManager.Extensions.GBA_ROM
+			filepath = FileManager.findRomPath((profile.Paths.RomsFolder or "") .. filename)
 		end
 	end
-	return filepath or (GameSettings.getRomName() .. FileManager.Extensions.GBA_ROM)
+	return filepath or (GameSettings.getRomName() .. FileManager.Extensions.DEFAULT_ROM)
 end
 
 ---Returns the full TDAT filepath used by the specified `profile`
