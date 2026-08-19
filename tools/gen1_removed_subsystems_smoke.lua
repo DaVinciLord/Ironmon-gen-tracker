@@ -6,7 +6,7 @@ local function read(path)
 end
 
 local manifest = read("ironmon_tracker/FileManager.lua")
-for _, moduleName in ipairs({ "AbilityData", "GachaMonData", "GachaMonFileManager", "GachaMonOverlay", "AnimationManager" }) do
+for _, moduleName in ipairs({ "AbilityData", "GachaMonData", "GachaMonFileManager", "GachaMonOverlay", "AnimationManager", "MGBA", "MGBADisplay" }) do
 	assert(not manifest:find('name%s*=%s*"' .. moduleName .. '"'), moduleName .. " must not be loaded")
 end
 

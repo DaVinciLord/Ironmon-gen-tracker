@@ -151,13 +151,11 @@ FileManager.LuaCode = {
 	{ name = "Tracker", filepath = "Tracker.lua", },
 	{ name = "Gen1BattleRuntime", filepath = "gen1" .. FileManager.slash .. "BattleRuntime.lua", },
 	{ name = "Gen1Runtime", filepath = "gen1" .. FileManager.slash .. "Runtime.lua", },
-	{ name = "MGBA", filepath = "MGBA.lua", },
 	-- Network files
 	{ name = "Network", filepath = FileManager.Folders.Network .. FileManager.slash .. "Network.lua", },
 	{ name = "EventHandler", filepath = FileManager.Folders.Network .. FileManager.slash .. "EventHandler.lua", },
 	{ name = "RequestHandler", filepath = FileManager.Folders.Network .. FileManager.slash .. "RequestHandler.lua", },
 	-- Screen files
-	{ name = "MGBADisplay", filepath = "MGBADisplay.lua", },
 	{ name = "TrackerScreen", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "TrackerScreen.lua", },
 	{ name = "InfoScreen", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "InfoScreen.lua", },
 	{ name = "TrainerInfoScreen", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "TrainerInfoScreen.lua", },

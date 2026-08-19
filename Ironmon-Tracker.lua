@@ -1,4 +1,4 @@
--- This file is the first file loaded by Bizhawk or mGBA.
+-- This file is the first file loaded by BizHawk.
 -- This file is NOT automatically updated live during Tracker auto-updates; requires Bizhawk restart
 -- Ideally this file should be as small as possible, and should not contain important code that requires maintaining
 
@@ -15,6 +15,10 @@ function IronmonTracker.startTracker()
 	collectgarbage()
 
 	IronmonTracker.setupEmulatorSpecifics()
+	if not IronmonTracker.isOnBizhawk then
+		print("> This Generation 1 tracker requires BizHawk.")
+		return
+	end
 
 	-- Only continue with starting up the Tracker if the 'Main' script was able to be loaded
 	if IronmonTracker.tryLoad() then
@@ -32,11 +36,11 @@ function IronmonTracker.setupEmulatorSpecifics()
 	-- Redefine Lua print function to be compatible with outputting to mGBA's scripting console
 	local trackerLabel
 	if IronmonTracker.isOnBizhawk then
-		trackerLabel = "Bizhawk (Gen 3)"
+		trackerLabel = "BizHawk (Generation 1)"
 		print = function(...) console.log(...) end
 		console.clear()
 	else
-		trackerLabel = "mGBA (lite edition)"
+		trackerLabel = "unsupported mGBA session"
 		print = function(...) console:log(...) end
 		print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n") -- This "clears" the Console for mGBA
 	end
