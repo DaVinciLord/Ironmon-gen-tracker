@@ -4,11 +4,11 @@
 -- Game Boy WRAM offset). ROM offsets use the equivalent 0x08000000 mapping.
 -- Keeping these values in one Gen 1-only registry prevents GBA address names
 -- and version conditionals from leaking into the runtime.
-Gen1GameProfiles = {}
+GameProfiles = {}
 
-Gen1GameProfiles.HeaderAddress = 0x0800013C
+GameProfiles.HeaderAddress = 0x0800013C
 
-Gen1GameProfiles.GameCodes = {
+GameProfiles.GameCodes = {
 	RED_US = 0x52454400, -- "RED\0"
 	BLUE_US = 0x424C5545, -- "BLUE"
 	YELLOW_US = 0x59454C4C, -- "YELL"
@@ -188,28 +188,28 @@ yellowFrRom.levelUpMoves = 0x0803B1E8 -- EvosMovesPointerTable (+3 from Yellow U
 yellowFrRom.trainers = 0x08039DD4 -- TrainerDataPointers (+3 from Yellow US)
 yellowFrRom.tmMoves = 0x0801233C
 
-Gen1GameProfiles.Profiles = {
+GameProfiles.Profiles = {
 	red_us = makeProfile("red_us", "Pokemon Red (US/EU)", "Red", "English", RED_BLUE_WRAM, redBlueRom),
 	blue_us = makeProfile("blue_us", "Pokemon Blue (US/EU)", "Blue", "English", RED_BLUE_WRAM, redBlueRom),
 	yellow_us = makeProfile("yellow_us", "Pokemon Yellow (US/EU)", "Yellow", "English", YELLOW_US_WRAM, yellowUsRom),
 	yellow_fr = makeProfile("yellow_fr", "Pokemon Yellow (France)", "Yellow", "French", YELLOW_FR_WRAM, yellowFrRom),
 }
 
-Gen1GameProfiles.ByGameCode = {
-	[Gen1GameProfiles.GameCodes.RED_US] = Gen1GameProfiles.Profiles.red_us,
-	[Gen1GameProfiles.GameCodes.RED_KAIZO] = Gen1GameProfiles.Profiles.red_us,
-	[Gen1GameProfiles.GameCodes.BLUE_US] = Gen1GameProfiles.Profiles.blue_us,
-	[Gen1GameProfiles.GameCodes.YELLOW_US] = Gen1GameProfiles.Profiles.yellow_us,
-	[Gen1GameProfiles.GameCodes.YELLOW_KAIZO] = Gen1GameProfiles.Profiles.yellow_us,
-	[Gen1GameProfiles.GameCodes.YELLOW_FR] = Gen1GameProfiles.Profiles.yellow_fr,
+GameProfiles.ByGameCode = {
+	[GameProfiles.GameCodes.RED_US] = GameProfiles.Profiles.red_us,
+	[GameProfiles.GameCodes.RED_KAIZO] = GameProfiles.Profiles.red_us,
+	[GameProfiles.GameCodes.BLUE_US] = GameProfiles.Profiles.blue_us,
+	[GameProfiles.GameCodes.YELLOW_US] = GameProfiles.Profiles.yellow_us,
+	[GameProfiles.GameCodes.YELLOW_KAIZO] = GameProfiles.Profiles.yellow_us,
+	[GameProfiles.GameCodes.YELLOW_FR] = GameProfiles.Profiles.yellow_fr,
 }
 
-function Gen1GameProfiles.get(gameCode)
-	return Gen1GameProfiles.ByGameCode[gameCode]
+function GameProfiles.get(gameCode)
+	return GameProfiles.ByGameCode[gameCode]
 end
 
-function Gen1GameProfiles.isSupported(gameCode)
-	return Gen1GameProfiles.get(gameCode) ~= nil
+function GameProfiles.isSupported(gameCode)
+	return GameProfiles.get(gameCode) ~= nil
 end
 
-return Gen1GameProfiles
+return GameProfiles

@@ -26,9 +26,9 @@ Utils = {
 TrainerData = {
 	getExcludedTrainers = function() return {} end,
 	shouldUseTrainer = function() return true end,
+	GlobalLogIdToTrainerId = {},
 }
-Gen1TrainerData = { GlobalLogIdToTrainerId = {} }
-for id = 1, 500 do Gen1TrainerData.GlobalLogIdToTrainerId[id] = id end
+for id = 1, 500 do TrainerData.GlobalLogIdToTrainerId[id] = id end
 FileManager = {
 	readLinesFromFile = function(path)
 		local lines = {}
@@ -40,7 +40,6 @@ FileManager = {
 dofile("ironmon_tracker/data/PokemonData.lua")
 dofile("ironmon_tracker/data/MoveData.lua")
 dofile("ironmon_tracker/data/RandomizerLog.lua")
-dofile("ironmon_tracker/data/Gen1RandomizerLog.lua")
 
 assert(RandomizerLog.parseLog(logPath), "randomizer log parsing failed")
 
@@ -67,5 +66,8 @@ for _ in pairs(RandomizerLog.Data.Trainers) do trainerCount = trainerCount + 1 e
 for _ in pairs(RandomizerLog.Data.TMs) do tmCount = tmCount + 1 end
 assert(trainerCount >= 300, "too few trainer teams parsed: " .. trainerCount)
 assert(tmCount == 50, "expected 50 Gen 1 TMs, got " .. tmCount)
+for _, tmNumber in ipairs({ 34, 11, 24, 21, 6, 46, 38, 27 }) do
+	assert(RandomizerLog.Data.TMs[tmNumber], "Kanto gym TM" .. tmNumber .. " missing from the log")
+end
 print(string.format("Gen 1 log integration passed: %d encounter areas, %d trainers, %d TMs",
 	populated, trainerCount, tmCount))

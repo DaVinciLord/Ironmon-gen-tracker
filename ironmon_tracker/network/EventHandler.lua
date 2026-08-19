@@ -749,9 +749,9 @@ EventHandler.DefaultEvents = {
 			local lastBattleStatus = TrackerAPI.getBattleOutcome()
 			local lastFoughtTrainerId = TrackerAPI.getOpponentTrainerId()
 			local rivalIds = {}
-			if Gen1TrainerData and Gen1TrainerData.makeId then
+			if TrainerData and TrainerData.makeId then
 				for trainerNumber = 1, 9 do
-					rivalIds[Gen1TrainerData.makeId(25, trainerNumber)] = true
+					rivalIds[TrainerData.makeId(25, trainerNumber)] = true
 				end
 			end
 			-- Won the battle against the first rival

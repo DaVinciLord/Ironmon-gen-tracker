@@ -666,8 +666,12 @@ ScreenResources{
 		LabelBSTTotal = "Total", -- Usage: "Total: 505"
 		LabelYourIVs = "Your IVs",
 		LabelYourEVs = "Your EVs",
+		LabelYourDVs = "Your DVs",
+		LabelYourStatExp = "Your Stat Exp",
 		LabelShowIVs = "Show IVs",
 		LabelShowEVs = "Show EVs",
+		LabelShowDVs = "Show DVs",
+		LabelShowStatExp = "Show EVs",
 		LabelShowBST = "Show BST",
 		ButtonLevelupMoves = "Levelup Moves",
 		ButtonTMMoves = "TM Moves",

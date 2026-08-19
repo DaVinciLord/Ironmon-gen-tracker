@@ -1,10 +1,10 @@
--- Active ROM identity and native RBY addresses. Gen1GameProfiles is the sole
+-- Active ROM identity and native RBY addresses. GameProfiles is the sole
 -- source of supported games; no GBA address registry is loaded at runtime.
 GameSettings = { generation = 1, GEN = 1 }
 
 function GameSettings.initialize()
-	local gameCode = Utils.reverseEndian32(Memory.read32(Gen1GameProfiles.HeaderAddress) or 0)
-	local profile = Gen1GameProfiles.get(gameCode)
+	local gameCode = Utils.reverseEndian32(Memory.read32(GameProfiles.HeaderAddress) or 0)
+	local profile = GameProfiles.get(gameCode)
 	if not profile then
 		GameSettings.gamename = "Unsupported Game"
 		Main.DisplayError("This game is unsupported by the Gen 1 Ironmon Tracker.\n\nSupported games: Pokemon Red, Blue, and Yellow (US/EU), plus Pokemon Yellow (France).")

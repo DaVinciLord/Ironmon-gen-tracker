@@ -135,7 +135,7 @@ function MoveData.initialize()
 	MoveData.Categories[2] = MoveData.Categories.SPECIAL
 	MoveData.Categories[3] = MoveData.Categories.STATUS
 
-	Gen1DataAdapter.initializeMoveData()
+	DataAdapter.initializeMoveData()
 end
 
 function MoveData.updateResources()
@@ -154,11 +154,11 @@ end
 --- Reads the Move's type, power, accuracy, and pp from the game memory.
 ---@param forced boolean? Optional, forces the data to be read in from the game
 function MoveData.buildData(forced)
-	Gen1DataAdapter.initializeMoveData()
+	DataAdapter.initializeMoveData()
 end
 
 function MoveData.readMoveInfoFromMemory(moveId)
-	return Gen1DataAdapter.readMoveInfo(moveId)
+	return DataAdapter.readMoveInfo(moveId)
 end
 
 function MoveData.checkIfDataIsRandomized()

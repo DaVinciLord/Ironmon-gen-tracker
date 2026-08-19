@@ -10,14 +10,14 @@ Memory = {
 		return (bytes[address] or 0) + (bytes[address + 1] or 0) * 0x100
 	end,
 }
-RouteData = {
-	EncounterArea = {
-		LAND = "Walking", SURFING = "Surfing", OLDROD = "Old Rod",
-		GOODROD = "Good Rod", SUPERROD = "Super Rod", TRAINER = "Trainer",
-	},
-	populateAvailableRoutes = function() end,
-	CombinedAreas = {},
+Constants = {
+	BLANKLINE = "-",
+	SCREEN = { WIDTH = 0, HEIGHT = 0, LINESPACING = 12, MARGIN = 0 },
+	Font = { SIZE = 9 },
+	GAME_STATS = {},
 }
+Utils = { formatSpecialCharacters = function(s) return s end, getGameStat = function() return 0 end }
+Main = { IsOnBizhawk = function() return false end, Version = {}, ExitSafely = function() end, loadNextSeed = false }
 TrainerData = {
 	Classes = setmetatable({ Unknown = { filename = "unknown" } }, {
 		__index = function(self) return self.Unknown end,
@@ -67,7 +67,7 @@ GameOverScreen = {
 	createTempSaveState = function() end,
 	openIfEnded = function() end,
 	updateDefeatedTrainersCount = function()
-		GameOverScreen.numDefeatedTrainers = Gen1TrainerData.countDefeated()
+		GameOverScreen.numDefeatedTrainers = TrainerData.countDefeated()
 	end,
 }
 TeamViewArea = {}
@@ -78,9 +78,9 @@ MiscData = {
 	TMs = {}, HMs = {},
 }
 PokemonData = { Pokemon = {}, Types = { UNKNOWN = "unknown", EMPTY = "" } }
-Gen1SpeciesMap = { getDexId = function(id) return id end, getName = function() return "" end }
-Gen1DataAdapter = { expForLevel = function() return 0 end, TypeIndexMap = {} }
-Gen1PokemonReader = { PartyStructSize = 44, readPartyPokemon = function() end, readBattlePokemon = function() end }
+SpeciesMap = { getDexId = function(id) return id end, getName = function() return "" end }
+DataAdapter = { expForLevel = function() return 0 end, TypeIndexMap = {} }
+PokemonDataReader = { PartyStructSize = 44, readPartyPokemon = function() end, readBattlePokemon = function() end }
 
 GameSettings = {
 	currentProfile = { version = "Red" },
@@ -95,8 +95,11 @@ GameSettings = {
 	tmMoves = 0x600, enemyMon = 0x700, battleMon = 0x800, trainers = 0x900,
 }
 
-dofile(repoRoot .. "ironmon_tracker/data/Gen1RouteData.lua")
-dofile(repoRoot .. "ironmon_tracker/data/Gen1TrainerData.lua")
+dofile(repoRoot .. "ironmon_tracker/data/RouteData.lua")
+dofile(repoRoot .. "ironmon_tracker/data/TrainerData.lua")
+dofile(repoRoot .. "ironmon_tracker/core/Program.lua")
+Program.redraw = function() end
+Program.GameData.mapId = 0x0C
 InfoScreen = { clearScreenData = function() end }
 TrainerInfoScreen = {}
 TrainersOnRouteScreen = {}
@@ -107,23 +110,10 @@ TypeDefensesScreen = {}
 CoverageCalcScreen = {}
 HealsInBagScreen = {}
 BattleDetailsScreen = { clearBuiltData = function() end }
-dofile(repoRoot .. "ironmon_tracker/Battle.lua")
-dofile(repoRoot .. "ironmon_tracker/Runtime.lua")
+dofile(repoRoot .. "ironmon_tracker/core/Battle.lua")
 
 RouteData.initialize()
-Gen1TrainerData.initialize()
-Program.hasDefeatedTrainer = Gen1TrainerData.hasDefeatedTrainer
-Program.getDefeatedTrainersByLocation = Gen1TrainerData.getDefeatedTrainersByLocation
-Program.getDefeatedTrainersByCombinedArea = Gen1TrainerData.getDefeatedTrainersByCombinedArea
-Program.readTrainerGameData = Gen1TrainerData.readTrainer
-Program.getLearnedMoveInfoTable = Gen1Runtime.getLearnedMoveInfoTable
-Program.updateRepelSteps = Gen1Runtime.updateRepelSteps
-Program.isInSafariZone = Gen1Runtime.isInSafariZone
-Program.isInEvolutionScene = Gen1Runtime.isInEvolutionScene
-Program.isInStartMenu = Gen1Runtime.isInStartMenu
-Program.getPlayerTilePosition = Gen1Runtime.getPlayerTilePosition
-Program.getStarterChoice = Gen1Runtime.getStarterChoice
-Program.changeGameSettingForLR = Gen1Runtime.changeGameSettingForLR
+TrainerData.initialize()
 bytes[GameSettings.partyCount] = 1
 
 assert(RouteData.Info[0x0C][RouteData.EncounterArea.LAND])
@@ -141,16 +131,16 @@ assert(RouteData.Locations.CanObtainBadge[0x36])
 -- Encounter classification
 bytes[GameSettings.walkBikeSurf] = 0
 bytes[GameSettings.curItem] = 0
-assert(Gen1RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.LAND)
+assert(RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.LAND)
 bytes[GameSettings.walkBikeSurf] = 2
-assert(Gen1RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.SURFING)
+assert(RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.SURFING)
 bytes[GameSettings.walkBikeSurf] = 0
 bytes[GameSettings.curItem] = 76
-assert(Gen1RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.OLDROD)
+assert(RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.OLDROD)
 bytes[GameSettings.curItem] = 77
-assert(Gen1RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.GOODROD)
+assert(RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.GOODROD)
 bytes[GameSettings.curItem] = 78
-assert(Gen1RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.SUPERROD)
+assert(RouteData.getCurrentEncounterArea() == RouteData.EncounterArea.SUPERROD)
 
 local enemy = { pokemonID = 16, level = 3, curHP = 12, stats = { hp = 12, atk = 6, def = 6, spe = 6, special = 6 }, moves = { { id = 16 } } }
 Tracker.getPokemon = function(_, isOwn)
@@ -173,7 +163,7 @@ Battle.begin(1, enemy)
 assert(Tracker.lastRoute[2] == RouteData.EncounterArea.LAND, "later grass battles must not reuse the previous rod")
 
 -- Defeated trainers
-local youngster = Gen1TrainerData.makeId(1, 1)
+local youngster = TrainerData.makeId(1, 1)
 bytes[GameSettings.battleState] = 2
 bytes[GameSettings.trainerClass] = 1
 bytes[GameSettings.trainerNumber] = 1
@@ -183,7 +173,7 @@ Battle.endCurrentBattle()
 assert(Program.hasDefeatedTrainer(youngster), "winning a trainer battle must persist the defeat")
 assert(Tracker.Data.defeatedTrainers[youngster])
 
-local second = Gen1TrainerData.makeId(1, 2)
+local second = TrainerData.makeId(1, 2)
 bytes[GameSettings.trainerNumber] = 2
 bytes[GameSettings.battleResult] = 1
 Tracker.getPokemon = function(_, isOwn)
@@ -195,9 +185,9 @@ Battle.endCurrentBattle()
 assert(not Program.hasDefeatedTrainer(second), "a lost trainer battle must not count as defeated")
 
 bytes[GameSettings.badges] = 0x01
-assert(Program.hasDefeatedTrainer(Gen1TrainerData.makeId(34, 1)), "Boulder Badge implies Brock is defeated")
+assert(Program.hasDefeatedTrainer(TrainerData.makeId(34, 1)), "Boulder Badge implies Brock is defeated")
 local pewters = RouteData.Info[0x36].trainers
-assert(pewters and pewters[1] == Gen1TrainerData.makeId(34, 1))
+assert(pewters and pewters[1] == TrainerData.makeId(34, 1))
 local defeated, total = Program.getDefeatedTrainersByLocation(0x36)
 assert(total >= 1 and #defeated >= 1)
 

@@ -3,21 +3,21 @@ local scriptPath = debug.getinfo(1, "S").source:sub(2)
 local toolsDir = scriptPath:match("^(.*[/\\])") or ""
 local repoRoot = toolsDir:gsub("tools[/\\]$", "")
 
-dofile(repoRoot .. "ironmon_tracker/GameProfiles.lua")
+dofile(repoRoot .. "ironmon_tracker/memory/GameProfiles.lua")
 
-local codes = Gen1GameProfiles.GameCodes
-local red = assert(Gen1GameProfiles.get(codes.RED_US))
-local blue = assert(Gen1GameProfiles.get(codes.BLUE_US))
-local yellow = assert(Gen1GameProfiles.get(codes.YELLOW_US))
-local yellowFr = assert(Gen1GameProfiles.get(codes.YELLOW_FR))
+local codes = GameProfiles.GameCodes
+local red = assert(GameProfiles.get(codes.RED_US))
+local blue = assert(GameProfiles.get(codes.BLUE_US))
+local yellow = assert(GameProfiles.get(codes.YELLOW_US))
+local yellowFr = assert(GameProfiles.get(codes.YELLOW_FR))
 
 assert(red.generation == 1 and blue.generation == 1 and yellow.generation == 1 and yellowFr.generation == 1)
 assert(red.version == "Red" and blue.version == "Blue")
 assert(yellow.language == "English" and yellowFr.language == "French")
-assert(Gen1GameProfiles.get(codes.RED_KAIZO) == red)
-assert(Gen1GameProfiles.get(codes.YELLOW_KAIZO) == yellow)
-assert(not Gen1GameProfiles.isSupported(0x414C0042), "Crystal must not be accepted by the Gen 1-only tracker")
-assert(not Gen1GameProfiles.isSupported(0x42504545), "Emerald must not be accepted by the Gen 1-only tracker")
+assert(GameProfiles.get(codes.RED_KAIZO) == red)
+assert(GameProfiles.get(codes.YELLOW_KAIZO) == yellow)
+assert(not GameProfiles.isSupported(0x414C0042), "Crystal must not be accepted by the Gen 1-only tracker")
+assert(not GameProfiles.isSupported(0x42504545), "Emerald must not be accepted by the Gen 1-only tracker")
 
 assert(red.wram.walkBikeSurf == 0x02001700 and red.wram.repelSteps == 0x020010DB)
 assert(red.wram.moveNum == 0x020010E0 and red.wram.whichPokemon == 0x02000F92)

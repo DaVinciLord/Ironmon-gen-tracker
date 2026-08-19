@@ -3,16 +3,14 @@ local scriptPath = debug.getinfo(1, "S").source:sub(2)
 local toolsDir = scriptPath:match("^(.*[/\\])") or ""
 local repoRoot = toolsDir:gsub("tools[/\\]$", "")
 
-RouteData = {
-	EncounterArea = {
-		LAND = "Walking", SURFING = "Surfing", OLDROD = "Old Rod",
-		GOODROD = "Good Rod", SUPERROD = "Super Rod",
-	},
-	populateAvailableRoutes = function(maxMapId)
-		RouteData.lastPopulatedMap = maxMapId
-	end,
-}
-dofile(repoRoot .. "ironmon_tracker/data/Gen1RouteData.lua")
+Constants = { BLANKLINE = "-" }
+Utils = { formatSpecialCharacters = function(s) return s end }
+dofile(repoRoot .. "ironmon_tracker/data/RouteData.lua")
+local populateAvailableRoutes = RouteData.populateAvailableRoutes
+RouteData.populateAvailableRoutes = function(maxMapId)
+	RouteData.lastPopulatedMap = maxMapId
+	return populateAvailableRoutes(maxMapId)
+end
 
 RouteData.initialize()
 assert(RouteData.Info[0x0C].name == "Route 1")

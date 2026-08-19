@@ -12,11 +12,11 @@ end
 
 for _, path in ipairs({
 	"ironmon_tracker/Main.lua",
-	"ironmon_tracker/Program.lua",
-	"ironmon_tracker/Battle.lua",
-	"ironmon_tracker/Input.lua",
-	"ironmon_tracker/Tracker.lua",
-	"ironmon_tracker/TrackerAPI.lua",
+	"ironmon_tracker/core/Program.lua",
+	"ironmon_tracker/core/Battle.lua",
+	"ironmon_tracker/core/Input.lua",
+	"ironmon_tracker/core/Tracker.lua",
+	"ironmon_tracker/core/TrackerAPI.lua",
 	"ironmon_tracker/screens/TrackerScreen.lua",
 	"ironmon_tracker/screens/SetupScreen.lua",
 	"ironmon_tracker/screens/ExtrasScreen.lua",

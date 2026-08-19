@@ -25,10 +25,10 @@ Memory = {
 	end,
 }
 
-dofile(repoRoot .. "ironmon_tracker/GameProfiles.lua")
-dofile(repoRoot .. "ironmon_tracker/GameSettings.lua")
+dofile(repoRoot .. "ironmon_tracker/memory/GameProfiles.lua")
+dofile(repoRoot .. "ironmon_tracker/memory/GameSettings.lua")
 
-Memory.gameCode = Gen1GameProfiles.GameCodes.RED_US
+Memory.gameCode = GameProfiles.GameCodes.RED_US
 assert(GameSettings.initialize())
 assert(GameSettings.GEN == 1 and GameSettings.currentProfile.id == "red_us")
 assert(GameSettings.partyMon1 == 0x0200116B)
@@ -36,7 +36,7 @@ assert(GameSettings.gamename == "Pokemon Red (US/EU)")
 assert(GameSettings.isYellow ~= true)
 assert(GameSettings.usesStarterChoice())
 
-Memory.gameCode = Gen1GameProfiles.GameCodes.YELLOW_FR
+Memory.gameCode = GameProfiles.GameCodes.YELLOW_FR
 assert(GameSettings.initialize())
 assert(GameSettings.currentProfile.id == "yellow_fr" and GameSettings.isFrenchYellow)
 assert(GameSettings.isYellow)

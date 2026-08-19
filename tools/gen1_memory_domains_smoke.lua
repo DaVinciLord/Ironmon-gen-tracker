@@ -14,7 +14,7 @@ Utils = {
 		return result
 	end,
 }
-dofile(repoRoot .. "ironmon_tracker/Memory.lua")
+dofile(repoRoot .. "ironmon_tracker/memory/Memory.lua")
 
 -- Yellow FR probes confirmed party data at WRAM:116F (encoded 0x0200116F),
 -- not GBA EWRAM and not System Bus with the raw 0x116F offset.

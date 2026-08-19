@@ -121,7 +121,7 @@ function Battle.begin(state, enemy)
 	Battle.inBattleScreen = true
 	Battle.dataReady = true
 	Battle.isWildEncounter = state == 1
-	Battle.opposingTrainerId = state == 2 and Gen1TrainerData and Gen1TrainerData.getCurrentTrainerId() or 0
+	Battle.opposingTrainerId = state == 2 and TrainerData and TrainerData.getCurrentTrainerId() or 0
 	Battle.numBattlers = 2
 	Battle.partySize = math.min(Memory.readbyte(GameSettings.partyCount) or 0, 6)
 	Battle.isViewingOwn = not Options["Auto swap to enemy"]
@@ -129,13 +129,13 @@ function Battle.begin(state, enemy)
 	Battle.lastEnemyMoveId = 0
 	if state == 1 then
 		Battle.CurrentRoute = Battle.CurrentRoute or {}
-		Battle.CurrentRoute.encounterArea = (Gen1RouteData and Gen1RouteData.consumeEncounterArea and Gen1RouteData.consumeEncounterArea())
+		Battle.CurrentRoute.encounterArea = (RouteData and RouteData.consumeEncounterArea and RouteData.consumeEncounterArea())
 			or (RouteData.EncounterArea and RouteData.EncounterArea.LAND)
 	end
 	local battleType = GameSettings.battleType and Memory.readbyte(GameSettings.battleType) or 0
 	Battle.recentBattleWasTutorial = battleType == 1
-	if state == 2 and Gen1TrainerData and Gen1TrainerData.rememberTrainerOnMap then
-		Gen1TrainerData.rememberTrainerOnMap(Program.GameData.mapId, Battle.opposingTrainerId)
+	if state == 2 and TrainerData and TrainerData.rememberTrainerOnMap then
+		TrainerData.rememberTrainerOnMap(Program.GameData.mapId, Battle.opposingTrainerId)
 	end
 	Battle.enemyMoveAtBattleStart = Memory.readbyte(GameSettings.enemyMove) or 0
 	Battle.enemyMoveReadArmed = Battle.enemyMoveAtBattleStart == 0
@@ -155,12 +155,12 @@ end
 function Battle.endCurrentBattle()
 	if not Battle.inBattleScreen then return end
 	local lastTrainerId = Battle.opposingTrainerId
-	if lastTrainerId and lastTrainerId ~= 0 and Gen1TrainerData and Gen1TrainerData.markDefeated then
+	if lastTrainerId and lastTrainerId ~= 0 and TrainerData and TrainerData.markDefeated then
 		local result = GameSettings.battleResult and Memory.readbyte(GameSettings.battleResult) or 1
 		local lead = Tracker.getPokemon(1, true)
 		local leadAlive = lead and (lead.curHP or 0) > 0
 		if result == 0 and leadAlive then
-			Gen1TrainerData.markDefeated(lastTrainerId)
+			TrainerData.markDefeated(lastTrainerId)
 		end
 	end
 	Battle.lastCompletedEnemySignature = signature(Tracker.getPokemon(1, false)) or Battle.lastEnemySignature
@@ -198,7 +198,7 @@ function Battle.observeEnemy(enemy)
 	Tracker.TrackEncounter(enemy.pokemonID, Battle.isWildEncounter)
 	if Battle.isWildEncounter and type(Tracker.TrackRouteEncounter) == "function" and RouteData.EncounterArea then
 		local area = (Battle.CurrentRoute and Battle.CurrentRoute.encounterArea)
-			or (Gen1RouteData and Gen1RouteData.getCurrentEncounterArea and Gen1RouteData.getCurrentEncounterArea())
+			or (RouteData and RouteData.getCurrentEncounterArea and RouteData.getCurrentEncounterArea())
 			or RouteData.EncounterArea.LAND
 		Tracker.TrackRouteEncounter(Program.GameData.mapId, area, enemy.pokemonID)
 	end

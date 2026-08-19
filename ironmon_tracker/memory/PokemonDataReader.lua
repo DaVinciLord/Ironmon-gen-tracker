@@ -1,11 +1,11 @@
 -- Reader for the two native RBY Pokémon structures: the 44-byte party record
 -- and the compact active-battle record. Multi-byte values in these structures
 -- are big-endian even though the emulator's generic word helper is not.
-Gen1PokemonReader = {}
+PokemonDataReader = {}
 
-Gen1PokemonReader.PartyStructSize = 44
+PokemonDataReader.PartyStructSize = 44
 
-Gen1PokemonReader.Status = {
+PokemonDataReader.Status = {
 	NONE = 0,
 	SLEEP = 1,
 	POISON = 2,
@@ -28,12 +28,12 @@ end
 
 local function decodeStatus(raw)
 	local sleepTurns = raw % 8
-	if sleepTurns > 0 then return Gen1PokemonReader.Status.SLEEP, sleepTurns end
-	if math.floor(raw / 0x08) % 2 == 1 then return Gen1PokemonReader.Status.POISON, 0 end
-	if math.floor(raw / 0x10) % 2 == 1 then return Gen1PokemonReader.Status.BURN, 0 end
-	if math.floor(raw / 0x20) % 2 == 1 then return Gen1PokemonReader.Status.FREEZE, 0 end
-	if math.floor(raw / 0x40) % 2 == 1 then return Gen1PokemonReader.Status.PARALYSIS, 0 end
-	return Gen1PokemonReader.Status.NONE, 0
+	if sleepTurns > 0 then return PokemonDataReader.Status.SLEEP, sleepTurns end
+	if math.floor(raw / 0x08) % 2 == 1 then return PokemonDataReader.Status.POISON, 0 end
+	if math.floor(raw / 0x10) % 2 == 1 then return PokemonDataReader.Status.BURN, 0 end
+	if math.floor(raw / 0x20) % 2 == 1 then return PokemonDataReader.Status.FREEZE, 0 end
+	if math.floor(raw / 0x40) % 2 == 1 then return PokemonDataReader.Status.PARALYSIS, 0 end
+	return PokemonDataReader.Status.NONE, 0
 end
 
 local function readDVs(address)
@@ -76,7 +76,7 @@ local function resolveSpecies(internalId, resolver)
 	return internalId
 end
 
-function Gen1PokemonReader.readPartyPokemon(startAddress, speciesResolver)
+function PokemonDataReader.readPartyPokemon(startAddress, speciesResolver)
 	local internalId = read8(startAddress)
 	local status, sleepTurns = decodeStatus(read8(startAddress + 4))
 	local special = readBE16(startAddress + 42)
@@ -104,7 +104,7 @@ function Gen1PokemonReader.readPartyPokemon(startAddress, speciesResolver)
 	}
 end
 
-function Gen1PokemonReader.readBattlePokemon(startAddress, speciesResolver)
+function PokemonDataReader.readBattlePokemon(startAddress, speciesResolver)
 	local internalId = read8(startAddress)
 	local status, sleepTurns = decodeStatus(read8(startAddress + 4))
 	local special = readBE16(startAddress + 23)
@@ -129,4 +129,4 @@ function Gen1PokemonReader.readBattlePokemon(startAddress, speciesResolver)
 	}
 end
 
-return Gen1PokemonReader
+return PokemonDataReader

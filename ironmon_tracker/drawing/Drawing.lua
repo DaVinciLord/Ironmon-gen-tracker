@@ -90,8 +90,17 @@ function Drawing.initialize()
 	end
 end
 
+---Height of the right-gap tracker panel, including BizHawk padding below the GB screen.
+function Drawing.getTrackerHeight()
+	local bottomGap = Constants.SCREEN.DOWN_GAP
+	if TeamViewArea and TeamViewArea.isDisplayed and TeamViewArea.isDisplayed() then
+		bottomGap = Constants.SCREEN.BOTTOM_AREA
+	end
+	return Constants.SCREEN.HEIGHT + bottomGap
+end
+
 function Drawing.clearGUI()
-	gui.drawRectangle(Constants.SCREEN.WIDTH, 0, Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP, Constants.SCREEN.HEIGHT, Drawing.Colors.BLACK, Drawing.Colors.BLACK)
+	gui.drawRectangle(Constants.SCREEN.WIDTH, 0, Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP, Drawing.getTrackerHeight(), Drawing.Colors.BLACK, Drawing.Colors.BLACK)
 end
 
 ---@param waitFramesBeforeClearing number? [Optional] Will wait N frames before clearing the cache, useful for allowing any final image draws
@@ -113,7 +122,7 @@ function Drawing.drawBackgroundAndMargins(x, y, width, height, bgcolor)
 	x = x or Constants.SCREEN.WIDTH
 	y = y or 0
 	width = width or Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP
-	height = height or Constants.SCREEN.HEIGHT
+	height = height or Drawing.getTrackerHeight()
 	bgcolor = bgcolor or Theme.COLORS["Main background"]
 	gui.drawRectangle(x, y, width, height, bgcolor, bgcolor)
 end

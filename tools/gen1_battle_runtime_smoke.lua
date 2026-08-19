@@ -24,7 +24,10 @@ Options = { ["Auto swap to enemy"] = true }
 Input = { StatHighlighter = { resetSelectedStat = function() end } }
 CustomCode = { afterBattleBegins = function() end, afterBattleEnds = function() end, afterBattleDataUpdate = function() end }
 RouteData = { EncounterArea = { LAND = "Land" } }
-Gen1TrainerData = { getCurrentTrainerId = function() return 0x2B02 end }
+TrainerData = {
+	getCurrentTrainerId = function() return 0x2B02 end,
+	FinalTrainer = {},
+}
 GameOverScreen = {
 	createTempSaveState = function() saveStatesCreated = saveStatesCreated + 1 end,
 	openIfEnded = function(trainerId) endedTrainerId = trainerId end,
@@ -40,9 +43,8 @@ CoverageCalcScreen = {}
 HealsInBagScreen = {}
 BattleDetailsScreen = { clearBuiltData = function() end }
 TrackerScreen = {}
-TrainerData = { FinalTrainer = {} }
 
-dofile(repoRoot .. "ironmon_tracker/Battle.lua")
+dofile(repoRoot .. "ironmon_tracker/core/Battle.lua")
 
 bytes[GameSettings.partyCount] = 1
 bytes[GameSettings.battleState] = 1

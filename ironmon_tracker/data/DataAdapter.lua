@@ -1,13 +1,13 @@
 -- Narrows Besteon's shared datasets to the data that exists in Red/Blue/Yellow
 -- and applies the original Generation 1 battle rules.
-Gen1DataAdapter = {}
+DataAdapter = {}
 
-Gen1DataAdapter.PokemonCount = 151
-Gen1DataAdapter.MoveCount = 165
+DataAdapter.PokemonCount = 151
+DataAdapter.MoveCount = 165
 
 ---Returns the cumulative experience required at a level for all six growth
 ---curves implemented by RBY (two are normally unused but valid in ROM data).
-function Gen1DataAdapter.expForLevel(growthRate, level)
+function DataAdapter.expForLevel(growthRate, level)
 	level = math.max(1, math.min(100, level or 1))
 	local cube, square = level * level * level, level * level
 	local formulas = {
@@ -23,7 +23,7 @@ end
 
 ---Exact RBY capture probability, including the game's inclusive comparisons.
 ---@return number wholePercent
-function Gen1DataAdapter.calcCatchRate(pokemonId, maxHP, currentHP, _, status, ball)
+function DataAdapter.calcCatchRate(pokemonId, maxHP, currentHP, _, status, ball)
 	if not PokemonData.isValid(pokemonId) or (maxHP or 0) <= 0 or (currentHP or 0) <= 0 then return 0 end
 	ball = ball or 4
 	if ball == 1 then return 100 end -- Master Ball
@@ -48,7 +48,7 @@ function Gen1DataAdapter.calcCatchRate(pokemonId, maxHP, currentHP, _, status, b
 	return math.max(0, math.min(100, math.floor(probability * 100)))
 end
 
-Gen1DataAdapter.TypeIndexMap = {
+DataAdapter.TypeIndexMap = {
 	[0x00] = PokemonData.Types.NORMAL,
 	[0x01] = PokemonData.Types.FIGHTING,
 	[0x02] = PokemonData.Types.FLYING,
@@ -97,8 +97,8 @@ local function bankPointerToAddress(tableAddress, pointer)
 	return 0x08000000 + bank * 0x4000 + pointer - 0x4000
 end
 
-function Gen1DataAdapter.readEvolutionsAndMoves(pokemonId)
-	local internalId = Gen1SpeciesMap.getInternalId(pokemonId)
+function DataAdapter.readEvolutionsAndMoves(pokemonId)
+	local internalId = SpeciesMap.getInternalId(pokemonId)
 	if not internalId then return {}, {} end
 	local pointer = Memory.readword(GameSettings.levelUpMoves + (internalId - 1) * 2)
 	if not pointer or pointer == 0 then return {}, {} end
@@ -109,15 +109,15 @@ function Gen1DataAdapter.readEvolutionsAndMoves(pokemonId)
 		if method == 0 then address = address + 1 break end
 		if method == 1 then
 			table.insert(evolutions, { method = method, level = Memory.readbyte(address + 1),
-				species = Gen1SpeciesMap.getDexId(Memory.readbyte(address + 2)) })
+				species = SpeciesMap.getDexId(Memory.readbyte(address + 2)) })
 			address = address + 3
 		elseif method == 2 then
 			table.insert(evolutions, { method = method, item = Memory.readbyte(address + 1),
-				level = Memory.readbyte(address + 2), species = Gen1SpeciesMap.getDexId(Memory.readbyte(address + 3)) })
+				level = Memory.readbyte(address + 2), species = SpeciesMap.getDexId(Memory.readbyte(address + 3)) })
 			address = address + 4
 		elseif method == 3 then
 			table.insert(evolutions, { method = method, level = Memory.readbyte(address + 1),
-				species = Gen1SpeciesMap.getDexId(Memory.readbyte(address + 2)) })
+				species = SpeciesMap.getDexId(Memory.readbyte(address + 2)) })
 			address = address + 3
 		else
 			return evolutions, {}
@@ -150,7 +150,7 @@ local function evolutionDisplay(evolutions)
 	return byItem[evolution.item] or PokemonData.Evolutions.NONE
 end
 
-function Gen1DataAdapter.readPokemonInfo(pokemonId)
+function DataAdapter.readPokemonInfo(pokemonId)
 	local address = baseStatsAddress(pokemonId)
 	local stats = {
 		hp = Memory.readbyte(address + 1),
@@ -165,30 +165,30 @@ function Gen1DataAdapter.readPokemonInfo(pokemonId)
 		expYield = Memory.readbyte(address + 9),
 		growthRate = Memory.readbyte(address + 19),
 		types = {
-			Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 6)] or PokemonData.Types.UNKNOWN,
-			Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 7)] or PokemonData.Types.UNKNOWN,
+			DataAdapter.TypeIndexMap[Memory.readbyte(address + 6)] or PokemonData.Types.UNKNOWN,
+			DataAdapter.TypeIndexMap[Memory.readbyte(address + 7)] or PokemonData.Types.UNKNOWN,
 		},
 	}
 end
 
 -- Vanilla RBY Bulbasaur's level-up table starts at Leech Seed (7) then Vine Whip (13).
 -- Starting moves are stored separately and are not part of this list.
-function Gen1DataAdapter.isRandomizedLearnset(moves)
+function DataAdapter.isRandomizedLearnset(moves)
 	local first, second = moves and moves[1], moves and moves[2]
 	return not first or first.id ~= 73 or first.level ~= 7
 		or not second or second.id ~= 22 or second.level ~= 13
 end
 
-function Gen1DataAdapter.initializePokemonData()
-	local bulbasaur = Gen1DataAdapter.readPokemonInfo(1)
+function DataAdapter.initializePokemonData()
+	local bulbasaur = DataAdapter.readPokemonInfo(1)
 	PokemonData.IsRand.types = bulbasaur.types[1] ~= PokemonData.Types.GRASS or bulbasaur.types[2] ~= PokemonData.Types.POISON
 	PokemonData.IsRand.stats = bulbasaur.stats.hp ~= 45 or bulbasaur.stats.atk ~= 49 or bulbasaur.stats.def ~= 49
 	PokemonData.IsRand.friendshipBase = false
 	PokemonData.IsRand.expYield = bulbasaur.expYield ~= 64
 
-	for pokemonId = 1, Gen1DataAdapter.PokemonCount do
+	for pokemonId = 1, DataAdapter.PokemonCount do
 		local pokemon = PokemonData.Pokemon[pokemonId]
-		local info = Gen1DataAdapter.readPokemonInfo(pokemonId)
+		local info = DataAdapter.readPokemonInfo(pokemonId)
 		pokemon.pokemonID = pokemonId
 		pokemon.types = info.types
 		pokemon.baseStats = info.stats
@@ -198,10 +198,10 @@ function Gen1DataAdapter.initializePokemonData()
 		pokemon.friendshipBase = nil
 		pokemon.bst = tostring(info.stats.hp + info.stats.atk + info.stats.def + info.stats.spe + info.stats.special)
 	end
-	Gen1SpeciesMap.rebuildDexMap()
+	SpeciesMap.rebuildDexMap()
 	PokemonData.IsRand.moveLearnSet = true
-	for pokemonId = 1, Gen1DataAdapter.PokemonCount do
-		local evolutions, moves = Gen1DataAdapter.readEvolutionsAndMoves(pokemonId)
+	for pokemonId = 1, DataAdapter.PokemonCount do
+		local evolutions, moves = DataAdapter.readEvolutionsAndMoves(pokemonId)
 		local pokemon = PokemonData.Pokemon[pokemonId]
 		pokemon.evolution = evolutionDisplay(evolutions)
 		local levels = {}
@@ -210,16 +210,16 @@ function Gen1DataAdapter.initializePokemonData()
 		end
 		pokemon.movelvls = { levels, levels }
 		if pokemonId == 1 then
-			PokemonData.IsRand.moveLearnSet = Gen1DataAdapter.isRandomizedLearnset(moves)
+			PokemonData.IsRand.moveLearnSet = DataAdapter.isRandomizedLearnset(moves)
 		end
 	end
-	PokemonData.knownTotal = Gen1DataAdapter.PokemonCount
+	PokemonData.knownTotal = DataAdapter.PokemonCount
 end
 
-function Gen1DataAdapter.readMoveInfo(moveId)
+function DataAdapter.readMoveInfo(moveId)
 	local address = GameSettings.moveData + (moveId - 1) * 6
 	local power = Memory.readbyte(address + 2)
-	local typeName = Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 3)] or PokemonData.Types.UNKNOWN
+	local typeName = DataAdapter.TypeIndexMap[Memory.readbyte(address + 3)] or PokemonData.Types.UNKNOWN
 	local accuracyByte = Memory.readbyte(address + 4)
 	return {
 		power = tostring(power),
@@ -229,18 +229,18 @@ function Gen1DataAdapter.readMoveInfo(moveId)
 	}
 end
 
-function Gen1DataAdapter.initializeMoveData()
-	local blizzard = Gen1DataAdapter.readMoveInfo(59)
-	local hydroPump = Gen1DataAdapter.readMoveInfo(56)
+function DataAdapter.initializeMoveData()
+	local blizzard = DataAdapter.readMoveInfo(59)
+	local hydroPump = DataAdapter.readMoveInfo(56)
 	MoveData.IsRand.moveType = blizzard.type ~= PokemonData.Types.ICE or hydroPump.type ~= PokemonData.Types.WATER
 	MoveData.IsRand.movePower = blizzard.power ~= "120" or hydroPump.power ~= "120"
 	MoveData.IsRand.moveAccuracy = blizzard.accuracy ~= "90" or hydroPump.accuracy ~= "80"
 	MoveData.IsRand.movePP = blizzard.pp ~= "5" or hydroPump.pp ~= "5"
 	MoveData.IsRand.moveCategory = false
 
-	for moveId = 1, Gen1DataAdapter.MoveCount do
+	for moveId = 1, DataAdapter.MoveCount do
 		local move = MoveData.Moves[moveId]
-		local info = Gen1DataAdapter.readMoveInfo(moveId)
+		local info = DataAdapter.readMoveInfo(moveId)
 		move.type = info.type
 		move.accuracy = info.accuracy
 		move.pp = info.pp
@@ -249,13 +249,13 @@ function Gen1DataAdapter.initializeMoveData()
 			move.category = MoveData.TypeToCategory[move.type]
 		end
 	end
-	MoveData.knownTotal = Gen1DataAdapter.MoveCount
-	Gen1DataAdapter.applyMoveSummaries()
+	MoveData.knownTotal = DataAdapter.MoveCount
+	DataAdapter.applyMoveSummaries()
 end
 
-function Gen1DataAdapter.apply()
-	truncate(PokemonData.Pokemon, Gen1DataAdapter.PokemonCount)
-	truncate(MoveData.Moves, Gen1DataAdapter.MoveCount)
+function DataAdapter.apply()
+	truncate(PokemonData.Pokemon, DataAdapter.PokemonCount)
+	truncate(MoveData.Moves, DataAdapter.MoveCount)
 
 	-- RBY has no Hidden Power and only exposes its fifteen native types.
 	MoveData.HiddenPowerTypeList = {}
@@ -279,7 +279,7 @@ function Gen1DataAdapter.apply()
 		ghost = { normal = 0, psychic = 0, ghost = 2 }, -- RBY Ghost/Psychic bug
 		dragon = { dragon = 2 },
 	}
-	PokemonData.TypeIndexMap = Gen1DataAdapter.TypeIndexMap
+	PokemonData.TypeIndexMap = DataAdapter.TypeIndexMap
 	PokemonData.Evolutions.TRADE = PokemonData.Evolutions.TRADE or {
 		abbreviation = "TRADE", short = { "Trade" }, detailed = { "Trade" },
 	}
@@ -314,10 +314,10 @@ function Gen1DataAdapter.apply()
 		applyMoveOverride(moveId, fields)
 	end
 
-	Gen1DataAdapter.applyMoveSummaries()
+	DataAdapter.applyMoveSummaries()
 end
 
-function Gen1DataAdapter.applyMoveSummaries()
+function DataAdapter.applyMoveSummaries()
 	local trapping = "Traps the target for 2-5 turns and prevents it from attacking."
 	local ohko = "Knocks out the target. Fails if the target is faster than the user."
 	for _, moveId in ipairs({ 12, 32, 90 }) do MoveData.Moves[moveId].summary = ohko end
@@ -334,11 +334,11 @@ function Gen1DataAdapter.applyMoveSummaries()
 	MoveData.Moves[165].summary = "User loses 1/2 of the damage dealt; no recoil when breaking a substitute."
 end
 
-function Gen1DataAdapter.trimLanguageData()
+function DataAdapter.trimLanguageData()
 	local function trimGame(game)
 		if type(game) ~= "table" then return end
-		truncate(game.PokemonNames, Gen1DataAdapter.PokemonCount)
-		truncate(game.MoveNames, Gen1DataAdapter.MoveCount)
+		truncate(game.PokemonNames, DataAdapter.PokemonCount)
+		truncate(game.MoveNames, DataAdapter.MoveCount)
 		game.AbilityNames = {}
 		if game.AbilityDescriptions then game.AbilityDescriptions = {} end
 		if game.Natures then game.Natures = {} end
@@ -350,17 +350,17 @@ function Gen1DataAdapter.trimLanguageData()
 	if MiscData then MiscData.Natures = {} end
 end
 
-function Gen1DataAdapter.initialize()
-	Gen1DataAdapter.trimLanguageData()
+function DataAdapter.initialize()
+	DataAdapter.trimLanguageData()
 end
 
-function Gen1DataAdapter.updateResources()
+function DataAdapter.updateResources()
 	-- Besteon loads localized Gen 3 descriptions first. Reapply only the moves
 	-- whose mechanics differ in RBY after every language/resource refresh.
-	Gen1DataAdapter.applyMoveSummaries()
-	Gen1DataAdapter.trimLanguageData()
+	DataAdapter.applyMoveSummaries()
+	DataAdapter.trimLanguageData()
 end
 
-Gen1DataAdapter.apply()
+DataAdapter.apply()
 
-return Gen1DataAdapter
+return DataAdapter

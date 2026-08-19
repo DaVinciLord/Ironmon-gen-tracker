@@ -818,7 +818,7 @@ function InfoScreen.drawMoveInfoScreen(moveId)
 	local offsetColumnX = offsetX + 44
 	local offsetY = 0 + Constants.SCREEN.MARGIN + 3
 	local linespacing = Constants.SCREEN.LINESPACING - 1
-	local botOffsetY = offsetY + (linespacing * 7) + 7
+	local botOffsetY = offsetY + (linespacing * 5) + 7
 
 	local data = DataHelper.buildMoveInfoDisplay(moveId)
 
@@ -834,14 +834,12 @@ function InfoScreen.drawMoveInfoScreen(moveId)
 	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, Constants.SCREEN.MARGIN, rightEdge, botOffsetY - linespacing - 8, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box background"])
 
 	local moveType = data.m.type
-	local moveCategory = data.m.category
 	local movePP = data.m.pp
 	local movePower = data.m.power
 	local moveAcc = data.m.accuracy
 	if Program.currentOverlay == LogOverlay and RandomizerLog.Data.Moves[moveId] then
 		local moveLog = RandomizerLog.Data.Moves[moveId]
 		moveType = moveLog.type or PokemonData.Types.EMPTY
-		moveCategory = MoveData.getCategory(moveId, moveType)
 		movePP = moveLog.pp ~= 0 and moveLog.pp or Constants.BLANKLINE
 		movePower = moveLog.power ~= 0 and moveLog.power or Constants.BLANKLINE
 		moveAcc = moveLog.acc ~= 0 and moveLog.acc or Constants.BLANKLINE
@@ -862,21 +860,8 @@ function InfoScreen.drawMoveInfoScreen(moveId)
 		Drawing.drawText(offsetX + 103, offsetY + linespacing * 2 - 6, Resources.InfoScreen.SetHiddenPowerType, Theme.COLORS["Positive text"], boxInfoTopShadow)
 	end
 
-	-- CATEGORY
-	if moveCategory == MoveData.Categories.PHYSICAL then
-		Drawing.drawImageAsPixels(Constants.PixelImages.PHYSICAL, offsetColumnX + 36, offsetY + 2, { Theme.COLORS["Default text"] }, boxInfoTopShadow)
-	elseif moveCategory == MoveData.Categories.SPECIAL then
-		Drawing.drawImageAsPixels(Constants.PixelImages.SPECIAL, offsetColumnX + 33, offsetY + 2, { Theme.COLORS["Default text"] }, boxInfoTopShadow)
-	end
-	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelCategory .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, moveCategory, Theme.COLORS["Default text"], boxInfoTopShadow)
-	offsetY = offsetY + linespacing
-
-	-- CONTACT
-	data.m.iscontact = Utils.inlineIf(data.m.iscontact, Resources.AllScreens.Yes, Resources.AllScreens.No)
-	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelContact .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.m.iscontact, Theme.COLORS["Default text"], boxInfoTopShadow)
-	offsetY = offsetY + linespacing
+	-- RBY has no physical/special split UI and no contact flag. Category
+	-- still follows type on the tracker (MoveData.TypeToCategory).
 
 	-- PP
 	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelPP .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)

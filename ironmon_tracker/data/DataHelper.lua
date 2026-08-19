@@ -182,11 +182,6 @@ function DataHelper.buildTrackerScreenDisplay(forceView)
 		data.p.evo = PokemonData.Evolutions.FRIEND_READY
 	end
 
-	-- RBY has neither held items nor abilities. Keep two blank rows so the
-	-- inherited compact layout retains its vertical spacing.
-	data.p.line1 = Constants.BLANKLINE
-	data.p.line2 = Constants.BLANKLINE
-
 	-- Add: Move Header
 	data.m.nextmoveheader, data.m.nextmovelevel, data.m.nextmovespacing = Utils.getMovesLearnedHeader(viewedPokemon.pokemonID, viewedPokemon.level)
 

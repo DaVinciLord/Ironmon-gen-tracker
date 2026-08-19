@@ -11,7 +11,8 @@ LogOverlay = {
 	viewedLog = "None", -- use to note if the opened log is the current seed, previous seed, or other
 }
 
--- Dimensions of the screen space occupied by the currentl visible Tab
+-- Dimensions of the screen space occupied by the currently visible Tab.
+-- Besteon: the log covers the game screen; InfoScreen/tracker stay in the right gap.
 LogOverlay.TabBox = {
 	x = LogOverlay.margin,
 	y = LogOverlay.tabHeight,
@@ -270,6 +271,7 @@ function LogOverlay.initialize()
 	LogOverlay.TabHistory = {}
 	LogOverlay.Windower.currentTab = nil
 
+	LogOverlay.syncLayout()
 	LogOverlay.addHeaderTabButtons()
 
 	for _, button in pairs(LogOverlay.HeaderButtons) do
@@ -316,6 +318,31 @@ function LogOverlay.refreshButtons()
 	end
 end
 
+-- Cover the GB game screen (160×144). Chrome sits on the overlay, not in the tracker gap.
+function LogOverlay.syncLayout()
+	local m = LogOverlay.margin
+	LogOverlay.TabBox.x = m
+	LogOverlay.TabBox.y = LogOverlay.tabHeight
+	LogOverlay.TabBox.width = Constants.SCREEN.WIDTH - (m * 2)
+	LogOverlay.TabBox.height = Constants.SCREEN.HEIGHT - LogOverlay.tabHeight - m - 1
+
+	local box = LogOverlay.TabBox
+	local xRight = box.x + box.width
+	local buttons = LogOverlay.HeaderButtons
+	if buttons.XIcon then
+		buttons.XIcon.box[1] = xRight - 12
+	end
+	if buttons.NextPage then
+		buttons.NextPage.box[1] = xRight - 24
+	end
+	if buttons.CurrentPage then
+		buttons.CurrentPage.box[1] = xRight - 74
+	end
+	if buttons.PrevPage then
+		buttons.PrevPage.box[1] = xRight - 87
+	end
+end
+
 function LogOverlay.addHeaderTabButtons()
 	local orderedTabs = {
 		LogTabPokemon,
@@ -324,7 +351,7 @@ function LogOverlay.addHeaderTabButtons()
 		LogTabTMs,
 		LogTabMisc,
 	}
-	local offsetX = LogOverlay.margin + 1
+	local offsetX = LogOverlay.TabBox.x + 1
 	local spacer = 3
 
 	for i, tab in ipairs(orderedTabs) do
@@ -439,6 +466,7 @@ end
 function LogOverlay.drawScreen()
 	if Program.currentOverlay ~= LogOverlay then return end
 
+	LogOverlay.syncLayout()
 	Drawing.drawBackgroundAndMargins(0, 0, Constants.SCREEN.WIDTH, Constants.SCREEN.HEIGHT)
 
 	local currentTab = LogOverlay.Windower.currentTab or {}
@@ -450,7 +478,7 @@ function LogOverlay.drawScreen()
 	end
 
 	-- Draw tab dividers; color depends on currently viewed tab
-	gui.drawLine(LogOverlay.margin, 1, LogOverlay.margin, LogOverlay.TabBox.y - 1, borderColor)
+	gui.drawLine(LogOverlay.TabBox.x, 1, LogOverlay.TabBox.x, LogOverlay.TabBox.y - 1, borderColor)
 	local dividerHeight = LogOverlay.tabHeight - 1
 	for _, headerTab in ipairs(Utils.getSortedList(LogOverlay.HeaderButtons)) do
 		local rightEdge = headerTab.box[1] + headerTab.box[3] + 2

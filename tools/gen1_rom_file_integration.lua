@@ -8,7 +8,7 @@ local file = assert(io.open(romPath, "rb"))
 local rom = file:read("*a")
 file:close()
 
-dofile(repoRoot .. "ironmon_tracker/GameProfiles.lua")
+dofile(repoRoot .. "ironmon_tracker/memory/GameProfiles.lua")
 
 local function byte(offset)
 	return rom:byte(offset + 1) or 0
@@ -23,7 +23,7 @@ end
 local header = rom:sub(0x13D, 0x140)
 local gameCode = byte(0x13C) * 0x1000000 + byte(0x13D) * 0x10000
 	+ byte(0x13E) * 0x100 + byte(0x13F)
-local profile = assert(Gen1GameProfiles.get(gameCode), "Unsupported ROM header: " .. header)
+local profile = assert(GameProfiles.get(gameCode), "Unsupported ROM header: " .. header)
 
 -- Every base-stat row starts with its National Dex id and contains five
 -- non-zero stats. Red/Blue store Mew separately.
@@ -59,7 +59,7 @@ Constants = { BLANKLINE = "--", HIDDEN_INFO = "?", Words = { POKEMON = "Pokemon"
 dofile(repoRoot .. "ironmon_tracker/data/PokemonData.lua")
 dofile(repoRoot .. "ironmon_tracker/data/SpeciesMap.lua")
 for dexId = 1, 151 do
-	local internalId = assert(Gen1SpeciesMap.getInternalId(dexId))
+	local internalId = assert(SpeciesMap.getInternalId(dexId))
 	local pointer = word(offset(profile.rom.levelUpMoves) + (internalId - 1) * 2)
 	local target = bankTarget(profile.rom.levelUpMoves, pointer)
 	assert(pointer ~= 0 and target < #rom, "Invalid learnset pointer for dex " .. dexId)

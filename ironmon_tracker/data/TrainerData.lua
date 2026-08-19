@@ -79,19 +79,13 @@ TrainerData.BlankTrainer = {
 	class = TrainerData.Classes.Unknown,
 }
 
-function TrainerData.initialize()
-	Gen1TrainerData.initialize()
-end
 
-function TrainerData.buildData()
-	Gen1TrainerData.initialize()
-end
 
 ---Returns true if the Pokémon data in this game is randomized (not vanilla), based on game data memory checks
 
 --- Compare data from game memory with original game data to determine what's been randomized
 function TrainerData.checkIfDataIsRandomized()
-	-- Randomization flags are set by Gen1TrainerData.initialize().
+	-- Randomization flags are set by TrainerData.initialize().
 	return
 end
 
@@ -119,7 +113,7 @@ function TrainerData.shouldUseClassName(trainerId)
 	return TrainerData.isRival(trainerId)
 end
 function TrainerData.isRival(trainerId)
-	local classId = Gen1TrainerData.splitId(trainerId)
+	local classId = TrainerData.splitId(trainerId)
 	return classId == 25 or classId == 42 or classId == 43
 end
 function TrainerData.shouldUseTrainer(trainerId)
@@ -129,7 +123,7 @@ function TrainerData.getExcludedTrainers()
 	return {}
 end
 function TrainerData.isGiovanni(trainerId)
-	local classId = Gen1TrainerData.splitId(trainerId or Gen1TrainerData.getCurrentTrainerId())
+	local classId = TrainerData.splitId(trainerId or TrainerData.getCurrentTrainerId())
 	return classId == 29
 end
 function TrainerData.getCommonTrainers(gamenumber)
@@ -185,4 +179,338 @@ local function mapRoutesToTrainers()
 			end
 		end
 	end
+end
+
+-- Native RBY trainer classes and parties. TrainerDataPointers contains one
+-- little-endian bank pointer per class; each class then stores its numbered
+-- parties as zero-terminated records.
+TrainerData.ClassNames = {
+	"Youngster", "Bug Catcher", "Lass", "Sailor", "Jr. Trainer M", "Jr. Trainer F",
+	"Pokemaniac", "Super Nerd", "Hiker", "Biker", "Burglar", "Engineer",
+	"Unused Juggler", "Fisher", "Swimmer", "Cue Ball", "Gambler", "Beauty",
+	"Psychic", "Rocker", "Juggler", "Tamer", "Bird Keeper", "Blackbelt",
+	"Rival", "Prof. Oak", "Chief", "Scientist", "Giovanni", "Rocket",
+	"Cooltrainer M", "Cooltrainer F", "Bruno", "Brock", "Misty", "Lt. Surge",
+	"Erika", "Koga", "Blaine", "Sabrina", "Gentleman", "Rival", "Rival",
+	"Lorelei", "Channeler", "Agatha", "Lance",
+}
+
+-- UPR ZX 4.6.1 gen1_offsets.ini. Randomization changes the party records,
+-- not the number of trainer parties in each class.
+TrainerData.RedBlueClassCounts = {
+	13, 14, 18, 8, 9, 24, 7, 12, 14, 15, 9, 3, 0, 11, 15, 9, 7, 15, 4, 2, 8, 6,
+	17, 9, 9, 3, 0, 13, 3, 41, 10, 8, 1, 1, 1, 1, 1, 1, 1, 1, 5, 12, 3, 1, 24, 1, 1,
+}
+TrainerData.YellowClassCounts = {
+	14, 15, 19, 8, 10, 25, 7, 12, 14, 15, 9, 3, 0, 11, 15, 9, 7, 15, 4, 2, 8, 6,
+	17, 9, 3, 3, 0, 13, 3, 49, 10, 8, 1, 1, 1, 1, 1, 1, 1, 1, 5, 10, 3, 1, 24, 1, 1,
+}
+
+local classKeys = {
+	"Youngster", "BugCatcher", "Lass", "Sailor", "Camper", "Picnicker",
+	"PokeManiac", "SuperNerd", "Hiker", "Biker", "Burglar", "Engineer",
+	"Juggler", "Fisherman", "SwimmerM", "CueBall", "Gamer", "Beauty",
+	"Psychic", "Rocker", "Juggler", "Tamer", "BirdKeeper", "BlackBelt",
+	"RivalFRLGA", "Unknown", "Unknown", "Scientist", "GymLeader8", "TeamRocketGrunt",
+	"CoolTrainer", "CoolTrainer", "EliteFour2", "GymLeader1", "GymLeader2", "GymLeader3",
+	"GymLeader4", "GymLeader5", "GymLeader7", "GymLeader6", "Gentleman", "RivalFRLGB",
+	"EliteChampion", "EliteFour1", "Channeler", "EliteFour3", "EliteFour4",
+}
+
+function TrainerData.makeId(classId, trainerNumber)
+	return classId * 0x100 + trainerNumber
+end
+
+local function id(classId, trainerNumber)
+	return TrainerData.makeId(classId, trainerNumber)
+end
+
+-- Badge bit → gym leader. Soul/Marsh/Volcano/Earth follow Kanto badge order.
+TrainerData.GymLeaders = {
+	[0] = id(34, 1), -- Brock
+	[1] = id(35, 1), -- Misty
+	[2] = id(36, 1), -- Lt. Surge
+	[3] = id(37, 1), -- Erika
+	[4] = id(38, 1), -- Koga
+	[5] = id(40, 1), -- Sabrina
+	[6] = id(39, 1), -- Blaine
+	[7] = id(29, 3), -- Giovanni (Viridian Gym)
+}
+
+-- TM item each Kanto gym awards (RBY/Yellow). UPR randomizes the move on the
+-- TM, not which TM number the gym gives.
+TrainerData.RbyGymTMs = {
+	{ number = 34, leader = "Brock" },
+	{ number = 11, leader = "Misty" },
+	{ number = 24, leader = "Lt. Surge" },
+	{ number = 21, leader = "Erika" },
+	{ number = 6, leader = "Koga" },
+	{ number = 46, leader = "Sabrina" },
+	{ number = 38, leader = "Blaine" },
+	{ number = 27, leader = "Giovanni" },
+}
+
+-- Gym leaders, rivals, Giovanni, and the Elite Four have unique class/party
+-- IDs. Other trainers are attached to the map where they are fought.
+TrainerData.TrainersByMap = {
+	[0x21] = { id(25, 1), id(25, 2), id(25, 3) }, -- Route 22 rivals
+	[0x36] = { id(34, 1) }, -- Pewter Gym
+	[0x41] = { id(35, 1) }, -- Cerulean Gym
+	[0x5C] = { id(36, 1) }, -- Vermilion Gym
+	[0x86] = { id(37, 1) }, -- Celadon Gym
+	[0x9D] = { id(38, 1) }, -- Fuchsia Gym
+	[0xB2] = { id(40, 1) }, -- Saffron Gym
+	[0xA6] = { id(39, 1) }, -- Cinnabar Gym
+	[0x2D] = { id(29, 3) }, -- Viridian Gym (Giovanni)
+	[0xCA] = { id(29, 1) }, -- Rocket Hideout Giovanni
+	[0xEB] = { id(29, 2) }, -- Silph Co. Giovanni
+	[0xF5] = { id(44, 1) },
+	[0xF6] = { id(33, 1) },
+	[0xF7] = { id(46, 1) },
+	[0x71] = { id(47, 1) },
+	[0x78] = { id(43, 1), id(43, 2), id(43, 3) },
+}
+
+function TrainerData.applyRouteTrainers()
+	if not RouteData or not RouteData.Info then return end
+	for mapId, trainers in pairs(TrainerData.TrainersByMap) do
+		local route = RouteData.Info[mapId]
+		if route then
+			route.trainers = {}
+			for _, trainerId in ipairs(trainers) do
+				table.insert(route.trainers, trainerId)
+			end
+		end
+	end
+end
+
+function TrainerData.rememberTrainerOnMap(mapId, trainerId)
+	if not trainerId or trainerId == 0 then return end
+	if not RouteData or not RouteData.Info then return end
+	local route = RouteData.Info[mapId or false]
+	if not route then return end
+	route.trainers = route.trainers or {}
+	for _, existing in ipairs(route.trainers) do
+		if existing == trainerId then return end
+	end
+	table.insert(route.trainers, trainerId)
+end
+
+function TrainerData.markDefeated(trainerId)
+	if not trainerId or trainerId == 0 then return end
+	if not Tracker or not Tracker.Data then return end
+	Tracker.Data.defeatedTrainers = Tracker.Data.defeatedTrainers or {}
+	Tracker.Data.defeatedTrainers[trainerId] = true
+	TrainerData.rememberTrainerOnMap(Program.GameData.mapId, trainerId)
+end
+
+function TrainerData.hasDefeatedTrainer(trainerId)
+	if not TrainerData.Trainers[trainerId or false] then return false end
+	if Program.isValidMapLocation and not Program.isValidMapLocation() then return false end
+	if Tracker and Tracker.Data and Tracker.Data.defeatedTrainers and Tracker.Data.defeatedTrainers[trainerId] then
+		return true
+	end
+	local badges = (GameSettings.badges and Memory.readbyte(GameSettings.badges)) or 0
+	for bit, leaderId in pairs(TrainerData.GymLeaders) do
+		if leaderId == trainerId then
+			local mask = 2 ^ bit
+			if math.floor(badges / mask) % 2 == 1 then return true end
+		end
+	end
+	return false
+end
+
+function TrainerData.countDefeated()
+	local count = 0
+	local seen = {}
+	for trainerId, defeated in pairs(Tracker.Data.defeatedTrainers or {}) do
+		if defeated and TrainerData.Trainers[trainerId or false] then
+			seen[trainerId] = true
+			count = count + 1
+		end
+	end
+	local badges = Memory.readbyte(GameSettings.badges) or 0
+	for bit, leaderId in pairs(TrainerData.GymLeaders) do
+		local mask = 2 ^ bit
+		if math.floor(badges / mask) % 2 == 1 and not seen[leaderId] and TrainerData.Trainers[leaderId] then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function TrainerData.splitId(trainerId)
+	return math.floor((trainerId or 0) / 0x100), (trainerId or 0) % 0x100
+end
+
+local function classCounts()
+	if GameSettings.currentProfile and GameSettings.currentProfile.version == "Yellow" then
+		return TrainerData.YellowClassCounts
+	end
+	return TrainerData.RedBlueClassCounts
+end
+
+local function classObject(classId)
+	return TrainerData.Classes[classKeys[classId] or "Unknown"] or TrainerData.Classes.Unknown
+end
+
+local function bankPointerToAddress(pointer)
+	local tableOffset = (GameSettings.trainers or 0) % 0x1000000
+	local bank = math.floor(tableOffset / 0x4000)
+	if pointer < 0x4000 then return 0x08000000 + pointer end
+	return 0x08000000 + bank * 0x4000 + pointer - 0x4000
+end
+
+function TrainerData.getClassAddress(classId)
+	if classId < 1 or classId > #TrainerData.ClassNames then return nil end
+	local pointer = Memory.readword(GameSettings.trainers + (classId - 1) * 2)
+	if not pointer or pointer == 0 then return nil end
+	return bankPointerToAddress(pointer)
+end
+
+local function skipRecord(address)
+	for offset = 0, 63 do
+		if Memory.readbyte(address + offset) == 0 then return address + offset + 1 end
+	end
+	return nil
+end
+
+function TrainerData.getPartyAddress(classId, trainerNumber)
+	local address = TrainerData.getClassAddress(classId)
+	if not address or trainerNumber < 1 or trainerNumber > (classCounts()[classId] or 0) then return nil end
+	for _ = 2, trainerNumber do
+		address = skipRecord(address)
+		if not address then return nil end
+	end
+	return address
+end
+
+function TrainerData.readParty(classId, trainerNumber)
+	local address = TrainerData.getPartyAddress(classId, trainerNumber)
+	if not address then return {} end
+	local party = {}
+	local first = Memory.readbyte(address)
+	address = address + 1
+	if first == 0xFF then
+		for _ = 1, 6 do
+			local level = Memory.readbyte(address)
+			if level == 0 then break end
+			local internalSpecies = Memory.readbyte(address + 1)
+			table.insert(party, {
+				pokemonID = SpeciesMap.getDexId(internalSpecies) or 0,
+				internalSpecies = internalSpecies,
+				level = level, ivs = 9, heldItem = 0, moves = {},
+			})
+			address = address + 2
+		end
+	else
+		for _ = 1, 6 do
+			local internalSpecies = Memory.readbyte(address)
+			if internalSpecies == 0 then break end
+			table.insert(party, {
+				pokemonID = SpeciesMap.getDexId(internalSpecies) or 0,
+				internalSpecies = internalSpecies,
+				level = first, ivs = 9, heldItem = 0, moves = {},
+			})
+			address = address + 1
+		end
+	end
+	return party
+end
+
+function TrainerData.getCurrentTrainerId()
+	if (Memory.readbyte(GameSettings.battleState) or 0) ~= 2 then return 0 end
+	local classId = Memory.readbyte(GameSettings.trainerClass) or 0
+	local trainerNumber = Memory.readbyte(GameSettings.trainerNumber) or 0
+	if classId < 1 or classId > #TrainerData.ClassNames or trainerNumber < 1 then return 0 end
+	return TrainerData.makeId(classId, trainerNumber)
+end
+
+function TrainerData.readTrainer(trainerId)
+	local classId, trainerNumber = TrainerData.splitId(trainerId)
+	if not TrainerData.Trainers[trainerId] then return nil end
+	local party = TrainerData.readParty(classId, trainerNumber)
+	return Program.GameTrainer:new({
+		trainerId = trainerId, defeated = TrainerData.hasDefeatedTrainer(trainerId),
+		trainerClass = TrainerData.ClassNames[classId],
+		trainerName = string.format("#%d", trainerNumber),
+		partySize = #party, party = party, partyFlags = 0, items = {},
+		doubleBattle = false, aiFlags = 0, gender = 0,
+	})
+end
+
+function TrainerData.initialize()
+	TrainerData.Trainers, TrainerData.OrderedIds = {}, {}
+	TrainerData.GlobalLogIdToTrainerId = {}
+	TrainerData.GymTMs, TrainerData.CommonTrainers, TrainerData.FinalTrainer = {}, {}, {}
+	for _, gymTM in ipairs(TrainerData.RbyGymTMs) do
+		table.insert(TrainerData.GymTMs, {
+			number = gymTM.number,
+			leader = gymTM.leader,
+		})
+	end
+	for key in pairs(TrainerData.IsRand or {}) do TrainerData.IsRand[key] = false end
+
+	local globalLogId = 0
+	for classId, count in ipairs(classCounts()) do
+		for trainerNumber = 1, count do
+			globalLogId = globalLogId + 1
+			local trainerId = TrainerData.makeId(classId, trainerNumber)
+			TrainerData.GlobalLogIdToTrainerId[globalLogId] = trainerId
+			TrainerData.Trainers[trainerId] = {
+				name = TrainerData.ClassNames[classId], class = classObject(classId),
+				classId = classId, trainerNumber = trainerNumber,
+			}
+			table.insert(TrainerData.OrderedIds, trainerId)
+		end
+	end
+	for trainerNumber = 1, (classCounts()[43] or 0) do
+		TrainerData.FinalTrainer[TrainerData.makeId(43, trainerNumber)] = true
+	end
+
+	-- The first Youngster is identical in clean Red, Blue, and Yellow. This
+	-- mirrors upstream's small vanilla probe without assuming that a modified
+	-- ROM necessarily randomized every other data category.
+	local probe = TrainerData.readParty(1, 1)
+	TrainerData.IsRand.teamSize = #probe ~= 2
+	TrainerData.IsRand.teamLevels = not probe[1] or probe[1].level ~= 11
+	TrainerData.IsRand.teamPokemon = not probe[1] or not probe[2]
+		or probe[1].internalSpecies ~= 0xA5 or probe[2].internalSpecies ~= 0x6C
+	TrainerData.applyRouteTrainers()
+end
+
+function TrainerData.getDefeatedTrainersByLocation(mapId)
+	local route = RouteData.Info[mapId or false]
+	if not route then return {}, 0 end
+	local defeatedTrainers = {}
+	local totalTrainers = 0
+	for _, trainerId in ipairs(route.trainers or {}) do
+		if TrainerData.Trainers[trainerId or false] then
+			totalTrainers = totalTrainers + 1
+			if TrainerData.hasDefeatedTrainer(trainerId) then
+				table.insert(defeatedTrainers, trainerId)
+			end
+		end
+	end
+	return defeatedTrainers, totalTrainers
+end
+
+function TrainerData.getDefeatedTrainersByCombinedArea(mapIdList)
+	if type(mapIdList) ~= "table" then return {}, 0 end
+	local totalTrainers = 0
+	local defeatedTrainers = {}
+	for _, mapId in ipairs(mapIdList) do
+		local defeatedList, total = TrainerData.getDefeatedTrainersByLocation(mapId)
+		totalTrainers = totalTrainers + total
+		for _, trainerId in ipairs(defeatedList) do
+			table.insert(defeatedTrainers, trainerId)
+		end
+	end
+	return defeatedTrainers, totalTrainers
+end
+
+
+
+function TrainerData.buildData()
+	TrainerData.initialize()
 end

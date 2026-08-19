@@ -262,7 +262,7 @@ function Program.initialize()
 	Program.GameData.PlayerTeam = {}
 	Program.GameData.EnemyTeam = {}
 
-	Program.Addresses.sizeofPokemonStruct = Gen1PokemonReader.PartyStructSize
+	Program.Addresses.sizeofPokemonStruct = PokemonDataReader.PartyStructSize
 
 	Program.Pedometer:initialize()
 	Program.GameTimer:initialize()
@@ -466,12 +466,7 @@ function Program.update()
 				end
 			end
 
-			-- Check if summary screen has being shown
-			if not Tracker.Data.hasCheckedSummary then
-				if GameSettings.sMonSummaryScreen and Memory.readbyte(GameSettings.sMonSummaryScreen) ~= 0 then
-					Tracker.Data.hasCheckedSummary = true
-				end
-			end
+			Program.checkSummaryScreen()
 
 			-- Check if a Pokemon in the player's party is learning a move, if so track it
 			local learnedInfoTable = Program.getLearnedMoveInfoTable()
@@ -618,29 +613,304 @@ function Program.removeDebugDrawing(label)
 	Program.DebugDrawing[label] = nil
 end
 
-function Program.checkForStarterSelection()
-	Gen1Runtime.checkForStarterSelection()
+local function asTrackerPokemon(data, isEnemy)
+	if not data then return nil end
+	data.nickname = SpeciesMap.getName(data.internalSpecies) or ""
+	data.trainerID = isEnemy and -1 or data.trainerID
+	-- The working Yellow FR tracker stored the species byte as personality so
+	-- Tracker.getPokemon would not treat a real party member as an empty GBA slot.
+	data.personality = data.internalSpecies or data.pokemonID or 1
+	data.currentExp = 0
+	data.totalExp = 100
+	if not isEnemy and data.experience and data.level and data.level < 100 then
+		local internal = PokemonData.Pokemon[data.pokemonID] or {}
+		local atLevel = DataAdapter.expForLevel(internal.growthRate, data.level)
+		local atNextLevel = DataAdapter.expForLevel(internal.growthRate, data.level + 1)
+		data.currentExp = math.max(0, math.min(data.experience - atLevel, atNextLevel - atLevel))
+		data.totalExp = math.max(1, atNextLevel - atLevel)
+	end
+	data.heldItem = nil
+	data.friendship = nil
+	data.isEgg = 0
+	return Program.DefaultPokemon:new(data)
 end
-function Program.getPlayerMapTile()
-	return Gen1Runtime.getPlayerTilePosition()
+
+function Program.readPartyPokemon(startAddress)
+	return asTrackerPokemon(PokemonDataReader.readPartyPokemon(startAddress, SpeciesMap.getDexId), false)
 end
-function Program.getPlayerTilePosition()
-	return Gen1Runtime.getPlayerTilePosition()
+
+function Program.readEnemyPokemon(startAddress)
+	return asTrackerPokemon(PokemonDataReader.readBattlePokemon(startAddress, SpeciesMap.getDexId), true)
 end
-function Program.readFlashLevel()
-	return Gen1Runtime.readFlashLevel()
+
+function Program.readNewPokemon(startAddress)
+	return Program.readPartyPokemon(startAddress)
 end
-function Program.updateRepelSteps()
-	Gen1Runtime.updateRepelSteps()
-end
+
 function Program.updatePokemonTeams()
-	Gen1Runtime.updatePokemonTeams()
+	local count = Memory.readbyte(GameSettings.partyCount) or 0
+	if count < 1 or count > 6 then
+		count = 6
+	end
+	for slot = 1, 6 do
+		Program.GameData.PlayerTeam[slot] = nil
+		if slot <= count then
+			local address = GameSettings.partyMon1 + (slot - 1) * PokemonDataReader.PartyStructSize
+			local internalId = Memory.readbyte(address) or 0
+			if internalId ~= 0 then
+				local pokemon = Program.readPartyPokemon(address)
+				if Program.validPokemonData(pokemon) then
+					Program.GameData.PlayerTeam[slot] = pokemon
+				end
+			end
+		end
+	end
+
+	local battleState = Memory.readbyte(GameSettings.battleState) or 0
+	if battleState == 1 or battleState == 2 then
+		local enemy = Program.readEnemyPokemon(GameSettings.enemyMon)
+		Program.GameData.EnemyTeam[1] = Program.validPokemonData(enemy) and enemy or nil
+	else
+		Program.GameData.EnemyTeam[1] = nil
+	end
+	for slot = 2, 6 do Program.GameData.EnemyTeam[slot] = nil end
 end
-function Program.readNewPokemon(startAddress, personality)
-	return Gen1Runtime.readPartyPokemon(startAddress)
+
+function Program.updateMapLocation()
+	Program.GameData.mapId = Memory.readbyte(GameSettings.currentMap)
 end
+
+function Program.isValidMapLocation()
+	-- Pallet Town is map 0. Any assigned mapId is in-game, including 0.
+	return Program.GameData.mapId ~= nil
+end
+
+function Program.readBadgeBits()
+	if not Program.isValidMapLocation() then return 0 end
+	return Memory.readbyte(GameSettings.badges) or 0
+end
+
+function Program.getPokemonTypes(isOwn)
+	local address = (isOwn and GameSettings.battleMon or GameSettings.enemyMon) + 5
+	local first = DataAdapter.TypeIndexMap[Memory.readbyte(address)] or PokemonData.Types.UNKNOWN
+	local second = DataAdapter.TypeIndexMap[Memory.readbyte(address + 1)] or PokemonData.Types.UNKNOWN
+	if second == first then second = PokemonData.Types.EMPTY end
+	return { first, second }
+end
+
+function Program.getMoveIdFromTMHMNumber(number, isHM)
+	if type(number) ~= "number" or number < 1 or number > (isHM and 5 or 50) then return 0 end
+	return Memory.readbyte(GameSettings.tmMoves + number - 1 + (isHM and 50 or 0)) or 0
+end
+
+function Program.getTMsHMsBagItems()
+	local tms, hms = {}, {}
+	for itemId, quantity in pairs((Program.GameData.Items or {}).Other or {}) do
+		if MiscData.TMs[itemId] then table.insert(tms, { id = itemId, quantity = quantity }) end
+		if MiscData.HMs[itemId] then table.insert(hms, { id = itemId, quantity = quantity }) end
+	end
+	table.sort(tms, function(a, b) return a.id < b.id end)
+	table.sort(hms, function(a, b) return a.id < b.id end)
+	return tms, hms
+end
+
+function Program.getExtras()
+	return { lefts = {}, rights = {}, bumps = {} }
+end
+
+function Program.rememberPartyLevels()
+	Program.lastPartyLevels = Program.lastPartyLevels or {}
+	for slot = 1, 6 do
+		local pokemon = Tracker.getPokemon and Tracker.getPokemon(slot, true)
+			or (Program.GameData.PlayerTeam or {})[slot]
+		if pokemon and pokemon.level then
+			Program.lastPartyLevels[slot] = pokemon.level
+		end
+	end
+end
+
+function Program.getLearnedMoveInfoTable()
+	local empty = { pokemonID = nil, level = nil, moveId = nil }
+	local moveId = GameSettings.moveNum and Memory.readbyte(GameSettings.moveNum) or 0
+	local slot = (GameSettings.whichPokemon and Memory.readbyte(GameSettings.whichPokemon) or 0) + 1
+	if moveId < 1 or moveId > 165 or slot < 1 or slot > 6 then
+		Program.rememberPartyLevels()
+		return empty
+	end
+	local pokemon = Tracker.getPokemon(slot, true)
+	local previousLevel = (Program.lastPartyLevels or {})[slot]
+		or ((Program.GameData.PlayerTeam or {})[slot] or {}).level
+	Program.rememberPartyLevels()
+	if not pokemon or not previousLevel or (pokemon.level or 0) <= previousLevel then
+		return empty
+	end
+	return { pokemonID = pokemon.pokemonID, level = pokemon.level, moveId = moveId }
+end
+
+local function emptyItems()
+	return { healingTotal = 0, healingPercentage = 0, healingValue = 0,
+		PokeBalls = {}, HPHeals = {}, PPHeals = {}, StatusHeals = {}, EvoStones = {}, Other = {} }
+end
+
+function Program.updateBagItems()
+	local items = emptyItems()
+	local count = math.min(Memory.readbyte(GameSettings.bagCount) or 0, 20)
+	for slot = 0, count - 1 do
+		local itemId = Memory.readbyte(GameSettings.bagItems + slot * 2)
+		local quantity = Memory.readbyte(GameSettings.bagItems + slot * 2 + 1)
+		if itemId and itemId ~= 0 and itemId ~= 0xFF and quantity > 0 then
+			if MiscData.PokeBalls[itemId] then items.PokeBalls[itemId] = quantity end
+			if MiscData.HealingItems[itemId] then items.HPHeals[itemId] = quantity end
+			if MiscData.PPItems[itemId] then items.PPHeals[itemId] = quantity end
+			if MiscData.StatusItems[itemId] then items.StatusHeals[itemId] = quantity end
+			if MiscData.EvolutionStones[itemId] then items.EvoStones[itemId] = quantity end
+			if not (items.PokeBalls[itemId] or items.HPHeals[itemId] or items.PPHeals[itemId]
+				or items.StatusHeals[itemId] or items.EvoStones[itemId]) then items.Other[itemId] = quantity end
+		end
+	end
+	Program.GameData.Items = items
+	Program.recalcLeadPokemonHealingInfo()
+end
+
+function Program.updateRepelSteps()
+	local remaining = GameSettings.repelSteps and Memory.readbyte(GameSettings.repelSteps) or 0
+	if remaining > 0 then
+		Program.ActiveRepel.inUse = true
+		if remaining ~= Program.ActiveRepel.stepCount then
+			Program.ActiveRepel.stepCount = remaining
+			if remaining > Program.ActiveRepel.duration then
+				if remaining <= 200 then
+					Program.ActiveRepel.duration = 200
+				elseif remaining <= 250 then
+					Program.ActiveRepel.duration = 250
+				end
+			end
+		end
+	else
+		Program.ActiveRepel.inUse = false
+		Program.ActiveRepel.stepCount = 0
+		Program.ActiveRepel.duration = 100
+	end
+end
+
+function Program.isInSafariZone()
+	local mapId = Program.GameData.mapId
+	if RouteData.Locations and RouteData.Locations.IsInSafariZone and RouteData.Locations.IsInSafariZone[mapId] then
+		return true
+	end
+	return (GameSettings.safariBalls and Memory.readbyte(GameSettings.safariBalls) or 0) > 0
+end
+
+function Program.isInEvolutionScene()
+	return (GameSettings.evolutionOccurred and Memory.readbyte(GameSettings.evolutionOccurred) or 0) ~= 0
+end
+
+function Program.isInStartMenu()
+	if (GameSettings.battleState and Memory.readbyte(GameSettings.battleState) or 0) ~= 0 then return false end
+	return (GameSettings.joyIgnore and Memory.readbyte(GameSettings.joyIgnore) or 0) ~= 0
+end
+
+-- GBA IronMON hides own stats until sMonSummaryScreen is non-zero. Gen 1 has
+-- no equivalent address, so the option would otherwise hide stats forever.
+function Program.checkSummaryScreen()
+	if Tracker.Data.hasCheckedSummary then return end
+	if not GameSettings.sMonSummaryScreen then
+		Tracker.Data.hasCheckedSummary = true
+		return
+	end
+	if Memory.readbyte(GameSettings.sMonSummaryScreen) ~= 0 then
+		Tracker.Data.hasCheckedSummary = true
+	end
+end
+
+function Program.getPlayerTilePosition()
+	return {
+		x = GameSettings.playerX and Memory.readbyte(GameSettings.playerX) or 0,
+		y = GameSettings.playerY and Memory.readbyte(GameSettings.playerY) or 0,
+	}
+end
+
+function Program.getPlayerMapTile()
+	return Program.getPlayerTilePosition()
+end
+
+function Program.getStarterChoice()
+	return GameSettings.playerStarter and Memory.readbyte(GameSettings.playerStarter) or 0
+end
+
+function Program.readFlashLevel()
+	local palOffset = GameSettings.mapPalOffset and Memory.readbyte(GameSettings.mapPalOffset) or 0
+	if palOffset == 6 then return 8 end
+	return 0
+end
+
+function Program.updateCatchingTutorial()
+	local battleType = GameSettings.battleType and Memory.readbyte(GameSettings.battleType) or 0
+	Program.inCatchingTutorial = battleType == 1
+	if Program.inCatchingTutorial then
+		Battle.recentBattleWasTutorial = true
+	else
+		Program.hasCompletedTutorial = true
+	end
+end
+
+function Program.updatePCHeals()
+	if Battle.inActiveBattle and Battle.inActiveBattle() then return end
+	if not (RouteData.Locations and RouteData.Locations.CanPCHeal[Program.GameData.mapId]) then return end
+	local allFull, anyDamaged = true, false
+	for slot = 1, 6 do
+		local pokemon = Program.GameData.PlayerTeam[slot]
+		if pokemon then
+			if (pokemon.curHP or 0) < (pokemon.stats and pokemon.stats.hp or pokemon.curHP or 0) then
+				allFull = false
+				anyDamaged = true
+			end
+		end
+	end
+	if anyDamaged then
+		Program.partyWasDamagedAtCenter = true
+	elseif allFull and Program.partyWasDamagedAtCenter then
+		Program.partyWasDamagedAtCenter = false
+		if Options["Track PC Heals"] and TrackerScreen.Buttons.PCHealAutoTracking and TrackerScreen.Buttons.PCHealAutoTracking.toggleState then
+			if Options["PC heals count downward"] then
+				Tracker.Data.centerHeals = math.max(0, (Tracker.Data.centerHeals or 0) - 1)
+			else
+				Tracker.Data.centerHeals = math.min(99, (Tracker.Data.centerHeals or 0) + 1)
+			end
+		end
+	end
+end
+
+function Program.changeGameSettingForLR()
+	-- Game Boy has no L/R button-mode override.
+end
+
+function Program.checkForStarterSelection()
+	if not GameSettings.usesStarterChoice() then
+		Program.isViewingStarter = false
+		return
+	end
+	if not RouteData.Locations or not RouteData.Locations.IsInLab[Program.GameData.mapId] then
+		Program.isViewingStarter = false
+		return
+	end
+	if (Memory.readbyte(GameSettings.partyCount) or 0) > 0 then
+		if Program.isViewingStarter then
+			Program.isViewingStarter = false
+			if Program.changeScreenView then Program.changeScreenView(TrackerScreen) end
+		end
+	end
+end
+
+function Program.snapshotRodItem()
+	local item = GameSettings.curItem and Memory.readbyte(GameSettings.curItem) or 0
+	if item == 76 or item == 77 or item == 78 then
+		Program.lastRodItem = item
+	end
+end
+
 function Program.readTrainerGameData(trainerId)
-	return Gen1TrainerData.readTrainer(trainerId)
+	return TrainerData.readTrainer(trainerId)
 end
 function Program.getTeamCounts()
 	local numAlive, total = 0, 0
@@ -665,15 +935,9 @@ function Program.getNextLevelExp(pokemonID, level, experience)
 		return 0, 100
 	end
 	local internal = PokemonData.Pokemon[pokemonID] or {}
-	local atLevel = Gen1DataAdapter.expForLevel(internal.growthRate, level)
-	local atNextLevel = Gen1DataAdapter.expForLevel(internal.growthRate, level + 1)
+	local atLevel = DataAdapter.expForLevel(internal.growthRate, level)
+	local atNextLevel = DataAdapter.expForLevel(internal.growthRate, level + 1)
 	return math.max(0, math.min(experience - atLevel, atNextLevel - atLevel)), math.max(1, atNextLevel - atLevel)
-end
-function Program.updatePCHeals()
-	Gen1Runtime.updatePCHeals()
-end
-function Program.readBadgeBits()
-	return Gen1Runtime.readBadgeBits()
 end
 function Program.updateBadgesObtained()
 	-- Don't bother checking badge data if in the pre-game intro screen (where old data exists)
@@ -697,20 +961,6 @@ function Program.updateBadgesObtained()
 	return newBadgeObtained
 end
 
-function Program.snapshotRodItem()
-	Gen1Runtime.snapshotRodItem()
-end
-
-function Program.getStarterChoice()
-	return Gen1Runtime.getStarterChoice()
-end
-
-function Program.updateMapLocation()
-	Gen1Runtime.updateMapLocation()
-end
-function Program.isValidMapLocation()
-	return Gen1Runtime.isValidMapLocation()
-end
 function Program.HandleExit()
 	if not Main.IsOnBizhawk() then
 		return
@@ -734,25 +984,6 @@ function Program.focusBizhawkWindow()
 	end
 end
 
-function Program.getLearnedMoveInfoTable()
-	return Gen1Runtime.getLearnedMoveInfoTable()
-end
-
-function Program.getPokemonTypes(isOwn, isLeft)
-	return Gen1Runtime.getPokemonTypes(isOwn)
-end
-function Program.updateCatchingTutorial()
-	Gen1Runtime.updateCatchingTutorial()
-end
-function Program.isInEvolutionScene()
-	return Gen1Runtime.isInEvolutionScene()
-end
-function Program.isInStartMenu()
-	return Gen1Runtime.isInStartMenu()
-end
-function Program.changeGameSettingForLR(forced)
-	Gen1Runtime.changeGameSettingForLR()
-end
 function Program.validPokemonData(pokemonData)
 	if pokemonData == nil then return false end
 
@@ -776,27 +1007,14 @@ function Program.validPokemonData(pokemonData)
 	return true
 end
 
--- Gets the extra pixels for screen rounding
-function Program.getExtras()
-	return Gen1Runtime.getExtras()
-end
-function Program.isInSafariZone(saveBlock1Addr)
-	return Gen1Runtime.isInSafariZone()
-end
 function Program.hasDefeatedTrainer(trainerId, saveBlock1Addr)
-	return Gen1TrainerData.hasDefeatedTrainer(trainerId)
+	return TrainerData.hasDefeatedTrainer(trainerId)
 end
 function Program.getDefeatedTrainersByLocation(mapId, saveBlock1Addr)
-	return Gen1TrainerData.getDefeatedTrainersByLocation(mapId)
+	return TrainerData.getDefeatedTrainersByLocation(mapId)
 end
 function Program.getDefeatedTrainersByCombinedArea(mapIdList, saveBlock1Addr)
-	return Gen1TrainerData.getDefeatedTrainersByCombinedArea(mapIdList)
-end
-function Program.getMoveIdFromTMHMNumber(tmhmNumber, isHM)
-	return Gen1Runtime.getMoveIdFromTMHMNumber(tmhmNumber, isHM)
-end
-function Program.updateBagItems()
-	Gen1Runtime.updateBagItems()
+	return TrainerData.getDefeatedTrainersByCombinedArea(mapIdList)
 end
 function Program.recalcLeadPokemonHealingInfo()
 	if not Battle.isViewingOwn then
@@ -829,12 +1047,6 @@ function Program.recalcLeadPokemonHealingInfo()
 			items.healingValue = items.healingValue + math.floor(percentageAmt * maxHP / 100 + 0.5)
 		end
 	end
-end
-
----Returns sorted lists of obtained TM & HM items in the bag
----@return table tms, table hms
-function Program.getTMsHMsBagItems()
-	return Gen1Runtime.getTMsHMsBagItems()
 end
 
 ---@class IPokemon

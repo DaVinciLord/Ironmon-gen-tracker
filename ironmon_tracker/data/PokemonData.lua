@@ -169,7 +169,7 @@ PokemonData.Evolutions = {
 
 function PokemonData.initialize()
 	PokemonData.knownTotal = nil
-	Gen1DataAdapter.initializePokemonData()
+	DataAdapter.initializePokemonData()
 end
 
 function PokemonData.updateResources()
@@ -226,12 +226,12 @@ function PokemonData.updateResources()
 end
 
 function PokemonData.buildData(forced)
-	Gen1DataAdapter.initializePokemonData()
+	DataAdapter.initializePokemonData()
 end
 
 --- Compare data from game memory with original game data to determine what's been randomized
 function PokemonData.checkIfDataIsRandomized()
-	-- Randomization flags are set by Gen1DataAdapter.initializePokemonData().
+	-- Randomization flags are set by DataAdapter.initializePokemonData().
 end
 
 ---Returns true if the Pokémon data in this game is randomized (not vanilla), based on game data memory checks
@@ -375,7 +375,7 @@ end
 ---@param battleTurn number? Optional, defaults to 0; first turn of a battle
 ---@return number
 function PokemonData.calcCatchRate(pokemonID, hpMax, hpCurrent, level, status, ball, terrain, battleTurn)
-	return Gen1DataAdapter.calcCatchRate(pokemonID, hpMax, hpCurrent, level, status, ball)
+	return DataAdapter.calcCatchRate(pokemonID, hpMax, hpCurrent, level, status, ball)
 end
 
 ---Reads from the game data all of the level-up moves learned by a Pokémon species
@@ -385,7 +385,7 @@ function PokemonData.readLevelUpMoves(pokemonID)
 	if not PokemonData.isValid(pokemonID) then
 		return {}
 	end
-	local _, moves = Gen1DataAdapter.readEvolutionsAndMoves(pokemonID)
+	local _, moves = DataAdapter.readEvolutionsAndMoves(pokemonID)
 	return moves or {}
 end
 

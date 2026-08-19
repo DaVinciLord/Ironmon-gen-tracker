@@ -1062,16 +1062,7 @@ function TrackerScreen.drawPokemonInfoArea(data)
 		offsetY = offsetY + 5
 	end
 
-	-- HELD ITEM AND ABILITIES
-	Drawing.drawText(Constants.SCREEN.WIDTH + offsetX, offsetY, data.p.line1, Theme.COLORS["Intermediate text"], shadowcolor)
-	offsetY = offsetY + linespacing
-	Drawing.drawText(Constants.SCREEN.WIDTH + offsetX, offsetY, data.p.line2, Theme.COLORS["Intermediate text"], shadowcolor)
-	offsetY = offsetY + linespacing
-
-	-- Unsqueeze the text
-	if Options["Show experience points bar"] and Battle.isViewingOwn then
-		linespacing = linespacing + 1
-	end
+	-- Gen 1 has neither held items nor abilities; type icons keep the 52px box.
 
 	-- HEALS INFO / ENCOUNTER INFO
 	local infoBoxHeight = 23

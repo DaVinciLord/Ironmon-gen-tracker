@@ -235,8 +235,8 @@ function GameOverScreen.randomizeAnnouncerQuote()
 end
 
 function GameOverScreen.updateDefeatedTrainersCount()
-	if Gen1TrainerData and Gen1TrainerData.countDefeated then
-		GameOverScreen.numDefeatedTrainers = Gen1TrainerData.countDefeated()
+	if TrainerData and TrainerData.countDefeated then
+		GameOverScreen.numDefeatedTrainers = TrainerData.countDefeated()
 		return
 	end
 	GameOverScreen.numDefeatedTrainers = 0

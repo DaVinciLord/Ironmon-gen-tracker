@@ -24,7 +24,7 @@ assert(PokemonData.canShowUnknownMoveLearnSets(), "Open Book still reveals enemy
 local dataHelper = read("ironmon_tracker/data/DataHelper.lua")
 assert(dataHelper:find("canShowUnknownMoveLearnSets", 1, true), "DataHelper must keep the Besteon canShowMoves gate")
 assert(not dataHelper:find("canShowEnemyBattleMoves", 1, true), "do not invent a separate enemy-move gate")
-local input = read("ironmon_tracker/Input.lua")
+local input = read("ironmon_tracker/core/Input.lua")
 assert(input:find("canShowUnknownMoveLearnSets", 1, true))
 assert(not input:find("canShowEnemyBattleMoves", 1, true))
 

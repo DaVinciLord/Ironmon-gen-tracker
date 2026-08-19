@@ -1,7 +1,7 @@
 -- RBY stores species in a historical internal order unrelated to the Pokédex.
-Gen1SpeciesMap = {}
+SpeciesMap = {}
 
-Gen1SpeciesMap.NamesByInternalId = {
+SpeciesMap.NamesByInternalId = {
 	[0x1] = "RHYDON",
 	[0x2] = "KANGASKHAN",
 	[0x3] = "NIDORAN M",
@@ -210,39 +210,39 @@ for dexId, pokemon in ipairs(PokemonData.Pokemon or {}) do
 	englishNameByDexId[dexId] = pokemon.name
 end
 
-function Gen1SpeciesMap.rebuildDexMap()
-	Gen1SpeciesMap.DexByInternalId = {}
-	Gen1SpeciesMap.InternalIdByDexId = {}
+function SpeciesMap.rebuildDexMap()
+	SpeciesMap.DexByInternalId = {}
+	SpeciesMap.InternalIdByDexId = {}
 	local dexByName = {}
 	for dexId, pokemon in ipairs(PokemonData.Pokemon or {}) do
 		dexByName[normalize(englishNameByDexId[dexId] or pokemon.name)] = dexId
 	end
-	for internalId, name in pairs(Gen1SpeciesMap.NamesByInternalId) do
+	for internalId, name in pairs(SpeciesMap.NamesByInternalId) do
 		if name ~= "MISSINGNO." then
 			local dexId = dexByName[normalize(name)]
-			Gen1SpeciesMap.DexByInternalId[internalId] = dexId
-			if dexId then Gen1SpeciesMap.InternalIdByDexId[dexId] = internalId end
+			SpeciesMap.DexByInternalId[internalId] = dexId
+			if dexId then SpeciesMap.InternalIdByDexId[dexId] = internalId end
 		end
 	end
 end
 
-function Gen1SpeciesMap.getInternalId(dexId)
-	if not Gen1SpeciesMap.InternalIdByDexId then Gen1SpeciesMap.rebuildDexMap() end
-	return Gen1SpeciesMap.InternalIdByDexId[dexId]
+function SpeciesMap.getInternalId(dexId)
+	if not SpeciesMap.InternalIdByDexId then SpeciesMap.rebuildDexMap() end
+	return SpeciesMap.InternalIdByDexId[dexId]
 end
 
-function Gen1SpeciesMap.getDexId(internalId)
-	if not Gen1SpeciesMap.DexByInternalId then Gen1SpeciesMap.rebuildDexMap() end
-	return Gen1SpeciesMap.DexByInternalId[internalId]
+function SpeciesMap.getDexId(internalId)
+	if not SpeciesMap.DexByInternalId then SpeciesMap.rebuildDexMap() end
+	return SpeciesMap.DexByInternalId[internalId]
 end
 
-function Gen1SpeciesMap.getName(internalId)
-	return Gen1SpeciesMap.NamesByInternalId[internalId]
+function SpeciesMap.getName(internalId)
+	return SpeciesMap.NamesByInternalId[internalId]
 end
 
-function Gen1SpeciesMap.initialize()
-	Gen1SpeciesMap.rebuildDexMap()
+function SpeciesMap.initialize()
+	SpeciesMap.rebuildDexMap()
 end
 
-return Gen1SpeciesMap
+return SpeciesMap
 

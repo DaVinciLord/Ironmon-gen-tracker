@@ -124,8 +124,8 @@ end
 ---Returns the `trainerId` of the opposing trainer being fought in battle
 ---@return number trainerId
 function TrackerAPI.getOpponentTrainerId()
-	if Gen1TrainerData and Gen1TrainerData.getCurrentTrainerId then
-		return Gen1TrainerData.getCurrentTrainerId()
+	if TrainerData and TrainerData.getCurrentTrainerId then
+		return TrainerData.getCurrentTrainerId()
 	end
 	return 0
 end

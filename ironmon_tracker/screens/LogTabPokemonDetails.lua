@@ -57,12 +57,116 @@ LogTabPokemonDetails.Pager = {
 function LogTabPokemonDetails.initialize()
 	LogTabPokemonDetails.infoId = -1
 	LogTabPokemonDetails.dataSet = nil
+	LogTabPokemonDetails.layout = nil
 	LogTabPokemonDetails.currentPreEvoSet = 1
 	LogTabPokemonDetails.currentEvoSet = 1
 	LogTabPokemonDetails.prevEvosPerSet = 1
 	LogTabPokemonDetails.evosPerSet = 3
 	LogTabPokemonDetails.playerTeam = {}
 	LogTabPokemonDetails.currentStatView = "ShowBST"
+end
+
+-- Short labels so "Special" does not overlap "Spe" in the five-stat graph.
+function LogTabPokemonDetails.statGraphLabel(statKey)
+	local labels = {
+		hp = Resources.TrackerScreen.StatHP,
+		atk = Resources.TrackerScreen.StatATK,
+		def = Resources.TrackerScreen.StatDEF,
+		special = Resources.TrackerScreen.StatSpecial,
+		spe = Resources.TrackerScreen.StatSPE,
+	}
+	return labels[statKey] or ""
+end
+
+-- ShowDVs = DVs 0–15; ShowStatExp = Stat Experience 0–65535; else base stats.
+function LogTabPokemonDetails.statGraphValue(pokemon, view, data, statKey)
+	if pokemon ~= nil and view == "ShowDVs" then
+		return (pokemon.dvs or {})[statKey] or 0
+	elseif pokemon ~= nil and view == "ShowStatExp" then
+		return (pokemon.statExp or {})[statKey] or 0
+	end
+	return (data.p or {})[statKey] or 0
+end
+
+-- Scale raw values to 0–255 for bar height (DVs fill the graph; Stat Exp uses the 16-bit max).
+function LogTabPokemonDetails.statGraphBarScale(rawValue, view)
+	if view == "ShowDVs" then
+		return math.min((rawValue or 0) * 17, 255)
+	elseif view == "ShowStatExp" then
+		return math.min(math.floor((rawValue or 0) * 255 / 65535 + 0.5), 255)
+	end
+	return math.min(rawValue or 0, 255)
+end
+
+-- GBA log details were laid out for a 240px game screen. On GB (160px) those
+-- offsets put the move list on top of InfoScreen (which starts at WIDTH).
+-- Same skeleton with or without evolutions. On GB the evo/icon row sits
+-- above the stats (left column only) so it cannot overlap the move list.
+function LogTabPokemonDetails.getLayout(hasEvo)
+	local box = LogOverlay.TabBox
+	local overlayRight = box.x + box.width
+	local statCount = #Constants.OrderedLists.STATSTAGES
+	local arrowW = 10
+	local gap = 3
+	local minLabelW = 16
+	local minStatW = statCount * minLabelW
+	local preferredStatW = (box.width < 200) and minStatW or 103
+	local statX = box.x + 4
+	local statW = math.min(preferredStatW, overlayRight - statX - arrowW - gap - 56)
+	statW = math.max(statW, math.min(minStatW, overlayRight - statX - 60))
+	local movesX = statX + statW + gap
+	local movesW = overlayRight - movesX - arrowW
+	if movesW < 52 then
+		movesW = 52
+		statW = overlayRight - arrowW - gap - movesW - statX
+		movesX = statX + statW + gap
+	end
+	local narrow = box.width < 200
+	local iconSize = narrow and 24 or 32
+	-- Always reserve the icon/name row above stats (with or without evos).
+	local reservedTop = narrow and (iconSize + 8) or 42
+	local graphHeaderY = box.y + reservedTop
+	local showBtnW = 47
+	local headerBox, showBtnBox
+	if narrow then
+		headerBox = { statX, graphHeaderY, statW, 11 }
+		showBtnBox = { statX, graphHeaderY + 12, showBtnW, 11 }
+	else
+		showBtnBox = { math.max(statX, math.min(statX + statW - showBtnW, movesX - showBtnW - 2)), graphHeaderY, showBtnW, 11 }
+		headerBox = { statX, graphHeaderY, math.max(24, showBtnBox[1] - statX - 2), 11 }
+	end
+	local graphY = showBtnBox[2] + showBtnBox[4] + 2
+	local graphLabelH = 20
+	local graphH = math.max(36, (box.y + box.height) - graphY - graphLabelH)
+	local lineH = Constants.SCREEN.LINESPACING or 11
+	local headerH = 13
+	local function movesThatFit(rowY)
+		local firstMoveY = rowY + headerH
+		local bottom = box.y + box.height - 1
+		return math.max(4, math.floor((bottom - firstMoveY) / lineH))
+	end
+	return {
+		statBox = {
+			x = statX,
+			y = graphY,
+			width = statW,
+			height = graphH,
+			barW = 7,
+			labelW = math.floor(statW / statCount),
+		},
+		movesX = movesX,
+		movesW = math.max(movesW, 40),
+		arrowX = overlayRight - arrowW,
+		iconX = statX,
+		iconSize = iconSize,
+		headerBox = headerBox,
+		showBtnBox = showBtnBox,
+		narrow = narrow,
+		lvTabLabel = narrow and "Lv" or nil,
+		tmTabLabel = narrow and "TM" or nil,
+		movesPerPage = movesThatFit(box.y),
+		movesPerPageWithEvo = movesThatFit(box.y + 42),
+	}
 end
 
 function LogTabPokemonDetails.refreshButtons()
@@ -95,10 +199,6 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 	LogTabPokemonDetails.currentEvoSet = 1
 	LogTabPokemonDetails.currentStatView = "ShowBST"
 
-	if data.p.abilities[1] == data.p.abilities[2] then
-		data.p.abilities[2] = nil
-	end
-
 	-- For checking against pokemon on the player's team
 	LogTabPokemonDetails.playerTeam = {}
 	for _, pokemon in pairs(Program.GameData.PlayerTeam or {}) do
@@ -110,8 +210,8 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 			end
 			LogTabPokemonDetails.playerTeam[pokemon.pokemonID] = {
 				name = pokemonName,
-				ivs = pokemon.ivs,
-				evs = pokemon.evs,
+				dvs = pokemon.dvs,
+				statExp = pokemon.statExp,
 			}
 		end
 	end
@@ -121,6 +221,8 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 
 	local hasPrevEvo = Options["Show Pre Evolutions"] and (#data.p.prevos > 0)
 	local hasEvo = hasPrevEvo or (#data.p.evos > 0)
+	local layout = LogTabPokemonDetails.getLayout(hasEvo)
+	LogTabPokemonDetails.layout = layout
 
 	local preEvoList = {}
 	if hasPrevEvo then
@@ -145,15 +247,19 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 	end
 
 	-- Pre-evos
-	local pokemonIconSize = 32
+	local pokemonIconSize = layout.iconSize
 	local pokemonIconSpacing = 4
 	local evoLabelTextHeight = 7
 	local evoArrowSize = 10
+	if layout.narrow then
+		LogTabPokemonDetails.evosPerSet = 1
+		LogTabPokemonDetails.prevEvosPerSet = 1
+	end
 
 	local pokemonIconRange = {
-		x = LogOverlay.TabBox.x + 75,
+		x = layout.iconX,
 		y = LogOverlay.TabBox.y - 2,
-		w = function(self) return Constants.SCREEN.WIDTH - self.x - LogOverlay.TabBox.x - 1 end,
+		w = function(self) return layout.movesX - self.x - 1 end,
 		h = pokemonIconSize + evoLabelTextHeight,
 	}
 
@@ -249,6 +355,9 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 			pokemonIconSize,
 			pokemonIconSize,
 		}
+		if evoBox[1] + evoBox[3] > layout.movesX then
+			break
+		end
 		-- If no evo method is given, use the first one
 		if not evo.method then
 			evo.method = evoList[1].method
@@ -290,7 +399,7 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 
 	-- EVOLUTION ARROW
 	local evoArrowX = viewedPokemonIcon.box[1] + pokemonIconSpacing / 2 + pokemonIconSize
-	if hasEvo then
+	if hasEvo and evoArrowX + evoArrowSize <= layout.movesX then
 		local evoArrow = {
 			type = Constants.ButtonTypes.PIXELIMAGE,
 			image = Constants.PixelImages.RIGHT_ARROW,
@@ -450,17 +559,27 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		table.insert(LogTabPokemonDetails.TemporaryButtons, chevronButton)
 	end
 
-	local movesColX = LogOverlay.TabBox.x + 118
-	local movesRowY = LogOverlay.TabBox.y + Utils.inlineIf(hasEvo, 42, 0)
-	LogTabPokemonDetails.Pager.movesPerPage = Utils.inlineIf(hasEvo, 8, 12)
+	local movesColX = layout.movesX
+	local movesColW = layout.movesW
+	-- GB: same move list position with or without evos. GBA keeps the Besteon offset.
+	local movesRowY = LogOverlay.TabBox.y
+	if not layout.narrow then
+		movesRowY = movesRowY + Utils.inlineIf(hasEvo, 42, 0)
+	end
+	LogTabPokemonDetails.Pager.movesPerPage = (not layout.narrow and hasEvo) and layout.movesPerPageWithEvo or layout.movesPerPage
+	local lvTabW = math.min(60, math.floor(movesColW * 0.55))
+	local tmTabW = math.max(18, movesColW - lvTabW - 2)
 
 	local levelupMovesTab = {
 		type = Constants.ButtonTypes.NO_BORDER,
-		getText = function(self) return Resources.LogOverlay.ButtonLevelupMoves end,
+		getText = function(self)
+			if layout.lvTabLabel then return layout.lvTabLabel end
+			return Utils.shortenText(Resources.LogOverlay.ButtonLevelupMoves, lvTabW - 2, true)
+		end,
 		textColor = LogTabPokemonDetails.Colors.text,
 		tab = LogTabPokemonDetails.Tabs.LevelMoves,
 		isSelected = false,
-		box = { movesColX, movesRowY, 60, 11 },
+		box = { movesColX, movesRowY, lvTabW, 11 },
 		updateSelf = function(self)
 			self.isSelected = (LogTabPokemonDetails.Pager.currentTab == self.tab)
 			self.textColor = Utils.inlineIf(self.isSelected, LogTabPokemonDetails.Colors.highlight, LogTabPokemonDetails.Colors.text)
@@ -482,11 +601,14 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 	}
 	local tmMovesTab = {
 		type = Constants.ButtonTypes.NO_BORDER,
-		getText = function(self) return Resources.LogOverlay.ButtonTMMoves end,
+		getText = function(self)
+			if layout.tmTabLabel then return layout.tmTabLabel end
+			return Utils.shortenText(Resources.LogOverlay.ButtonTMMoves, tmTabW - 2, true)
+		end,
 		textColor = LogTabPokemonDetails.Colors.text,
 		tab = LogTabPokemonDetails.Tabs.TmMoves,
 		isSelected = false,
-		box = { movesColX + 70, movesRowY, 41, 11 },
+		box = { movesColX + lvTabW + 2, movesRowY, tmTabW, 11 },
 		updateSelf = function(self)
 			self.isSelected = (LogTabPokemonDetails.Pager.currentTab == self.tab)
 			self.textColor = Utils.inlineIf(self.isSelected, LogTabPokemonDetails.Colors.highlight, LogTabPokemonDetails.Colors.text)
@@ -509,7 +631,7 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 	table.insert(LogTabPokemonDetails.TemporaryButtons, levelupMovesTab)
 	table.insert(LogTabPokemonDetails.TemporaryButtons, tmMovesTab)
 
-	local moveCategoryOffset = 90
+	local moveCategoryOffset = math.max(layout.movesW - 12, 36)
 
 	-- LEARNABLE MOVES
 	offsetY = 0
@@ -533,18 +655,19 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		local moveBtn = {
 			type = Constants.ButtonTypes.NO_BORDER,
 			getText = function(self)
-				-- add this customization for the Nat. Dex rom hack
+				local text
 				if moveInfo.level == 0 then
-					return string.format("Evo  %s", nameDisplayed)
+					text = string.format("Evo  %s", nameDisplayed)
 				else
-					return string.format("%02d  %s", moveInfo.level, nameDisplayed)
+					text = string.format("%02d  %s", moveInfo.level, nameDisplayed)
 				end
+				return Utils.shortenText(text, movesColW - 4, true)
 			end,
 			textColor = moveColor,
 			moveId = moveInfo.id,
 			tab = LogTabPokemonDetails.Tabs.LevelMoves,
 			pageVisible = math.ceil(i / LogTabPokemonDetails.Pager.movesPerPage),
-			box = { movesColX, movesRowY + 13 + offsetY + Utils.inlineIf(hasEvo, 0, -2), 80, 11 },
+			box = { movesColX, movesRowY + 13 + offsetY, movesColW, 11 },
 			isVisible = function(self) return LogTabPokemonDetails.Pager.currentTab == self.tab and LogTabPokemonDetails.Pager.currentPage == self.pageVisible end,
 			updateSelf = function(self)
 				self.textColor = moveColor
@@ -565,7 +688,7 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 				Drawing.drawTransparentTextbox(x + 1, y, self:getText(), textColor, bgColor, shadowcolor)
 
 				-- Don't draw icon for Hidden Power (no room on the screen)
-				if Options["Show physical special icons"] and MoveData.isValid(self.moveId) and not monOnTeamWithHP then
+				if Options["Show physical special icons"] and not layout.narrow and MoveData.isValid(self.moveId) and not monOnTeamWithHP then
 					local move = MoveData.Moves[self.moveId]
 					local image
 					if move.category == MoveData.Categories.PHYSICAL then
@@ -633,9 +756,12 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		numGymTMs = numGymTMs + 1
 	end
 
-	-- Add a spacer to separate Gym TMs from regular TMs
-	table.insert(data.p.tmmoves, 1, { label = Resources.LogOverlay.LabelGymTMs})
-	table.insert(data.p.tmmoves, numGymTMs + 2, { label = Resources.LogOverlay.LabelOtherTMs})
+	-- Add a spacer to separate Gym TMs from regular TMs (Besteon).
+	-- Skip when no gym TMs are tagged (missing GymTMs table).
+	if numGymTMs > 0 then
+		table.insert(data.p.tmmoves, 1, { label = Resources.LogOverlay.LabelGymTMs})
+		table.insert(data.p.tmmoves, numGymTMs + 2, { label = Resources.LogOverlay.LabelOtherTMs})
+	end
 
 	offsetY = 0
 	for i, tmInfo in ipairs(data.p.tmmoves) do
@@ -653,12 +779,12 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		end
 		local moveBtn = {
 			type = Constants.ButtonTypes.NO_BORDER,
-			getCustomText = function(self) return moveText end,
+			getCustomText = function(self) return Utils.shortenText(moveText, movesColW - 4, true) end,
 			textColor = moveColor,
 			moveId = tmInfo.moveId,
 			tab = LogTabPokemonDetails.Tabs.TmMoves,
 			pageVisible = math.ceil(i / LogTabPokemonDetails.Pager.movesPerPage),
-			box = { movesColX, movesRowY + 13 + offsetY + Utils.inlineIf(hasEvo, 0, -2), 80, 11 },
+			box = { movesColX, movesRowY + 13 + offsetY, movesColW, 11 },
 			isVisible = function(self) return LogTabPokemonDetails.Pager.currentTab == self.tab and LogTabPokemonDetails.Pager.currentPage == self.pageVisible end,
 			draw = function (self, shadowcolor)
 				local x, y = self.box[1], self.box[2]
@@ -668,7 +794,7 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 				end
 				Drawing.drawText(x + 1, y, self:getCustomText(), color, shadowcolor)
 				-- Physical/Special icon, if applicable
-				if Options["Show physical special icons"] and MoveData.isValid(self.moveId) then
+				if Options["Show physical special icons"] and not layout.narrow and MoveData.isValid(self.moveId) then
 					local move = MoveData.Moves[self.moveId]
 					local image
 					if move.category == MoveData.Categories.PHYSICAL then
@@ -702,11 +828,14 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 	end
 
 	-- UP/DOWN PAGING ARROWS
+	local lineH = Constants.SCREEN.LINESPACING or 11
+	local firstMoveY = movesRowY + 13
+	local lastMoveY = firstMoveY + (LogTabPokemonDetails.Pager.movesPerPage - 1) * lineH
 	local upArrow = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.UP_ARROW,
 		textColor = LogTabPokemonDetails.Colors.text,
-		box = { movesColX + 107, movesRowY + 24 + Utils.inlineIf(hasEvo, 0, 10), 10, 10 },
+		box = { layout.arrowX, firstMoveY + 4, 10, 10 },
 		isVisible = function() return LogTabPokemonDetails.Pager.totalPages > 1 end,
 		onClick = function(self) LogTabPokemonDetails.Pager:prevPage() end,
 	}
@@ -714,7 +843,7 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.DOWN_ARROW,
 		textColor = LogTabPokemonDetails.Colors.text,
-		box = { movesColX + 107, movesRowY + 81 + Utils.inlineIf(hasEvo, 0, 30), 10, 10 },
+		box = { layout.arrowX, math.min(lastMoveY, LogOverlay.TabBox.y + LogOverlay.TabBox.height - 12), 10, 10 },
 		isVisible = function() return LogTabPokemonDetails.Pager.totalPages > 1 end,
 		onClick = function(self) LogTabPokemonDetails.Pager:nextPage() end,
 	}
@@ -725,24 +854,24 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 	LogTabPokemonDetails.Pager.totalTMMoves = #data.p.tmmoves
 	LogTabPokemonDetails.Pager:changeTab(LogTabPokemonDetails.Tabs.LevelMoves)
 
-	-- LABEL/BUTTON FOR "Show IVs/EVs/BST"
-	local canSeeIVsEVs = LogOverlay.viewedLog == FileManager.PostFixes.AUTORANDOMIZED and LogTabPokemonDetails.playerTeam[pokemonID] ~= nil
-	local showBtnBox = { LogOverlay.TabBox.x + 66, LogOverlay.TabBox.y + 42, 43, 11 } -- x, y, width, height
+	-- LABEL/BUTTON FOR "Show DVs / Stat Exp / BST"
+	local canSeeDVsStatExp = LogOverlay.viewedLog == FileManager.PostFixes.AUTORANDOMIZED and LogTabPokemonDetails.playerTeam[pokemonID] ~= nil
+	local showBtnBox = layout.showBtnBox
 
 	local lblStatGraphHeader = {
 		type = Constants.ButtonTypes.NO_BORDER,
 		getText = function(self)
-			if LogTabPokemonDetails.currentStatView == "ShowIVs" then
-				return Resources.LogOverlay.LabelYourIVs
-			elseif LogTabPokemonDetails.currentStatView == "ShowEVs" then
-				return Resources.LogOverlay.LabelYourEVs
+			if LogTabPokemonDetails.currentStatView == "ShowDVs" then
+				return Resources.LogOverlay.LabelYourDVs
+			elseif LogTabPokemonDetails.currentStatView == "ShowStatExp" then
+				return Resources.LogOverlay.LabelYourStatExp
 			else
 				return Resources.LogOverlay.LabelBaseStats
 			end
 		end,
 		textColor = LogTabPokemonDetails.Colors.text,
 		boxColors = { LogTabPokemonDetails.Colors.border, LogTabPokemonDetails.Colors.boxFill },
-		box = { LogOverlay.TabBox.x + 4, showBtnBox[2], showBtnBox[3], showBtnBox[4] },
+		box = layout.headerBox,
 	}
 	local lblBaseStatTotal = {
 		type = Constants.ButtonTypes.NO_BORDER,
@@ -750,15 +879,15 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		textColor = LogTabPokemonDetails.Colors.text,
 		boxColors = { LogTabPokemonDetails.Colors.border, LogTabPokemonDetails.Colors.boxFill },
 		box = showBtnBox,
-		isVisible = function(self) return not canSeeIVsEVs end,
+		isVisible = function(self) return not canSeeDVsStatExp end,
 	}
 	local btnChangeStatGraph = {
 		type = Constants.ButtonTypes.FULL_BORDER,
 		getText = function(self)
 			if LogTabPokemonDetails.currentStatView == "ShowBST" then
-				return Resources.LogOverlay.LabelShowIVs
-			elseif LogTabPokemonDetails.currentStatView == "ShowIVs" then
-				return Resources.LogOverlay.LabelShowEVs
+				return Resources.LogOverlay.LabelShowDVs
+			elseif LogTabPokemonDetails.currentStatView == "ShowDVs" then
+				return Resources.LogOverlay.LabelShowStatExp
 			else
 				return Resources.LogOverlay.LabelShowBST
 			end
@@ -766,13 +895,13 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		textColor = LogTabPokemonDetails.Colors.highlight,
 		boxColors = { LogTabPokemonDetails.Colors.border, LogTabPokemonDetails.Colors.boxFill },
 		box = showBtnBox,
-		isVisible = function(self) return canSeeIVsEVs end,
+		isVisible = function(self) return canSeeDVsStatExp end,
 		onClick = function(self)
-			-- On click: change from viewing Base Stats -> IVs -> EVs -> Base Stats
+			-- On click: Base Stats -> DVs -> Stat Exp -> Base Stats
 			if LogTabPokemonDetails.currentStatView == "ShowBST" then
-				LogTabPokemonDetails.currentStatView = "ShowIVs"
-			elseif LogTabPokemonDetails.currentStatView == "ShowIVs" then
-				LogTabPokemonDetails.currentStatView = "ShowEVs"
+				LogTabPokemonDetails.currentStatView = "ShowDVs"
+			elseif LogTabPokemonDetails.currentStatView == "ShowDVs" then
+				LogTabPokemonDetails.currentStatView = "ShowStatExp"
 			else
 				LogTabPokemonDetails.currentStatView = "ShowBST"
 			end
@@ -814,6 +943,7 @@ function LogTabPokemonDetails.drawTab()
 	end
 
 	-- Draw all buttons
+	local layout = LogTabPokemonDetails.layout or LogTabPokemonDetails.getLayout()
 	for _, button in pairs(LogTabPokemonDetails.TemporaryButtons) do
 		Drawing.drawButton(button, shadowcolor)
 	end
@@ -821,14 +951,25 @@ function LogTabPokemonDetails.drawTab()
 		Drawing.drawButton(button, shadowcolor)
 	end
 
-	-- Draw Pokemon name
+	-- Draw Pokemon name in the icon row (stats column on GB so it cannot cover moves)
 	local pokemonName = data.p.name
 	if LogTabPokemonDetails.currentStatView ~= "ShowBST" and LogTabPokemonDetails.playerTeam[data.p.id] then
 		pokemonName = LogTabPokemonDetails.playerTeam[data.p.id].name
 	end
 	local nameText = Utils.toUpperUTF8(pokemonName)
-	Drawing.drawTransparentTextbox(LogOverlay.TabBox.x + 3, LogOverlay.TabBox.y + 2, nameText, highlightColor, fillColor, shadowcolor)
-
+	local nameX = LogOverlay.TabBox.x + 3
+	if layout.narrow then
+		local hasEvoIcons = (#(data.p.evos or {}) > 0) or (Options["Show Pre Evolutions"] and #(data.p.prevos or {}) > 0)
+		if hasEvoIcons then
+			nameText = ""
+		else
+			nameX = layout.iconX + layout.iconSize + 2
+			nameText = Utils.shortenText(nameText, layout.movesX - nameX - 2, true)
+		end
+	end
+	if not Utils.isNilOrEmpty(nameText) then
+		Drawing.drawTransparentTextbox(nameX, LogOverlay.TabBox.y + 2, nameText, highlightColor, fillColor, shadowcolor)
+	end
 
 	LogTabPokemonDetails.drawStatGraph(data, shadowcolor)
 end
@@ -837,16 +978,9 @@ function LogTabPokemonDetails.drawStatGraph(data, shadowcolor)
 	local textColor = Theme.COLORS[LogTabPokemonDetails.Colors.text]
 	local borderColor = Theme.COLORS[LogTabPokemonDetails.Colors.border]
 	local fillColor = Theme.COLORS[LogTabPokemonDetails.Colors.boxFill]
-
-	-- If these change, also update "lblStatGraphHeader", "lblBaseStatTotal", etc. above
-	local statBox = {
-		x = LogOverlay.TabBox.x + 6,
-		y = LogOverlay.TabBox.y + 53,
-		width = 103,
-		height = 68,
-		barW = 8,
-		labelW = 17,
-	}
+	local view = LogTabPokemonDetails.currentStatView
+	local layout = LogTabPokemonDetails.layout or LogTabPokemonDetails.getLayout()
+	local statBox = layout.statBox
 
 	-- Draw stat box
 	gui.drawRectangle(statBox.x, statBox.y, statBox.width, statBox.height, borderColor, fillColor)
@@ -865,21 +999,12 @@ function LogTabPokemonDetails.drawStatGraph(data, shadowcolor)
 	local barVals = {}
 	local pokemon = LogTabPokemonDetails.playerTeam[data.p.id]
 	for _, statKey in ipairs(Constants.OrderedLists.STATSTAGES) do
-		if pokemon ~= nil and LogTabPokemonDetails.currentStatView == "ShowIVs" then
-			barVals[statKey] = pokemon.ivs[statKey] or 0
-		elseif pokemon ~= nil and LogTabPokemonDetails.currentStatView == "ShowEVs" then
-			barVals[statKey] = pokemon.evs[statKey] or 0
-		else
-			barVals[statKey] = data.p[statKey] or 0
-		end
+		barVals[statKey] = LogTabPokemonDetails.statGraphValue(pokemon, view, data, statKey)
 	end
 
 	local statX = statBox.x + 1
 	for _, statKey in ipairs(Constants.OrderedLists.STATSTAGES) do
-		local barVal = barVals[statKey]
-		if LogTabPokemonDetails.currentStatView == "ShowIVs" then
-			barVal = math.min(barVal * 8, 255) -- Scale IV bar x8 to fill
-		end
+		local barVal = LogTabPokemonDetails.statGraphBarScale(barVals[statKey], view)
 		-- Draw the vertical bar
 		local barH = math.floor(barVal / 255 * (statBox.height - 2) + 0.5)
 		local barY = statBox.y + statBox.height - barH - 1 -- -1/-2 for box pixel border margin
@@ -897,10 +1022,12 @@ function LogTabPokemonDetails.drawStatGraph(data, shadowcolor)
 		end
 
 		-- Draw the bar's label
-		local statLabelOffsetX = (3 - string.len(statKey)) * 2
-		local statValueOffsetX = (3 - string.len(tostring(barVals[statKey]))) * 2
-		Drawing.drawText(statX + statLabelOffsetX, statBox.y + statBox.height + 1, Utils.firstToUpper(statKey), textColor, shadowcolor)
-		Drawing.drawText(statX + statValueOffsetX, statBox.y + statBox.height + 11, barVals[statKey], barColor, shadowcolor)
+		local label = LogTabPokemonDetails.statGraphLabel(statKey)
+		local valueText = tostring(barVals[statKey])
+		local statLabelOffsetX = math.max(0, math.floor((statBox.labelW - Utils.calcWordPixelLength(label)) / 2))
+		local statValueOffsetX = math.max(-2, math.floor((statBox.labelW - Utils.calcWordPixelLength(valueText)) / 2))
+		Drawing.drawText(statX + statLabelOffsetX, statBox.y + statBox.height + 1, label, textColor, shadowcolor)
+		Drawing.drawText(statX + statValueOffsetX, statBox.y + statBox.height + 11, valueText, barColor, shadowcolor)
 		statX = statX + statBox.labelW
 	end
 end

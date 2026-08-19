@@ -48,7 +48,7 @@ LogTabPokemon = {
 		},
 		chosenIcon = nil, -- references the 1st chosen icon used
 	},
-	defaultIconCount = 2,
+	defaultIconCount = 1,
 	defaultSortKey = "PokedexNum",
 	defaultFilterKey = "PokemonName",
 }
@@ -76,10 +76,12 @@ function LogTabPokemon.getTabIcons(amount)
 	amount = math.max(amount or LogTabPokemon.defaultIconCount or 1, 1)
 	local icons = {}
 	for _, icon in pairs(LogTabPokemon.TabIcons or {}) do
-		icon.randomizedIndex = math.random(16000)
-		table.insert(icons, icon)
+		if type(icon) == "table" and icon.image then
+			icon.randomizedIndex = math.random(16000)
+			table.insert(icons, icon)
+		end
 	end
-	if (#icons - amount) <= 1 then
+	if #icons <= amount then
 		return icons
 	end
 	-- Remove all but N items at random

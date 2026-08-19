@@ -33,28 +33,32 @@ Program = {
 	},
 }
 TrackerAPI = {}
-Gen1SpeciesMap = { getDexId = function(id) return id + 1000 end }
+SpeciesMap = { getDexId = function(id) return id + 1000 end }
 
-dofile("ironmon_tracker/data/Gen1TrainerData.lua")
-TrackerAPI.getOpponentTrainerId = Gen1TrainerData.getCurrentTrainerId
-Program.readTrainerGameData = Gen1TrainerData.readTrainer
-Gen1TrainerData.initialize()
+dofile("ironmon_tracker/data/TrainerData.lua")
+TrackerAPI.getOpponentTrainerId = TrainerData.getCurrentTrainerId
+Program.readTrainerGameData = TrainerData.readTrainer
+TrainerData.initialize()
 
 assert(#TrainerData.OrderedIds == 396, "Yellow must expose every native trainer party")
-assert(Gen1TrainerData.getClassAddress(1) == classAddress)
-local normal = Gen1TrainerData.readParty(1, 1)
+assert(TrainerData.getClassAddress(1) == classAddress)
+local normal = TrainerData.readParty(1, 1)
 assert(#normal == 2 and normal[1].level == 11 and normal[1].pokemonID == 1001)
-local special = Gen1TrainerData.readParty(1, 2)
+local special = TrainerData.readParty(1, 2)
 assert(#special == 2 and special[1].level == 5 and special[2].level == 8)
 
 bytes[GameSettings.battleState] = 2
 bytes[GameSettings.trainerClass] = 1
 bytes[GameSettings.trainerNumber] = 2
 local trainerId = TrackerAPI.getOpponentTrainerId()
-assert(trainerId == Gen1TrainerData.makeId(1, 2))
+assert(trainerId == TrainerData.makeId(1, 2))
 local trainer = Program.readTrainerGameData(trainerId)
 assert(trainer.partySize == 2 and trainer.trainerClass == "Youngster" and trainer.trainerName == "#2")
 bytes[GameSettings.battleState] = 1
 assert(TrackerAPI.getOpponentTrainerId() == 0)
+
+assert(#TrainerData.GymTMs == 8, "Kanto gyms each award one TM")
+assert(TrainerData.GymTMs[1].number == 34 and TrainerData.GymTMs[1].leader == "Brock")
+assert(TrainerData.GymTMs[5].number == 6 and TrainerData.GymTMs[8].number == 27)
 
 print("Gen 1 trainer data smoke tests passed")
