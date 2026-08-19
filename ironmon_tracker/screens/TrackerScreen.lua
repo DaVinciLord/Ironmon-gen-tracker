@@ -144,55 +144,6 @@ TrackerScreen.Buttons = {
 			Program.redraw(true)
 		end
 	},
-	GachaMonStars = {
-		box = { Constants.SCREEN.WIDTH + 61, 58, 38, 21 },
-		isVisible = function()
-			local allowedToShow = Battle.isViewingOwn and Options["Show GachaMon stars on main Tracker Screen"]
-			local hasConflict = Options["Track PC Heals"] or GachaMonData.playerViewedMon == nil or GachaMonData.hasNewestMonToShow()
-			return allowedToShow and not hasConflict
-		end,
-		onClick = function(self)
-			if not GachaMonData.playerViewedMon then
-				return
-			end
-			if Program.currentOverlay == GachaMonOverlay then
-				Program.closeScreenOverlay()
-				Program.redraw(true)
-				return
-			end
-			-- If another overlay is open, close that first
-			if Program.isScreenOverlayOpen() then
-				Program.closeScreenOverlay()
-			end
-			Program.openOverlayScreen(GachaMonOverlay)
-			local gachamon = GachaMonData.getAssociatedRecentMon(GachaMonData.playerViewedMon)
-			if gachamon then
-				GachaMonOverlay.currentTab = GachaMonOverlay.Tabs.View
-				GachaMonOverlay.Data.View.GachaMon = gachamon
-				GachaMonOverlay.refreshButtons()
-			end
-			Program.redraw(true)
-		end,
-		draw = function(self, shadowcolor)
-			if not GachaMonData.playerViewedMon then
-				return
-			end
-			local x, y = self.box[1], self.box[2]
-			local numStars = GachaMonData.playerViewedMon:getStars() or 0
-			local numStarsToDraw = math.max(numStars, GachaMonData.playerViewedInitialStars or 0) -- use the larger amount
-			if numStarsToDraw < 5 then
-				y = y + 3
-			end
-			if numStarsToDraw < 3 then
-				x = x + 10
-			end
-			local initialStars = nil
-			if (GachaMonData.playerViewedInitialStars or 0) > 0 then
-				initialStars = GachaMonData.playerViewedInitialStars
-			end
-			GachaMonOverlay.drawStarsOfGachaMon(numStars, x, y + 1, initialStars)
-		end,
-	},
 	LogViewerQuickAccess = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.MAGNIFYING_GLASS,
@@ -200,7 +151,7 @@ TrackerScreen.Buttons = {
 		box = { Constants.SCREEN.WIDTH + 84, 64, 10, 10 },
 		isVisible = function()
 			local okayToShow = Battle.isViewingOwn and Options["Open Book Play Mode"]
-			local hasConflict = Options["Track PC Heals"] or Options["Show GachaMon stars on main Tracker Screen"]
+			local hasConflict = Options["Track PC Heals"]
 			return okayToShow and not hasConflict
 		end,
 		onClick = function(self)
@@ -456,27 +407,6 @@ TrackerScreen.Buttons = {
 			end
 		end
 	},
-	GachaMonSummary = {
-		type = Constants.ButtonTypes.PIXELIMAGE,
-		image = Constants.PixelImages.GACHAMON_CARD,
-		iconColors = { "Intermediate text", },
-		getText = function(self) return self.updatedText or "" end,
-		textColor = "Lower box text",
-		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1, 140, 138, 12 },
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, 140, 13, 13 },
-		isVisible = function() return TrackerScreen.carouselIndex == TrackerScreen.CarouselTypes.GACHAMON end,
-		clearAnimation = function(self)
-			AnimationManager.GachaMonAnims.PackOpening = nil
-		end,
-		onClick = function(self)
-			local APO = AnimationManager.GachaMonAnims.PackOpening
-			if not APO and GachaMonData.hasNewestMonToShow() then
-				local x, y = Constants.SCREEN.WIDTH + 43, 32
-				AnimationManager.GachaMonAnims.PackOpening = AnimationManager.createGachaMonPackOpening(x, y, GachaMonData.newestRecentMon)
-			end
-			Program.redraw(true)
-		end,
-	},
 }
 
 -- This is also a priority list, lower the number has more priority of showing up before the others; must be sequential
@@ -488,7 +418,6 @@ TrackerScreen.CarouselTypes = {
 	NOTES = 5, -- During battle
 	BATTLE_DETAILS = 6, -- During battle
 	PEDOMETER = 7, -- Outside of battle
-	GACHAMON = 8, -- Outside of battle
 }
 
 TrackerScreen.carouselIndex = 1
@@ -630,7 +559,7 @@ function TrackerScreen.buildCarousel()
 			if not Options["Allow carousel rotation"] and TrackerScreen.CarouselItems[TrackerScreen.CarouselTypes.PEDOMETER]:canShow() then
 				return false
 			end
-			return Battle.isViewingOwn and not GachaMonData.hasNewestMonToShow() and not showEarlyRouteEncounters()
+			return Battle.isViewingOwn and not showEarlyRouteEncounters()
 		end,
 		getContentList = function(self)
 			local badgeButtons = {}
@@ -792,7 +721,7 @@ function TrackerScreen.buildCarousel()
 			if not SetupScreen.Buttons.CarouselPedometer.toggleState then
 				return false
 			end
-			return Battle.isViewingOwn and not GachaMonData.hasNewestMonToShow() and Program.Pedometer:isInUse()
+			return Battle.isViewingOwn and Program.Pedometer:isInUse()
 		end,
 		getContentList = function(self)
 			TrackerScreen.Buttons.PedometerStepText:updateSelf()
@@ -847,36 +776,6 @@ function TrackerScreen.buildCarousel()
 				return { TrackerScreen.Buttons.TrainerSummary }
 			else
 				return TrackerScreen.Buttons.TrainerSummary.updatedText or ""
-			end
-		end,
-	}
-
-	--  GACHAMON
-	TrackerScreen.CarouselItems[TrackerScreen.CarouselTypes.GACHAMON] = {
-		type = TrackerScreen.CarouselTypes.GACHAMON,
-		framesToShow = 210,
-		canShow = function(self)
-			if not SetupScreen.Buttons.CarouselGachaMon.toggleState then
-				return false
-			end
-			-- Showing the card pack overrides the need to show the info in the Carousel box
-			if Options["Show card pack on screen after capturing a GachaMon"] then
-				return false
-			end
-			return GachaMonData.hasNewestMonToShow()
-		end,
-		getContentList = function(self)
-			local text
-			if GachaMonData.checkIfNewCollectionSpecies(GachaMonData.newestRecentMon) then
-				text = string.format(" %s! %s", Resources.GachaMonAnimations.LabelTabNEW, Resources.TrackerScreen.GachaMonCaptured)
-			else
-				text = string.format(" %s", Resources.TrackerScreen.GachaMonCaptured)
-			end
-			TrackerScreen.Buttons.GachaMonSummary.updatedText = text
-			if Main.IsOnBizhawk() then
-				return { TrackerScreen.Buttons.GachaMonSummary }
-			else
-				return TrackerScreen.Buttons.GachaMonSummary.updatedText or ""
 			end
 		end,
 	}
@@ -952,45 +851,20 @@ function TrackerScreen.openNotePadWindow(pokemonId, onCloseFunc)
 	local pokemonName = PokemonData.Pokemon[pokemonId].name
 	local form = ExternalUI.BizForms.createForm(
 		string.format("%s (%s)", Resources.TrackerScreen.LeaveANote, pokemonName),
-		465, 220, nil, nil, onCloseFunc)
+		465, 145, nil, nil, onCloseFunc)
 
 	form:createLabel(string.format("%s %s:", Resources.TrackerScreen.PromptNoteDesc, pokemonName), 9, 10)
 	local noteTextBox = form:createTextBox(Tracker.getNote(pokemonId), 10, 30, 430, 20)
-	form:createLabel(string.format("%s %s:", Resources.TrackerScreen.PromptNoteAbilityDesc, pokemonName), 9, 60)
-
-	local abilityList = {}
-	table.insert(abilityList, BLANK)
-	abilityList = AbilityData.populateAbilityDropdown(abilityList)
-
-	local trackedAbilities = Tracker.getAbilities(pokemonId)
-	local trackedAbility1 = BLANK
-	local trackedAbility2 = BLANK
-	if AbilityData.isValid(trackedAbilities[1].id) then
-		trackedAbility1 = AbilityData.Abilities[trackedAbilities[1].id].name
-	end
-	if AbilityData.isValid(trackedAbilities[2].id) then
-		trackedAbility2 = AbilityData.Abilities[trackedAbilities[2].id].name
-	end
-	local abilityOneDropdown = form:createDropdown(abilityList, 10, 80, 145, 30, trackedAbility1)
-	local abilityTwoDropdown = form:createDropdown(abilityList, 10, 110, 145, 30, trackedAbility2)
-
 	local saveAndClose = string.format("%s && %s", Resources.AllScreens.Save, Resources.AllScreens.Close)
-	form:createButton(saveAndClose, 80, 145, function()
+	form:createButton(saveAndClose, 80, 65, function()
 		local formInput = ExternalUI.BizForms.getText(noteTextBox)
 		if formInput ~= nil then
-			local abilityOneText = ExternalUI.BizForms.getText(abilityOneDropdown)
-			local abilityTwoText = ExternalUI.BizForms.getText(abilityTwoDropdown)
 			Tracker.TrackNote(pokemonId, formInput)
-			Tracker.setAbilities(pokemonId, abilityOneText, abilityTwoText)
 			Program.redraw(true)
 		end
 		form:destroy()
 	end)
-	form:createButton(Resources.TrackerScreen.PromptNoteClearAbilities, 195, 145, function()
-		ExternalUI.BizForms.setText(abilityOneDropdown, BLANK)
-		ExternalUI.BizForms.setText(abilityTwoDropdown, BLANK)
-	end)
-	form:createButton(Resources.AllScreens.Cancel, 310, 145, function()
+	form:createButton(Resources.AllScreens.Cancel, 260, 65, function()
 		form:destroy()
 	end)
 end
@@ -1234,8 +1108,6 @@ function TrackerScreen.drawPokemonInfoArea(data)
 			end
 			Drawing.drawText(incBtn.box[1], incBtn.box[2], incBtn:getText(), Theme.COLORS[incBtn.textColor], nil, 5, Constants.Font.FAMILY)
 			Drawing.drawText(decBtn.box[1], decBtn.box[2], decBtn:getText(), Theme.COLORS[decBtn.textColor], nil, 5, Constants.Font.FAMILY)
-		elseif Options["Show GachaMon stars on main Tracker Screen"] then
-			Drawing.drawButton(TrackerScreen.Buttons.GachaMonStars, shadowcolor)
 		else
 			Drawing.drawButton(TrackerScreen.Buttons.LogViewerQuickAccess, shadowcolor)
 		end

@@ -208,28 +208,6 @@ function TeamViewArea.createPartyMemberBox(pokemon, x, y, width, height)
 	}
 	table.insert(partyMember.Buttons, itemBtn)
 
-	-- Pokemon Ability
-	yOffset = yOffset + Constants.SCREEN.LINESPACING - 1
-	local abilityText
-	local abilityId = PokemonData.getAbilityId(pokemon.pokemonID, pokemon.abilityNum)
-	if not isEgg and abilityId ~= nil and abilityId ~= 0 then
-		abilityText = AbilityData.Abilities[abilityId].name
-	else
-		abilityText = Constants.BLANKLINE
-	end
-	local abilityBtn = {
-		text = abilityText,
-		abilityId = Utils.inlineIf(isEgg, 0, abilityId or 0),
-		type = Constants.ButtonTypes.NO_BORDER,
-		box = { x, yOffset, partyMember.width - 2, Constants.SCREEN.LINESPACING, },
-		onClick = function (self)
-			if not isEgg and self.abilityId ~= nil and self.abilityId ~= 0 then
-				InfoScreen.changeScreenView(InfoScreen.Screens.ABILITY_INFO, self.abilityId)
-			end
-		end,
-	}
-	table.insert(partyMember.Buttons, abilityBtn)
-
 	return partyMember
 end
 

@@ -88,50 +88,6 @@ SCREEN.Buttons = {
 			Drawing.drawTransparentTextbox(x + 1, y + 1, self:getCustomText(), textColor, bgColor, shadowcolor)
 		end,
 	},
-	AbilityLine1 = {
-		type = Constants.ButtonTypes.NO_BORDER,
-		getCustomText = function(self) return SCREEN.Data.abilityName1 or Constants.BLANKLINE end,
-		textColor = SCREEN.Colors.highlight,
-		box = { CANVAS.X + 30, CANVAS.Y + 30, 63, Constants.SCREEN.LINESPACING },
-		location = "top",
-		isVisible = function() return SCREEN.Data.isReady end,
-		onClick = function(self)
-			if AbilityData.isValid(SCREEN.Data.abilityId1) then
-				InfoScreen.previousScreenFinal = SCREEN
-				InfoScreen.changeScreenView(InfoScreen.Screens.ABILITY_INFO, SCREEN.Data.abilityId1)
-			else
-				TrackerScreen.openNotePadWindow(SCREEN.Data.pokemonID, SCREEN.rebuildData)
-			end
-		end,
-		draw = function(self, shadowcolor)
-			local x, y = self.box[1], self.box[2]
-			local textColor = Theme.COLORS[self.textColor]
-			local bgColor = Theme.COLORS[SCREEN.Colors.boxFill]
-			Drawing.drawTransparentTextbox(x + 1, y + 1, self:getCustomText(), textColor, bgColor, shadowcolor)
-		end,
-	},
-	AbilityLine2 = {
-		type = Constants.ButtonTypes.NO_BORDER,
-		getCustomText = function(self) return SCREEN.Data.abilityName2 or Constants.BLANKLINE end,
-		textColor = SCREEN.Colors.highlight,
-		box = { CANVAS.X + 30, CANVAS.Y + 40, 63, Constants.SCREEN.LINESPACING },
-		location = "top",
-		isVisible = function() return SCREEN.Data.isReady end,
-		onClick = function(self)
-			if AbilityData.isValid(SCREEN.Data.abilityId2) then
-				InfoScreen.previousScreenFinal = SCREEN
-				InfoScreen.changeScreenView(InfoScreen.Screens.ABILITY_INFO, SCREEN.Data.abilityId2)
-			else
-				TrackerScreen.openNotePadWindow(SCREEN.Data.pokemonID, SCREEN.rebuildData)
-			end
-		end,
-		draw = function(self, shadowcolor)
-			local x, y = self.box[1], self.box[2]
-			local textColor = Theme.COLORS[self.textColor]
-			local bgColor = Theme.COLORS[SCREEN.Colors.boxFill]
-			Drawing.drawTransparentTextbox(x + 1, y + 1, self:getCustomText(), textColor, bgColor, shadowcolor)
-		end,
-	},
 	SeenTrainersWilds = {
 		type = Constants.ButtonTypes.NO_BORDER,
 		box = { CANVAS.X + 1, CANVAS.Y + 52, 95, 22 },
@@ -269,33 +225,6 @@ function NotebookPokemonNoteView.buildScreen(pokemonID)
 
 	-- LAST LEVEL
 	SCREEN.Data.lastLevel = trackedPokemon.eL or 0
-
-	-- ABILITIES
-	SCREEN.Data.abilityName1 = Constants.BLANKLINE
-	SCREEN.Data.abilityName2 = Constants.BLANKLINE
-	if PokemonData.canShowUnknownAbilities() then
-		SCREEN.Data.abilityId1 = PokemonData.getAbilityId(pokemonID, 0) or 0
-		SCREEN.Data.abilityId2 = PokemonData.getAbilityId(pokemonID, 1) or 0
-		if AbilityData.isValid(SCREEN.Data.abilityId1) then
-			if SCREEN.Data.abilityId2 ~= SCREEN.Data.abilityId1 and AbilityData.isValid(SCREEN.Data.abilityId2) then
-				SCREEN.Data.abilityName1 = AbilityData.Abilities[SCREEN.Data.abilityId1].name .. " /"
-				SCREEN.Data.abilityName2 = AbilityData.Abilities[SCREEN.Data.abilityId2].name
-			else
-				SCREEN.Data.abilityName1 = AbilityData.Abilities[SCREEN.Data.abilityId1].name
-				SCREEN.Data.abilityId2 = 0
-			end
-		end
-	elseif trackedPokemon.abilities then
-		SCREEN.Data.abilityId1 = trackedPokemon.abilities[1].id or 0
-		SCREEN.Data.abilityId2 = trackedPokemon.abilities[2].id or 0
-		if AbilityData.isValid(SCREEN.Data.abilityId1) then
-			SCREEN.Data.abilityName1 = AbilityData.Abilities[SCREEN.Data.abilityId1].name .. " /"
-			SCREEN.Data.abilityName2 = Constants.HIDDEN_INFO
-		end
-		if AbilityData.isValid(SCREEN.Data.abilityId2) then
-			SCREEN.Data.abilityName2 = AbilityData.Abilities[SCREEN.Data.abilityId2].name
-		end
-	end
 
 	-- SEEN ENCOUNTERS
 	SCREEN.Data.seenOnTrainers = trackedPokemon.eT or 0
@@ -507,9 +436,6 @@ function NotebookPokemonNoteView.drawScreen()
 	-- Draw last to properly overlap large animated icons
 	Drawing.drawButton(SCREEN.Buttons.PokemonName, canvas.shadow)
 	Drawing.drawButton(SCREEN.Buttons.LastSeenLv, canvas.shadow)
-	Drawing.drawButton(SCREEN.Buttons.AbilityLine1, canvas.shadow)
-	Drawing.drawButton(SCREEN.Buttons.AbilityLine2, canvas.shadow)
-
 	NotebookPokemonNoteView.drawBottomScreen(canvas)
 end
 

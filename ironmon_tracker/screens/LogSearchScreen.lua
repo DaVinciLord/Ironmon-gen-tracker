@@ -149,11 +149,6 @@ LogSearchScreen.FilterBy = {
 		contexts = { [LogTabPokemon] = true, [LogTabTrainers] = true, [LogTabRoutes] = true, },
 		index = 3,
 	},
-	PokemonAbility = {
-		getText = function() return Resources.LogSearchScreen.FilterAbility end,
-		contexts = { [LogTabPokemon] = true, [LogTabTrainers] = true, [LogTabRoutes] = true, },
-		index = 4,
-	},
 	PokemonMove = {
 		getText = function() return Resources.LogSearchScreen.FilterMove end,
 		contexts = { [LogTabPokemon] = true, [LogTabTrainers] = true, [LogTabRoutes] = true, },

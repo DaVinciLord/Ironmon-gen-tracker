@@ -135,13 +135,12 @@ function DataHelper.buildTrackerScreenDisplay(forceView)
 	local targetInfo = Battle.getDoublesCursorTargetInfo()
 	local viewedPokemon = Battle.getViewedPokemon(data.x.viewingOwn)
 	local opposingPokemon = Tracker.getPokemon(targetInfo.slot, targetInfo.isOwner) -- For Low Kick weight calcs and OHKO moves
-	local gachaMonViewOverride = (Options["Show card pack on screen after capturing a GachaMon"] and GachaMonData.hasNewestMonToShow())
 
 	if viewedPokemon == nil or viewedPokemon.pokemonID == 0 or not Program.isValidMapLocation() then
 		viewedPokemon = Tracker.getDefaultPokemon()
 		data.x.infoIsHidden = true
 	elseif PokemonData.isGameDataRandomized() then
-		if not Tracker.Data.hasCheckedSummary or gachaMonViewOverride then
+		if not Tracker.Data.hasCheckedSummary then
 			-- Don't display any spoilers about the stats/moves, but still show the pokemon icon, name, and level
 			local defaultPokemon = Tracker.getDefaultPokemon()
 			defaultPokemon.pokemonID = viewedPokemon.pokemonID
@@ -341,13 +340,6 @@ function DataHelper.buildTrackerScreenDisplay(forceView)
 		data.x.healnum = math.min(99, Program.GameData.Items.healingTotal or 0) -- Max of 99
 	end
 	data.x.pcheals = Tracker.Data.centerHeals
-
-	local gachamon = viewedPokemon and GachaMonData.getAssociatedRecentMon(viewedPokemon)
-	if gachamon and not data.x.infoIsHidden then
-		data.x.gachamonStars = gachamon:getStars()
-	else
-		data.x.gachamonStars = 0
-	end
 
 	data.x.route = Constants.BLANKLINE
 	if RouteData.hasRoute(Program.GameData.mapId) then

@@ -138,7 +138,6 @@ FileManager.LuaCode = {
 	{ name = "PokemonRevoData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "PokemonRevoData.lua", },
 	{ name = "MoveData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "MoveData.lua", },
 	{ name = "Gen1DataAdapter", filepath = "gen1" .. FileManager.slash .. "DataAdapter.lua", },
-	{ name = "AbilityData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "AbilityData.lua", },
 	{ name = "MiscData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "MiscData.lua", },
 	{ name = "Gen1ItemData", filepath = "gen1" .. FileManager.slash .. "ItemData.lua", },
 	{ name = "RouteData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "RouteData.lua", },
