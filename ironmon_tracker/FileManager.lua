@@ -117,6 +117,7 @@ FileManager.LuaCode = {
 	{ name = "GachaMonFileManager", filepath = "GachaMonFileManager.lua", },
 	-- Data files
 	{ name = "PokemonData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "PokemonData.lua", },
+	{ name = "Gen1SpeciesMap", filepath = "gen1" .. FileManager.slash .. "SpeciesMap.lua", },
 	{ name = "PokemonRevoData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "PokemonRevoData.lua", },
 	{ name = "MoveData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "MoveData.lua", },
 	{ name = "Gen1DataAdapter", filepath = "gen1" .. FileManager.slash .. "DataAdapter.lua", },
