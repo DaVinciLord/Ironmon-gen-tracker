@@ -121,6 +121,7 @@ ScreenResources{
 		StatHP = "HP", -- NEEDS TRANSLATION
 		StatATK = "ATK", -- NEEDS TRANSLATION
 		StatDEF = "DEF", -- NEEDS TRANSLATION
+		StatSpecial = "SPE",
 		StatSPA = "SPA", -- NEEDS TRANSLATION
 		StatSPD = "SPD", -- NEEDS TRANSLATION
 		StatSPE = "SPE", -- NEEDS TRANSLATION

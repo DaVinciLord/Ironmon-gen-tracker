@@ -124,7 +124,7 @@ function Gen1PokemonReader.readBattlePokemon(startAddress, speciesResolver)
 			spe = readBE16(startAddress + 21),
 			special = special,
 		},
-		statStages = { atk = 7, def = 7, spe = 7, special = 7, acc = 7, eva = 7 },
+		statStages = { atk = 6, def = 6, spe = 6, special = 6, acc = 6, eva = 6 },
 		moves = readMoves(startAddress + 8, startAddress + 25),
 	}
 end

@@ -50,8 +50,8 @@ for offset, value in ipairs({ 8, 7, 6, 9, 5, 10 }) do
 	bytes[GameSettings.playerStatStages + 0x14 + offset - 1] = 14 - value
 end
 Gen1BattleRuntime.updateStatStages()
-assert(own.statStages.atk == 8 and own.statStages.special == 9 and own.statStages.eva == 10)
-assert(enemy.statStages.atk == 6 and enemy.statStages.special == 5 and enemy.statStages.eva == 4)
+assert(own.statStages.atk == 7 and own.statStages.special == 8 and own.statStages.eva == 9)
+assert(enemy.statStages.atk == 5 and enemy.statStages.special == 4 and enemy.statStages.eva == 3)
 
 bytes[GameSettings.battleState] = 0
 Gen1BattleRuntime.updateBattleStatus()

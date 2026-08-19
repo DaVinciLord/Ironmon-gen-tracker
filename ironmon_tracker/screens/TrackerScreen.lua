@@ -1377,37 +1377,24 @@ function TrackerScreen.drawStatsArea(data)
 		if data.x.extras.lowerright then gui.drawPixel(x + w - 1, y + h - 1, borderColor) end
 	end
 
-	-- Draw the six primary stats
+	-- Draw the five Gen 1 stats (Special is not split into Sp. Atk / Sp. Def)
 	local statLabels = {
 		["HP"] = Resources.TrackerScreen.StatHP,
 		["ATK"] = Resources.TrackerScreen.StatATK,
 		["DEF"] = Resources.TrackerScreen.StatDEF,
-		["SPA"] = Resources.TrackerScreen.StatSPA,
-		["SPD"] = Resources.TrackerScreen.StatSPD,
+		["SPECIAL"] = Resources.TrackerScreen.StatSpecial,
 		["SPE"] = Resources.TrackerScreen.StatSPE,
 	}
 	for _, statKey in ipairs(Constants.OrderedLists.STATSTAGES) do
 		local textColor = Theme.COLORS["Default text"]
-		local natureSymbol = ""
-
-		if Battle.isViewingOwn then
-			if statKey == data.p.positivestat then
-				textColor = Theme.COLORS["Positive text"]
-				natureSymbol = "+"
-			elseif statKey == data.p.negativestat then
-				textColor = Theme.COLORS["Negative text"]
-				natureSymbol = Constants.BLANKLINE
-			end
-		end
 
 		local langOffset = 0
 		if Resources.currentLanguage == Resources.Languages.JAPANESE then
 			langOffset = 3
 		end
 
-		-- Draw stat label and nature symbol next to it
+		-- Draw stat label. Natures do not exist in Generation 1.
 		Drawing.drawText(statOffsetX, statOffsetY, statLabels[statKey:upper()], textColor, shadowcolor)
-		Drawing.drawText(statOffsetX + 16 + langOffset, statOffsetY - 1, natureSymbol, textColor, nil, 5, Constants.Font.FAMILY)
 
 		-- Draw stat battle increases/decreases, stages range from -6 to +6
 		if Battle.inActiveBattle() then

@@ -18,13 +18,18 @@ local function moveBelongsToPokemon(pokemon, moveId)
 end
 
 local function readStages(startAddress)
+	-- RBY stores stat modifiers with 7 as neutral. The inherited UI uses 6
+	-- as neutral, so normalize once at the memory boundary.
+	local function normalized(offset)
+		return math.max(0, (Memory.readbyte(startAddress + offset) or 7) - 1)
+	end
 	return {
-		atk = Memory.readbyte(startAddress),
-		def = Memory.readbyte(startAddress + 1),
-		spe = Memory.readbyte(startAddress + 2),
-		special = Memory.readbyte(startAddress + 3),
-		acc = Memory.readbyte(startAddress + 4),
-		eva = Memory.readbyte(startAddress + 5),
+		atk = normalized(0),
+		def = normalized(1),
+		spe = normalized(2),
+		special = normalized(3),
+		acc = normalized(4),
+		eva = normalized(5),
 	}
 end
 

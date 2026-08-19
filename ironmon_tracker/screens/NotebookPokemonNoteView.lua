@@ -306,8 +306,7 @@ function NotebookPokemonNoteView.buildScreen(pokemonID)
 		["hp"] = Resources.TrackerScreen.StatHP,
 		["atk"] = Resources.TrackerScreen.StatATK,
 		["def"] = Resources.TrackerScreen.StatDEF,
-		["spa"] = Resources.TrackerScreen.StatSPA,
-		["spd"] = Resources.TrackerScreen.StatSPD,
+		["special"] = Resources.TrackerScreen.StatSpecial,
 		["spe"] = Resources.TrackerScreen.StatSPE,
 	}
 	-- The box is replaced with the real base stat if playing Open Book Play Mode

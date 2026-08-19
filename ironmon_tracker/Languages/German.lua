@@ -121,6 +121,7 @@ ScreenResources{
 		StatHP = "KP", --StatHP english:HP
 		StatATK = "ANG", --StatATK english:ATK
 		StatDEF = "VER", --StatDEF english:DEF
+		StatSpecial = "SPEZ",
 		StatSPA = "SPA", --StatSPA english:SPA
 		StatSPD = "SPV", --StatSPD english:SPD
 		StatSPE = "INI", --StatSPE english:SPE

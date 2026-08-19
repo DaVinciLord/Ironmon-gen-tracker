@@ -121,6 +121,7 @@ ScreenResources{
 		StatHP = "HP",
 		StatATK = "ATK",
 		StatDEF = "DEF",
+		StatSpecial = "SPC",
 		StatSPA = "SPA",
 		StatSPD = "SPD",
 		StatSPE = "SPE",

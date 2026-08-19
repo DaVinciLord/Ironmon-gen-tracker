@@ -174,9 +174,8 @@ function DataHelper.buildTrackerScreenDisplay(forceView)
 	data.p.friendship = viewedPokemon.friendship or PokemonData.Values.DefaultBaseFriendship -- Current value
 	data.p.friendshipBase = pokemonInternal.friendshipBase or PokemonData.Values.DefaultBaseFriendship -- The starting value of the Pokémon
 
-	-- Add: Stats, Stages, and Nature
+	-- Add native Gen 1 stats and battle stages. Gen 1 has no natures.
 	data.p.gender = viewedPokemon.gender
-	data.p.nature = viewedPokemon.nature
 	data.p.positivestat = ""
 	data.p.negativestat = ""
 	data.p.stages = {}
@@ -188,13 +187,6 @@ function DataHelper.buildTrackerScreenDisplay(forceView)
 			end
 		end
 		data.p.stages[statKey] = viewedPokemon.statStages[statKey] or 6
-
-		local natureMultiplier = Utils.getNatureMultiplier(statKey, data.p.nature)
-		if natureMultiplier == 1.1 then
-			data.p.positivestat = statKey
-		elseif natureMultiplier == 0.9 then
-			data.p.negativestat = statKey
-		end
 	end
 	data.p.stages.acc = viewedPokemon.statStages.acc or 6
 	data.p.stages.eva = viewedPokemon.statStages.eva or 6

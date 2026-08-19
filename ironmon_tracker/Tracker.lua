@@ -441,7 +441,7 @@ end
 
 --- If the Pokemon is being tracked, return information on statmarkings; otherwise default stat values = 1
 --- @param pokemonID number
---- @return table statMarkings A table containing markings for all six stats
+--- @return table statMarkings A table containing markings for all five Gen 1 stats
 function Tracker.getStatMarkings(pokemonID)
 	local trackedPokemon = Tracker.getOrCreateTrackedPokemon(pokemonID, false)
 	local markings = trackedPokemon.sm or {}
@@ -449,8 +449,9 @@ function Tracker.getStatMarkings(pokemonID)
 		hp = markings.hp or 0,
 		atk = markings.atk or 0,
 		def = markings.def or 0,
-		spa = markings.spa or 0,
-		spd = markings.spd or 0,
+		-- Preserve old notes made before the Gen 1 migration. Prefer the
+		-- explicit Special mark, then either of the former split stats.
+		special = markings.special or markings.spa or markings.spd or 0,
 		spe = markings.spe or 0,
 	}
 end

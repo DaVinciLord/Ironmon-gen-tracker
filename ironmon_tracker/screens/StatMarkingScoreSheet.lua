@@ -118,7 +118,7 @@ local GRIDROW = {
 	COLS_X = { 1, 35, 56, 77, 98, 119 }
 }
 
-local STATS_ORDERED = { "hp", "atk", "def", "spa", "spd" } -- speed is excluded due to notetaking
+local STATS_ORDERED = { "hp", "atk", "def", "special" } -- speed is excluded due to notetaking
 
 local function hasMarkings()
 	return (SCREEN.Data.totalMarkings or 0) > 0
@@ -348,11 +348,8 @@ function StatMarkingScoreSheet.buildScreen()
 				end
 			end
 			if nonSpeedMarked then
-				-- Certain abilities modify how impactful the stats can be
-				local firstAbilityId = PokemonData.getAbilityId(id, 0)
 				local pokemonInfo = {
 					id = id,
-					abilityId = firstAbilityId,
 					statMarkings = trackedPokemon.sm,
 				}
 				table.insert(SCREEN.Data.pokemon, pokemonInfo)
@@ -430,7 +427,7 @@ function StatMarkingScoreSheet.buildScreen()
 			local gradeColor, gradeSymbol
 			if not statMarking then
 				gradeColor = SCREEN.Colors.text
-			elseif SCREEN.isMarkingAccurate(statMarking, baseStats[statKey], statKey, pokemonInfo.abilityId) then
+			elseif SCREEN.isMarkingAccurate(statMarking, baseStats[statKey]) then
 				gradeScore = gradeScore + 1
 				gradeColor = SCREEN.Colors.positive
 				gradeSymbol = SCREEN.PixelImages.SMALL_CHECK
@@ -463,10 +460,6 @@ function StatMarkingScoreSheet.buildScreen()
 					end
 					local centerOffset = Utils.getCenteredTextX(baseStatText, GRIDROW.CELL_W) - 2
 					Drawing.drawTransparentTextbox(x + centerOffset, y, baseStatText, textColor, bgColor, shadowcolor)
-					-- Draw an indicator that this stat is being influenced by the Pokémon's ability
-					if SCREEN.checkAbilityException(statKey, pokemonInfo.abilityId) ~= nil then
-						Drawing.drawChevronsVerticalIntensity(x + 1, y - 3, 1, 1, 4, 2, 1, 2)
-					end
 				end,
 			}
 			table.insert(buttonRow.buttonList, statBtn)
@@ -492,24 +485,11 @@ function StatMarkingScoreSheet.buildScreen()
 	SCREEN.Data.gradeLetter = SCREEN.getGradePixelImage(percentile)
 end
 
-function StatMarkingScoreSheet.checkAbilityException(statKey, abilityId)
-	if statKey == "atk" and (abilityId == AbilityData.Values.HugePowerId or abilityId == AbilityData.Values.PurePowerId) then
-		return "HugePower"
-	elseif statKey == "atk" and abilityId == AbilityData.Values.HustleId then
-		return "Hustle"
-	elseif statKey == "spd" and abilityId == AbilityData.Values.ThickFatId then
-		return "ThickFat"
-	end
-	return nil
-end
-
 ---Returns true if the `statMarking` for a given `baseStat` value is within its range [and margin of error], inclusive
 ---@param statMarking string
 ---@param baseStat number
----@param statKey? string Optional, pair with `abilityId` to check for abilities that would affect the marking accuracy
----@param abilityId? number Optional
 ---@return boolean
-function StatMarkingScoreSheet.isMarkingAccurate(statMarking, baseStat, statKey, abilityId)
+function StatMarkingScoreSheet.isMarkingAccurate(statMarking, baseStat)
 	local range = SCREEN.StatMarkingRanges[statMarking or false]
 	if not range then
 		return false
@@ -517,17 +497,7 @@ function StatMarkingScoreSheet.isMarkingAccurate(statMarking, baseStat, statKey,
 	local minAllowed = range.min - SCREEN.StatMarkingRanges.MarginOfError
 	local maxAllowed = range.max + SCREEN.StatMarkingRanges.MarginOfError
 
-	local alternativeSuccess = false
-	if SCREEN.checkAbilityException(statKey, abilityId) == "HugePower" then
-		baseStat = math.min(baseStat * 2, 255) -- treat it as though it's doubled, max 255
-	elseif SCREEN.checkAbilityException(statKey, abilityId) == "Hustle" then
-		baseStat = math.min(baseStat * 1.5, 255) -- treat it as though it's boosted, max 255
-	elseif SCREEN.checkAbilityException(statKey, abilityId) == "ThickFat" then
-		local altBaseStat = math.min(baseStat * 2, 255) -- treat it as though it's doubled, max 255
-		alternativeSuccess = (altBaseStat >= minAllowed) and (altBaseStat <= maxAllowed)
-	end
-
-	return (baseStat >= minAllowed) and (baseStat <= maxAllowed) or alternativeSuccess
+	return (baseStat >= minAllowed) and (baseStat <= maxAllowed)
 end
 
 ---Returns a pixel-image table that represents a letter grade from A to D.

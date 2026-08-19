@@ -121,6 +121,7 @@ ScreenResources{
 		StatHP = "ＨＰ",
 		StatATK = "攻撃",
 		StatDEF = "防御",
+		StatSpecial = "特殊",
 		StatSPA = "特攻",
 		StatSPD = "特防",
 		StatSPE = "素早",
