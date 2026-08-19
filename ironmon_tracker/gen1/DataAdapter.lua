@@ -129,7 +129,6 @@ function Gen1DataAdapter.initializePokemonData()
 	local bulbasaur = Gen1DataAdapter.readPokemonInfo(1)
 	PokemonData.IsRand.types = bulbasaur.types[1] ~= PokemonData.Types.GRASS or bulbasaur.types[2] ~= PokemonData.Types.POISON
 	PokemonData.IsRand.stats = bulbasaur.stats.hp ~= 45 or bulbasaur.stats.atk ~= 49 or bulbasaur.stats.def ~= 49
-	PokemonData.IsRand.abilities = false
 	PokemonData.IsRand.friendshipBase = false
 	PokemonData.IsRand.expYield = false
 

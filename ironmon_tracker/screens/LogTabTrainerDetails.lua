@@ -115,15 +115,6 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 						self.isSelected = true
 						return
 					end
-				elseif LogSearchScreen.currentFilter == LogSearchScreen.FilterBy.PokemonAbility then
-					local pokemonLog = RandomizerLog.Data.Pokemon[partyPokemon.id] or {}
-					for _, abilityId in pairs(pokemonLog.Abilities or {}) do
-						local abilityText = AbilityData.Abilities[abilityId].name
-						if Utils.containsText(abilityText, LogSearchScreen.searchText, true) then
-							self.isSelected = true
-							return
-						end
-					end
 				end
 			end,
 			getIconId = function(self) return self.pokemonID, SpriteData.Types.Idle end,

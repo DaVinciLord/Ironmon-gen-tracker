@@ -56,28 +56,6 @@ function DataHelper.findMoveId(name, threshold)
 	return id or tonumber(MoveData.BlankMove.id) or 0, distance
 end
 
----Searches for an Ability by name, finds the best match; returns 0 if no good match
----@param name string?
----@param threshold number? Default threshold distance of 3
----@return number abilityId
----@return number distance The Levenshtein distance between search word and matched word
-function DataHelper.findAbilityId(name, threshold)
-	threshold = threshold or 3
-	if Utils.isNilOrEmpty(name) then
-		return AbilityData.DefaultAbility.id, -1
-	end
-
-	-- Format list of Abilities as id, name pairs
-	local abilityNames = {}
-	for id = 1, AbilityData.getTotal(), 1 do
-		local ability = AbilityData.Abilities[id] or {}
-		abilityNames[id] = Utils.toLowerUTF8(ability.name)
-	end
-
-	local id, _, distance = Utils.getClosestWord(Utils.toLowerUTF8(name), abilityNames, threshold)
-	return id or AbilityData.DefaultAbility.id, distance
-end
-
 ---Searches for a Route by name, finds the best match; returns 0 if no good match
 ---@param name string?
 ---@param threshold number? Default threshold distance of 5!
@@ -489,23 +467,6 @@ function DataHelper.buildMoveInfoDisplay(moveId)
 	return data
 end
 
-function DataHelper.buildAbilityInfoDisplay(abilityId)
-	local data = {}
-	data.a = {} -- data about the Ability itself
-	data.x = {} -- misc data to display
-
-	local ability = AbilityData.isValid(abilityId) and AbilityData.Abilities[abilityId] or AbilityData.DefaultAbility
-
-	data.a.id = ability.id or 0
-	data.a.name = ability.name or Constants.BLANKLINE
-	data.a.description = ability.description or Constants.BLANKLINE
-	data.a.descriptionEmerald = ability.descriptionEmerald or Constants.BLANKLINE
-
-	data.x = nil -- Currently unused
-
-	return data
-end
-
 function DataHelper.buildRouteInfoDisplay(routeId)
 	local data = {}
 	data.r = {} -- data about the Route itself
@@ -573,8 +534,6 @@ function DataHelper.buildPokemonLogDisplay(pokemonID)
 		pokemonLog.Types[2] or pokemonInternal.types[2],
 	}
 	-- The following are all Randomizer Log information
-	data.p.helditems = pokemonLog.HeldItems or Constants.BLANKLINE -- unsure how this is formatted
-
 	-- The Pokemon's randomized base stats
 	for _, statKey in ipairs(Constants.OrderedLists.STATSTAGES) do
 		if pokemonLog.BaseStats ~= nil then

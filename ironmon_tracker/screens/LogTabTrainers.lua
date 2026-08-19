@@ -182,15 +182,6 @@ function LogTabTrainers.buildPagedButtons()
 							return true
 						end
 					end
-				elseif LogSearchScreen.currentFilter == LogSearchScreen.FilterBy.PokemonAbility then
-					for _, partyMon in ipairs(trainerLog.party or {}) do
-						for _, abilityId in pairs(RandomizerLog.Data.Pokemon[partyMon.pokemonID].Abilities or {}) do
-							local abilityText = AbilityData.Abilities[abilityId].name
-							if Utils.containsText(abilityText, LogSearchScreen.searchText, true) then
-								return true
-							end
-						end
-					end
 				elseif LogSearchScreen.currentFilter == LogSearchScreen.FilterBy.PokemonMove then
 					for _, partyMon in ipairs(trainerLog.party or {}) do
 						for _, moveId in ipairs(partyMon.moveIds or {}) do

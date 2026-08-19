@@ -64,7 +64,7 @@ RandomizerLog.Sectors = {
 		HeaderPattern = RandomizerLog.Patterns.getSectorHeaderPattern("Trainers Pokemon"),
 		-- Matches: trainer_num, trainername, party
 		NextTrainerPattern = "^#(%d+)%s%(([^=>]+)%s*=?>?%s*(.*)%)[^%s]*%s%-%s(.*)",
-		-- Matches: partypokemon (pokemon name with held item and level info)
+		-- Matches a party Pokémon name and level.
 		PartyPattern = "([^,]+)",
 		-- Matches: pokemon and helditem[optional], level
 		PartyPokemonPattern = "%s*(.-)%sLv(%d+)",
@@ -223,7 +223,6 @@ function RandomizerLog.initBlankData()
 		if id <= 251 or id >= 277 then -- celebi / treecko
 			RandomizerLog.Data.Pokemon[id] = {
 				Types = {},
-				Abilities = {},
 			}
 		end
 	end
@@ -847,7 +846,6 @@ end
 
 function RandomizerLog.setupMappings()
 	local allMovesSource = MoveData.Moves
-	local allAbilitiesSource = AbilityData.Abilities
 
 	-- If the game's language and tracker's display language don't match, load relevant Resources using the game language
 	if RandomizerLog.areLanguagesMismatched() then
@@ -861,12 +859,6 @@ function RandomizerLog.setupMappings()
 			end
 		end
 
-		if languageGameData.Game.AbilityNames then
-			allAbilitiesSource = {}
-			for id, name in ipairs(languageGameData.Game.AbilityNames) do
-				table.insert(allAbilitiesSource, { id = id, name = name, })
-			end
-		end
 	end
 
 	-- Pokémon names -> IDs
@@ -878,15 +870,6 @@ function RandomizerLog.setupMappings()
 		if moveInfo.id ~= nil and not Utils.isNilOrEmpty(moveInfo.name) then
 			local formattedName = RandomizerLog.formatInput(moveInfo.name) or ""
 			RandomizerLog.MoveNameToIdMap[formattedName] = tonumber(moveInfo.id) or -1
-		end
-	end
-
-	-- Ability names -> IDs
-	RandomizerLog.AbilityNameToIdMap = {}
-	for _, abilityInfo in ipairs(allAbilitiesSource) do
-		if abilityInfo.id ~= nil and not Utils.isNilOrEmpty(abilityInfo.name) then
-			local formattedName = RandomizerLog.formatInput(abilityInfo.name) or ""
-			RandomizerLog.AbilityNameToIdMap[formattedName] = abilityInfo.id
 		end
 	end
 
@@ -1540,7 +1523,6 @@ end
 function RandomizerLog.removeMappings()
 	RandomizerLog.PokemonNameToIdMap = nil
 	RandomizerLog.MoveNameToIdMap = nil
-	RandomizerLog.AbilityNameToIdMap = nil
 	RandomizerLog.RouteSetNumToIdMap = nil
 	collectgarbage()
 end

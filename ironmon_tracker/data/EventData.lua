@@ -54,18 +54,6 @@ local function getMoveOrDefault(input)
 		return nil
 	end
 end
-local function getAbilityOrDefault(input)
-	local id
-	if not Utils.isNilOrEmpty(input, true) then
-		id = DataHelper.findAbilityId(input)
-	else
-		local pokemon = Tracker.getPokemon(1, true) or {}
-		if PokemonData.isValid(pokemon.pokemonID) then
-			id = PokemonData.getAbilityId(pokemon.pokemonID, pokemon.abilityNum)
-		end
-	end
-	return AbilityData.Abilities[id or false]
-end
 local function getRouteIdOrDefault(input)
 	if not Utils.isNilOrEmpty(input, true) then
 		local id = DataHelper.findRouteId(input)
@@ -206,23 +194,6 @@ function EventData.getMove(params)
 		Utils.firstToUpperEachWord(move.category),
 		OUTPUT_CHAR)
 	return buildResponse(prefix, info)
-end
-
----@param params string?
----@return string response
-function EventData.getAbility(params)
-	local ability = getAbilityOrDefault(params)
-	if not ability then
-		return buildDefaultResponse(params)
-	end
-
-	local info = {}
-	table.insert(info, string.format("%s: %s", ability.name, ability.description))
-	-- Emerald only
-	if GameSettings.game == 2 and ability.descriptionEmerald then
-		table.insert(info, string.format("%s: %s", Resources.InfoScreen.LabelEmeraldAbility, ability.descriptionEmerald))
-	end
-	return buildResponse(OUTPUT_CHAR, info)
 end
 
 ---@param params string?
@@ -920,24 +891,15 @@ end
 ---@param params string?
 ---@return string response
 function EventData.getSearch(params)
-	local helpResponse = "Search tracked info for a Pokémon, move, or ability."
+	local helpResponse = "Search tracked info for a Pokémon or move."
 	if Utils.isNilOrEmpty(params, true) then
 		return buildResponse(params, helpResponse)
 	end
 
-	-- Determine if the search is for an ability, move, or pokemon
+	-- Determine if the search is for a move or Pokémon.
 	local function determineSearchMode(input)
 		local searchMode, searchId, closestDistance = nil, -1, 9999
-		local tempId, tempDist = DataHelper.findAbilityId(input, 4)
-		if (tempId or 0) and tempDist < closestDistance then
-			searchMode = "ability"
-			searchId = tempId
-			closestDistance = tempDist
-			if closestDistance == 0 then -- exact match
-				return searchMode, searchId
-			end
-		end
-		tempId, tempDist = DataHelper.findMoveId(input, 4)
+		local tempId, tempDist = DataHelper.findMoveId(input, 4)
 		if (tempId or 0) and tempDist < closestDistance then
 			searchMode = "move"
 			searchId = tempId
@@ -961,7 +923,7 @@ function EventData.getSearch(params)
 	local searchMode, searchId = determineSearchMode(params)
 	if not searchMode then
 		local prefix = string.format("%s %s", params, OUTPUT_CHAR)
-		return buildResponse(prefix, "Can't find a Pokémon, move, or ability with that name.")
+		return buildResponse(prefix, "Can't find a Pokémon or move with that name.")
 	end
 
 	local info = {}
@@ -969,16 +931,6 @@ function EventData.getSearch(params)
 		local pokemon = PokemonData.Pokemon[searchId]
 		if not pokemon then
 			return buildDefaultResponse(params)
-		end
-		-- Tracked Abilities
-		local trackedAbilities = {}
-		for _, ability in ipairs(Tracker.getAbilities(pokemon.pokemonID) or {}) do
-			if AbilityData.isValid(ability.id) then
-				table.insert(trackedAbilities, AbilityData.Abilities[ability.id].name)
-			end
-		end
-		if #trackedAbilities > 0 then
-			table.insert(info, string.format("%s: %s", "Abilities", table.concat(trackedAbilities, ", ")))
 		end
 		-- Tracked Stat Markings
 		local statMarksToAdd = {}
@@ -1073,35 +1025,6 @@ function EventData.getSearch(params)
 			table.insert(info, string.format("(+%s more Pokémon)", extra))
 		end
 		local prefix = string.format("%s %s %s Pokémon:", move.name, OUTPUT_CHAR, #foundMons)
-		return buildResponse(prefix, info, ", ")
-	elseif searchMode == "ability" or searchMode == "abilities" then
-		local ability = AbilityData.Abilities[searchId]
-		if not ability then
-			return buildDefaultResponse(params)
-		end
-		local foundMons = {}
-		for pokemonID, trackedPokemon in pairs(Tracker.Data.allPokemon or {}) do
-			for _, trackedAbility in ipairs(trackedPokemon.abilities or {}) do
-				if trackedAbility.id == ability.id then
-					local pokemon = PokemonData.Pokemon[pokemonID]
-					table.insert(foundMons, { id = pokemonID, bst = tonumber(pokemon.bst or "0"), notes = pokemon.name })
-					break
-				end
-			end
-		end
-		table.sort(foundMons, function(a,b) return a.bst > b.bst or (a.bst == b.bst and a.id < b.id) end)
-		local extra = 0
-		for _, mon in ipairs(foundMons) do
-			if #info < MAX_ITEMS then
-				table.insert(info, mon.notes)
-			else
-				extra = extra + 1
-			end
-		end
-		if extra > 0 then
-			table.insert(info, string.format("(+%s more Pokémon)", extra))
-		end
-		local prefix = string.format("%s %s %s Pokémon:", ability.name, OUTPUT_CHAR, #foundMons)
 		return buildResponse(prefix, info, ", ")
 	end
 	-- Unused
@@ -1290,122 +1213,6 @@ end
 
 ---@param params string?
 ---@return string response
-function EventData.getGachaMon(params)
-	local prefix = string.format("%s %s", "GachaMon", OUTPUT_CHAR)
-	local info = {}
-
-	if AnimationManager.GachaMonAnims.PackOpening ~= nil then
-		local msg = "Please wait until the GachaMon card pack is opened."
-		return string.format("%s %s", prefix, msg)
-	end
-
-	local gachamon ---@type IGachaMon|nil
-	if Utils.containsText(params, "current", true) and GachaMonData.playerViewedMon then
-		gachamon = GachaMonData.playerViewedMon
-	elseif not Utils.isNilOrEmpty(params, true) then
-		local id = DataHelper.findPokemonId(params)
-		local pokemon = PokemonData.getNatDexCompatible(id)
-		-- Check Recent GachaMons for any matching names, just get "first" one doesn't matter really
-		if pokemon then
-			for _, gmon in pairs(GachaMonData.RecentMons or {}) do
-				if gmon.PokemonId == id then
-					gachamon = gmon
-					break
-				end
-			end
-		end
-	else
-		local pokemon = TrackerAPI.getPlayerPokemon() or {}
-		gachamon = GachaMonData.getAssociatedRecentMon(pokemon)
-	end
-	if not gachamon then
-		return buildDefaultResponse(params)
-	end
-
-	-- EXAMPLE OUTPUT
-	-- GachaMon > Milotic - Rock Head | 4 Stars (60 Points) | 7000 BP | Lv.5 Stats: 30/8/14/18/20/6 | SolarBeam, Hydro Pump, LeafBlade, Seismic Toss
-
-	local pokemonInternal = PokemonData.getNatDexCompatible(gachamon.PokemonId)
-	local abilityInternal = AbilityData.Abilities[gachamon.AbilityId or 0] or AbilityData.DefaultAbility
-	local pokemonName = pokemonInternal.name
-	if gachamon:getIsShiny() == 1 then
-		pokemonName = string.format("* %s *", pokemonName)
-	end
-	local nameAndAbility = string.format("%s - %s", pokemonName, abilityInternal.name)
-	table.insert(info, nameAndAbility)
-
-	local numStars = gachamon:getStars() or 0
-	local starsText = string.format("%s %s (%s %s)",
-		numStars > 5 and "5+" or numStars,
-		Resources[GachaMonOverlay.Key].WordStars,
-		gachamon.RatingScore or 0,
-		Resources[GachaMonOverlay.Key].WordPoints
-	)
-	table.insert(info, starsText)
-
-	local bpText = string.format("%s BP", gachamon.BattlePower or 0)
-	table.insert(info, bpText)
-
-	local stats = gachamon:getStats()
-	local statValues = string.format("%s/%s/%s/%s/%s/%s", stats.hp or 0, stats.atk or 0, stats.def or 0, stats.spa or 0, stats.spd or 0, stats.spe or 0)
-	local levelAndStats = string.format("%s.%s Stats: %s", Resources.TrackerScreen.LevelAbbreviation, gachamon.Level, statValues)
-	table.insert(info, levelAndStats)
-
-	local moveNames = {}
-	local moveIds = gachamon:getMoveIds()
-	for _, moveId in ipairs(moveIds or {}) do
-		local move = MoveData.getNatDexCompatible(moveId)
-		if move ~= MoveData.BlankMove then
-			table.insert(moveNames, move.name)
-		end
-	end
-	local moveList = table.concat(moveNames, ", ")
-	table.insert(info, moveList)
-
-	return buildResponse(prefix, info)
-end
-
----@param params string?
----@return string response
-function EventData.getGachaDex(params)
-	-- TODO: Might add params to do some other fancy lookups later
-	local prefix = string.format("%s %s", "GachaDex", OUTPUT_CHAR)
-	local info = {}
-
-	-- EXAMPLE OUTPUT
-	-- GachaDex > 56% collection complete | GachaMons in collection: 159/386 | Seen: 221
-
-	local DD = GachaMonData.DexData or {}
-
-	local totalCards = #GachaMonData.Collection
-	if totalCards > 0 then
-		local totalCardsText = string.format("%s: %s",
-			"Total Cards",
-			totalCards
-		)
-		table.insert(info, totalCardsText)
-	end
-
-	local totalDex = PokemonData.getTotal() - 25
-	local totalCompletionText = string.format("%s: %s/%s (%s%%)",
-		"Dex Collected",
-		DD.NumCollected or 0,
-		totalDex,
-		math.floor(DD.PercentageComplete or 0)
-	)
-	table.insert(info, totalCompletionText)
-
-	local numSeen = DD.NumSeen or 0
-	local seenText = string.format("%s: %s/%s (%s%%)",
-		"Dex Seen",
-		numSeen,
-		totalDex,
-		DD.PercentageSeen or math.floor(numSeen / totalDex * 100 + 0.5)
-	)
-	table.insert(info, seenText)
-
-	return buildResponse(prefix, info)
-end
 
 ---@param params string?
 ---@return string response

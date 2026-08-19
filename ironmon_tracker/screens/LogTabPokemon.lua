@@ -111,13 +111,6 @@ function LogTabPokemon.buildPagedButtons()
 					if Utils.containsText(self:getText(), LogSearchScreen.searchText, true) then
 						return true
 					end
-				elseif LogSearchScreen.currentFilter == LogSearchScreen.FilterBy.PokemonAbility then
-					for _, abilityId in pairs(pokemon.Abilities) do
-						local abilityText = AbilityData.Abilities[abilityId].name
-						if Utils.containsText(abilityText, LogSearchScreen.searchText, true) then
-							return true
-						end
-					end
 				elseif LogSearchScreen.currentFilter == LogSearchScreen.FilterBy.PokemonMove then
 					for _, move in pairs(pokemon.MoveSet) do
 						local moveText = move.name -- potentially a custom move name

@@ -829,7 +829,6 @@ function LogTabPokemonDetails.drawTab()
 	local nameText = Utils.toUpperUTF8(pokemonName)
 	Drawing.drawTransparentTextbox(LogOverlay.TabBox.x + 3, LogOverlay.TabBox.y + 2, nameText, highlightColor, fillColor, shadowcolor)
 
-	-- data.p.helditems -- unused
 
 	LogTabPokemonDetails.drawStatGraph(data, shadowcolor)
 end

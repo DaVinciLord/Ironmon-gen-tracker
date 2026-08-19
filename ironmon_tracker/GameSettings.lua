@@ -416,7 +416,6 @@ function GameSettings.importTrackerOverridesFromJson(filepath)
 		["BattleDetailsScreen"] = BattleDetailsScreen,
 		["PokemonData"] = PokemonData,
 		["MoveData"] = MoveData,
-		["AbilityData"] = AbilityData,
 	}
 
 	xpcall(function()

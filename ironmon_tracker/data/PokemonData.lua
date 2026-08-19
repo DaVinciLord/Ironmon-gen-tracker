@@ -19,12 +19,10 @@ PokemonData.Addresses = {
 	offsetExpYield = 0x9,
 	offsetGenderRatio = 0x10,
 	offsetBaseFriendship = 0x12,
-	offsetAbilities = 0x16,
 	offsetLevelUpMoveId = 0x0,
 	offsetLevelUpMoveLv = 0x9,
 
 	sizeofExpYield = 1, -- Number of bytes for the experience yield section
-	sizeofAbilityInBytes = 1, -- Number of bytes for ONE ability number (each Pokémon has two total)
 	sizeofLevelUpLearnset = 4,
 	sizeofLevelUpMove = 2,
 	sizeofLevelUpMoveId = 9,
@@ -35,7 +33,6 @@ PokemonData.Addresses = {
 
 PokemonData.IsRand = {
 	types = false,
-	abilities = false,
 	stats = false,
 	moveLearnSet = false,
 	friendshipBase = false,
@@ -236,7 +233,6 @@ function PokemonData.buildData(forced)
 	-- 	return
 	-- end
 	local expReadFunc = Memory.getReadFunc(PokemonData.Addresses.sizeofExpYield)
-	local abilityReadFunc = Memory.getReadFunc(PokemonData.Addresses.sizeofAbilityInBytes)
 	for id = 1, PokemonData.getTotal(), 1 do
 		local pokemon = PokemonData.Pokemon[id] or PokemonData.BlankPokemon
 		pokemon.pokemonID = id
@@ -278,13 +274,6 @@ function PokemonData.buildData(forced)
 
 			-- Base Friendship (1 byte)
 			pokemon.friendshipBase = Memory.readbyte(addrOffset + PokemonData.Addresses.offsetBaseFriendship)
-
-			-- Abilities ([2] bytes)
-			local abilityAddr = addrOffset + PokemonData.Addresses.offsetAbilities
-			pokemon.abilities = {
-				abilityReadFunc(abilityAddr),
-				abilityReadFunc(abilityAddr + PokemonData.Addresses.sizeofAbilityInBytes)
-			}
 		end
 	end
 end
@@ -308,19 +297,6 @@ function PokemonData.checkIfDataIsRandomized()
 		PokemonData.IsRand.types = true
 	elseif shuckle.types[1] ~= PokemonData.Types.BUG or shuckle.types[2] ~= PokemonData.Types.ROCK then
 		PokemonData.IsRand.types = true
-	end
-
-	-- Check for randomized Pokémon abilities
-	if bulbasaur.abilities[1] ~= AbilityData.Values.OvergrowId then
-		PokemonData.IsRand.abilities = true
-	elseif bulbasaur.abilities[2] ~= AbilityData.Values.OvergrowId and bulbasaur.abilities[2] ~= 0 then -- 2nd ability can be empty
-		PokemonData.IsRand.abilities = true
-	elseif lapras.abilities[1] ~= AbilityData.Values.WaterAbsorbId or lapras.abilities[2] ~= AbilityData.Values.ShellArmorId then
-		PokemonData.IsRand.abilities = true
-	elseif shuckle.abilities[1] ~= AbilityData.Values.SturdyId then
-		PokemonData.IsRand.abilities = true
-	elseif shuckle.abilities[2] ~= AbilityData.Values.SturdyId and shuckle.abilities[2] ~= 0 then -- 2nd ability can be empty
-		PokemonData.IsRand.abilities = true
 	end
 
 	-- Check for randomized Pokémon stats
@@ -387,7 +363,7 @@ end
 ---Returns true if the Pokémon data in this game is randomized (not vanilla), based on game data memory checks
 ---@return boolean
 function PokemonData.isGameDataRandomized()
-	return PokemonData.IsRand.types or PokemonData.IsRand.abilities or PokemonData.IsRand.stats
+	return PokemonData.IsRand.types or PokemonData.IsRand.stats
 		or PokemonData.IsRand.moveLearnSet or PokemonData.IsRand.friendshipBase or PokemonData.IsRand.expYield
 end
 
@@ -398,15 +374,6 @@ function PokemonData.canShowUnknownTypes()
 		return true
 	end
 	return not PokemonData.IsRand.types and Options["Show data for vanilla game"]
-end
-
----Returns true if info unknown to the player (random or otherwise) is allowed to be revealed.
----@return boolean
-function PokemonData.canShowUnknownAbilities()
-	if Options["Open Book Play Mode"] then
-		return true
-	end
-	return not PokemonData.IsRand.abilities and Options["Show data for vanilla game"]
 end
 
 ---Returns true if info unknown to the player (random or otherwise) is allowed to be revealed.
@@ -430,17 +397,6 @@ end
 function PokemonData.getTypeResource(typename)
 	typename = typename or "unknown"
 	return Resources.Game.PokemonTypes[typename] or Resources.Game.PokemonTypes.unknown
-end
-
----@param pokemonID number
----@param abilityIndex number Specify 0 for the first ability or 1 for the second ability
----@return integer abilityId The abilityId of the Pokémon, or 0 if it doesn't exist
-function PokemonData.getAbilityId(pokemonID, abilityIndex)
-	if abilityIndex == nil or not PokemonData.isValid(pokemonID) then
-		return 0
-	end
-	local pokemon = PokemonData.Pokemon[pokemonID]
-	return pokemon.abilities[abilityIndex + 1] or 0 -- abilityNum stored from memory as [0 or 1]
 end
 
 ---Returns true if the pokemonId is a valid, existing id of a pokemon in PokemonData.Pokemon
@@ -776,7 +732,6 @@ PokemonData.BlankPokemon = {
 	pokemonID = 0,
 	name = Constants.BLANKLINE,
 	types = { PokemonData.Types.UNKNOWN, PokemonData.Types.EMPTY },
-	abilities = { 0, 0 },
 	evolution = PokemonData.Evolutions.NONE,
 	bst = Constants.BLANKLINE,
 	expYield = 0,

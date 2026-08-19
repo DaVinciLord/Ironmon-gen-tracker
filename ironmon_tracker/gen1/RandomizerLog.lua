@@ -45,9 +45,6 @@ function Gen1RandomizerLog.setupMappings()
 		end
 	end
 
-	-- Kept empty until the inherited parser no longer references the mapping at
-	-- all. RBY has no abilities.
-	RandomizerLog.AbilityNameToIdMap = {}
 	-- Native RBY encounter-set mapping is intentionally separate from the
 	-- inherited Hoenn/Kanto remakes tables.
 	RandomizerLog.RouteSetNumToIdMap = Gen1RandomizerLog.RouteSetToMap

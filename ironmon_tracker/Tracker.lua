@@ -166,30 +166,6 @@ function Tracker.getOrCreateTrackedPokemon(pokemonID, createIfDoesntExist)
 	return Tracker.Data.allPokemon[pokemonID] or {}
 end
 
---- Adds the Pokemon's ability to the tracked data if it doesn't exist, otherwise updates it.
---- @param pokemonID number
---- @param abilityId number
-function Tracker.TrackAbility(pokemonID, abilityId)
-	if pokemonID == nil or abilityId == nil then return end
-
-	local trackedPokemon = Tracker.getOrCreateTrackedPokemon(pokemonID)
-
-	if trackedPokemon.abilities == nil then
-		trackedPokemon.abilities = {
-			{ id = 0 },
-			{ id = 0 },
-		}
-	end
-
-	-- Only add as second ability if it's different than the first ability
-	if (trackedPokemon.abilities[1].id or 0) == 0 then
-		trackedPokemon.abilities[1].id = abilityId
-	elseif ((trackedPokemon.abilities[2].id or 0) == 0) and trackedPokemon.abilities[1].id ~= abilityId then
-		trackedPokemon.abilities[2].id = abilityId
-	end
-	-- If this pokemon already has two abilities being tracked, simply do nothing.
-end
-
 --- @param pokemonID number
 --- @param statStage string One of the six stats
 --- @param statState number The marking for this stat
@@ -394,49 +370,6 @@ function Tracker.getMoves(pokemonID, level)
 	end
 	local trackedPokemon = Tracker.getOrCreateTrackedPokemon(pokemonID, false)
 	return trackedPokemon.moves or {}
-end
-
--- If the Pokemon is being tracked, return information on abilities; otherwise a default ability values = 0
---- @param pokemonID number
---- @return table abilities
-function Tracker.getAbilities(pokemonID)
-	local trackedPokemon = Tracker.getOrCreateTrackedPokemon(pokemonID, false)
-	return trackedPokemon.abilities or {
-		{ id = 0 },
-		{ id = 0 },
-	}
-end
-
---- @param pokemonID number
---- @param abilityOneText string
---- @param abilityTwoText string
-function Tracker.setAbilities(pokemonID, abilityOneText, abilityTwoText)
-	abilityOneText = abilityOneText or Constants.BLANKLINE
-	abilityTwoText = abilityTwoText or Constants.BLANKLINE
-	local abilityOneId = 0
-	local abilityTwoId = 0
-
-	-- If only one ability was entered in
-	if abilityOneText == Constants.BLANKLINE then
-		abilityOneText = abilityTwoText
-		abilityTwoText = Constants.BLANKLINE
-	end
-
-	-- Lookup ability id's from the master list of ability pokemon data
-	for id = 1, AbilityData.getTotal(), 1 do
-		local ability = AbilityData.Abilities[id] or {}
-		if abilityOneText == ability.name then
-			abilityOneId = id
-		elseif abilityTwoText == ability.name then
-			abilityTwoId = id
-		end
-	end
-
-	local trackedPokemon = Tracker.getOrCreateTrackedPokemon(pokemonID)
-	trackedPokemon.abilities = {
-		{ id = abilityOneId },
-		{ id = abilityTwoId },
-	}
 end
 
 --- If the Pokemon is being tracked, return information on statmarkings; otherwise default stat values = 1
