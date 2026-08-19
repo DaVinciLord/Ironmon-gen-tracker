@@ -4,11 +4,11 @@ Constants.BLANKLINE = "---"
 Constants.HIDDEN_INFO = "?"
 
 Constants.SCREEN = {
-	HEIGHT = 160,
-	WIDTH = 240,
+	HEIGHT = 144,
+	WIDTH = 160,
 	UP_GAP = 0,
-	DOWN_GAP = 0,
-	RIGHT_GAP = 150,
+	DOWN_GAP = 15,
+	RIGHT_GAP = 180,
 	BOTTOM_AREA = 70,
 	MARGIN = 5,
 	LINESPACING = 11,
@@ -59,20 +59,13 @@ Constants.IronmonRulesetNames = {
 
 -- Holds information about looking up badge icon files and kerning offsets to draw onto screen
 Constants.Badges = {
-	-- Ruby/Sapphire
 	[1] = {
-		Prefix = "RSE",
-		IconOffsets = { 1, 1, 0, 0, 1, 1, 1, 1 },
-	},
-	-- Emerald
-	[2] = {
-		Prefix = "RSE",
-		IconOffsets = { 1, 1, 0, 0, 1, 1, 1, 1 },
-	},
-	-- FireRed/LeafGreen
-	[3] = {
 		Prefix = "FRLG",
-		IconOffsets = { 0, -2, -2, 0, 1, 1, 0, 1 },
+		IconOffsets = { 0, 0, 0, 0, 0, 0, 0, 0 },
+	},
+	[2] = {
+		Prefix = "FRLG",
+		IconOffsets = { 0, 0, 0, 0, 0, 0, 0, 0 },
 	},
 }
 

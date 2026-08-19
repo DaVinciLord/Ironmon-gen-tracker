@@ -39,6 +39,7 @@ SCREEN.Buttons = {
 		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 10, Constants.SCREEN.MARGIN + 64, Constants.SCREEN.RIGHT_GAP - 12, 8 },
 		box = {	Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 10, Constants.SCREEN.MARGIN + 64, 8, 8 },
 		toggleState = false, -- update later in initialize
+		isVisible = function() return GameSettings.usesStarterChoice() end,
 		updateSelf = function(self) self.toggleState = (Options[self.optionKey] == true) end,
 		onClick = function(self)
 			self.toggleState = Options.toggleSetting(self.optionKey)
@@ -50,6 +51,7 @@ SCREEN.Buttons = {
 		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 8, 79, 32, 29 },
 		box = 			{ Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 8, 75, 32, 32 },
 		pokemonID = 1,
+		isVisible = function() return GameSettings.usesStarterChoice() end,
 		getIconId = function(self) return self.pokemonID, SpriteData.Types.Idle end,
 		onClick = function(self)
 			SCREEN.openPokemonPickerWindow(self, self.pokemonID)
@@ -61,6 +63,7 @@ SCREEN.Buttons = {
 		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 53, 79, 32, 29 },
 		box = 			{ Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 53, 75, 32, 32 },
 		pokemonID = 4,
+		isVisible = function() return GameSettings.usesStarterChoice() end,
 		getIconId = function(self) return self.pokemonID, SpriteData.Types.Idle end,
 		onClick = function(self)
 			SCREEN.openPokemonPickerWindow(self, self.pokemonID)
@@ -72,6 +75,7 @@ SCREEN.Buttons = {
 		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 98, 79, 32, 29 },
 		box = 			{ Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 98, 75, 32, 32 },
 		pokemonID = 7,
+		isVisible = function() return GameSettings.usesStarterChoice() end,
 		getIconId = function(self) return self.pokemonID, SpriteData.Types.Idle end,
 		onClick = function(self)
 			SCREEN.openPokemonPickerWindow(self, self.pokemonID)
@@ -249,7 +253,9 @@ function StreamerScreen.drawScreen()
 	textLineY = textLineY + Constants.SCREEN.LINESPACING
 
 	-- Draw Favorites Label
-	Drawing.drawText(canvas.x + 3, canvas.y + 40, Resources.StreamerScreen.LabelFavorites .. ":", canvas.text, canvas.shadow)
+	if GameSettings.usesStarterChoice() then
+		Drawing.drawText(canvas.x + 3, canvas.y + 40, Resources.StreamerScreen.LabelFavorites .. ":", canvas.text, canvas.shadow)
+	end
 
 	-- Draw all buttons
 	for _, button in pairs(SCREEN.Buttons) do

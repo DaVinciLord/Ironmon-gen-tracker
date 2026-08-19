@@ -16,7 +16,7 @@ Options = {
 	["Show physical special icons"] = true,
 	["Show move effectiveness"] = true,
 	["Calculate variable damage"] = true,
-	["Determine friendship readiness"] = true,
+	["Determine friendship readiness"] = false,
 	["Show data for vanilla game"] = true,
 	["Count enemy PP usage"] = true,
 	["Show nicknames"] = false,
@@ -24,7 +24,7 @@ Options = {
 	["PC heals count downward"] = true,
 	["Auto save tracked game data"] = true,
 	["Pokemon icon set"] = "1",
-	["Override Button Mode to LR"] = true,
+	["Override Button Mode to LR"] = false,
 	["Show last damage calcs"] = true,
 	["Reveal info if randomized"] = true,
 	["Game Over condition"] = "LeadPokemonFaints",
@@ -59,7 +59,7 @@ Options = {
 	["Has checked carousel battle details"] = false,
 
 	-- In rare situations, new options get added that the user should be informed about (true: requires alerting, set to false after)
-	["AlertNewOptionLR"] = true, -- This is for the "Override Button Mode to LR" setting; allowing Tracker to change data in game
+	["AlertNewOptionLR"] = false, -- This is for the "Override Button Mode to LR" setting; allowing Tracker to change data in game
 
 	-- (Currently unused) Determines whether this is the first time the Tracker is opened/used
 	FIRST_RUN = true,

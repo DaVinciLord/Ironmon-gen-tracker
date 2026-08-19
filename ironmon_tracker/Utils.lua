@@ -397,24 +397,17 @@ end
 ---@param maxPokemonId? number Optional, if provided the random pokemonID will not exceed this number
 ---@return number pokemonID
 function Utils.randomPokemonID(maxPokemonId)
-	maxPokemonId = math.min(PokemonData.getTotal(), maxPokemonId or 99999) -- max
-	local pokemonID = math.random(maxPokemonId - 25)
-	if pokemonID > 251 then
-		pokemonID = pokemonID + 25
-	end
-	return pokemonID
+	maxPokemonId = math.min(PokemonData.getTotal(), maxPokemonId or 99999)
+	return math.random(math.max(maxPokemonId, 1))
 end
 
 -- Estimated total number of trainers (ids) found from log files
 function Utils.randomTrainerID()
-	if GameSettings.game == 1 then -- Game #: Ruby / Sapphire
-		return math.random(693)
-	elseif GameSettings.game == 2 then -- Game #: Emerald
-		return math.random(854)
-	elseif GameSettings.game == 3 then -- Game #: Fire Red / Leaf Green
-		return math.random(742)
+	local ids = TrainerData.OrderedIds
+	if ids and #ids > 0 then
+		return ids[math.random(#ids)]
 	end
-	return 0
+	return math.random(396)
 end
 
 ---@return string guid
@@ -428,29 +421,6 @@ end
 
 -- Returns '1.1' if positive nature, '0.9' if negative nature, and '1' otherwise (if neutral nature)
 function Utils.getNatureMultiplier(stat, nature)
-	if nature % 6 == 0 then return 1 end
-
-	if stat == "atk" then
-		if nature < 5 then return 1.1 end
-		if nature % 5 == 0 then return 0.9 end
-	end
-	if stat == "def" then
-		if nature > 4 and nature < 10 then return 1.1 end
-		if nature % 5 == 1 then return 0.9 end
-	end
-	if stat == "spe" then
-		if nature > 9 and nature < 15 then return 1.1 end
-		if nature % 5 == 2 then return 0.9 end
-	end
-	if stat == "spa" then
-		if nature > 14 and nature < 20 then return 1.1 end
-		if nature % 5 == 3 then return 0.9 end
-	end
-	if stat == "spd" then
-		if nature > 19 then return 1.1 end
-		if nature % 5 == 4 then return 0.9 end
-	end
-
 	return 1
 end
 
@@ -832,33 +802,8 @@ function Utils.calculateFriendshipBasedDamage(movePower, friendship)
 end
 
 function Utils.calculateWeatherBall(moveType, movePower)
-	if not Battle.inActiveBattle() then
-		return moveType, movePower
-	end
-
-	local weatherIds = {
-		[1] = "Rain", [5] = "Rain",
-		[8] = "Sandstorm", [24] = "Sandstorm",
-		[32] = "Harsh sunlight", [96] = "Harsh sunlight",
-		[128] = "Hail"
-	}
-	local battleWeather = Memory.readword(GameSettings.gBattleWeather)
-	local currentWeather = weatherIds[battleWeather]
-
-	if currentWeather ~= nil then
-		if currentWeather == "Rain" then
-			moveType = PokemonData.Types.WATER
-		elseif currentWeather == "Sandstorm" then
-			moveType = PokemonData.Types.ROCK
-		elseif currentWeather == "Harsh sunlight" then
-			moveType = PokemonData.Types.FIRE
-		elseif currentWeather == "Hail" then
-			moveType = PokemonData.Types.ICE
-		end
-		movePower = tonumber(movePower) * 2
-	end
-
-	return moveType, tostring(movePower)
+	-- Weather Ball and GBA weather are not present in Generation 1.
+	return moveType, movePower
 end
 
 -- Returns a number between 0 and 1, where 1 is best possible IVs and 0 is no IVs
@@ -982,65 +927,28 @@ function Utils.setFormLocation(handle, x, y)
 end
 
 function Utils.getSaveBlock1Addr()
-	if GameSettings.game == 1 then -- Ruby/Sapphire don't have ptr
-		return GameSettings.gSaveBlock1
-	end
-	return Memory.readdword(GameSettings.gSaveBlock1ptr)
+	return 0
 end
 
 function Utils.getSaveBlock2Addr()
-	if GameSettings.game == 1 then -- Ruby/Sapphire don't have ptr
-		return GameSettings.gSaveBlock2
-	end
-	return Memory.readdword(GameSettings.gSaveBlock2ptr)
+	return 0
 end
 
--- Gets the current game's encryption key
--- Size is the number of bytes (1/2/4) to return an encryption key of
 function Utils.getEncryptionKey(size)
-	if GameSettings.game == 1 then -- Ruby/Sapphire don't have an encryption key
-		return nil
-	end
-	local saveBlock2addr = Memory.readdword(GameSettings.gSaveBlock2ptr)
-	local address = saveBlock2addr + GameSettings.EncryptionKeyOffset
-	if size == 1 then
-		return Memory.read8(address)
-	elseif size == 2 then
-		return Memory.read16(address)
-	else
-		return Memory.read32(address)
-	end
+	return nil
 end
 
--- Reads the game stat stored at statIndex in memory
--- https://github.com/pret/pokefirered/blob/master/include/constants/game_stat.h
 function Utils.getGameStat(statIndex)
-	local saveBlock1Addr = Utils.getSaveBlock1Addr()
-	local gameStatsAddr = saveBlock1Addr + GameSettings.gameStatsOffset
-
-	local gameStatValue = Memory.readdword(gameStatsAddr + statIndex * Program.Addresses.sizeofGameStat)
-
-	local key = Utils.getEncryptionKey(4) -- Want a 32-bit key
-	if key ~= nil then
-		gameStatValue = Utils.bit_xor(gameStatValue, key)
-	end
-
-	return math.floor(gameStatValue)
+	return 0
 end
 
----Returns 1, 2, or 3 depending on game.
----FRLG: 1=Bulbasaur (left), 2=Squirtle (middle), 3=Charmander (right)
----RSE: 1=Treecko (left), 2=Torchic (middle), 3=Mudkip (right)
+---Yellow always starts with Pikachu. Red/Blue starter choice is read from native RBY memory.
 ---@return number starterChoice
 function Utils.getStarterMonChoice()
-	local saveblock1Addr = Utils.getSaveBlock1Addr()
-	local varOffset
-	if GameSettings.game == 3 then
-		varOffset = Program.Addresses.offsetStarterMonChoiceFRLG
-	else
-		varOffset = Program.Addresses.offsetStarterMonChoiceRSE
+	if Program and Program.getStarterChoice then
+		return Program.getStarterChoice() or 1
 	end
-	return 1 + Memory.readbyte(saveblock1Addr + GameSettings.gameVarsOffset + varOffset)
+	return 1
 end
 
 -- Returns a new list, sorted by their indexKey number (default: 'index' attribute)

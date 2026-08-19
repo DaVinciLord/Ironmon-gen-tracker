@@ -150,7 +150,7 @@ SCREEN.Buttons = {
 		getText = function(self) return " " .. Resources.SetupScreen.OptionOverrideButtonModeLR end,
 		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 26, Constants.SCREEN.RIGHT_GAP - 12, 8 },
 		box = {	Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 26, 8, 8 },
-		isVisible = function(self) return SCREEN.currentTab == SCREEN.Tabs.Controls and not SCREEN.inProcessOfBinding() end,
+		isVisible = function(self) return false end,
 		toggleState = true,
 		updateSelf = function(self) self.toggleState = (Options[self.optionKey] == true) end,
 		onClick = function(self)
@@ -439,12 +439,14 @@ function SetupScreen.createButtons()
 	local startY = Constants.SCREEN.MARGIN + 78
 
 	local optionKeyMap = {
-		{ "Show random ball picker", "OptionShowRandomBallPicker", },
 		{ "Show Team View", "OptionShowTeamView", },
 		{ "Right justified numbers", "OptionRightJustifiedNumbers", },
 		{ "Track PC Heals", "OptionTrackPCHeals", },
 		{ "PC heals count downward", "OptionPCHealsCountDown", },
 	}
+	if GameSettings.usesStarterChoice() then
+		table.insert(optionKeyMap, 1, { "Show random ball picker", "OptionShowRandomBallPicker", })
+	end
 
 	for _, optionTuple in ipairs(optionKeyMap) do
 		SCREEN.Buttons[optionTuple[1]] = {

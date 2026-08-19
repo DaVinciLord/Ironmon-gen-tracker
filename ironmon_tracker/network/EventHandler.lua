@@ -746,13 +746,13 @@ EventHandler.DefaultEvents = {
 			end
 
 			-- This condition is complete when the player has a Pokémon in their party and they've just beaten the Lab Rival
-			local lastBattleStatus = Memory.readbyte(GameSettings.gBattleOutcome) -- [0 = In battle, 1 = Won the match, 2 = Lost the match, 4 = Fled, 7 = Caught]
-			local lastFoughtTrainerId = Memory.readword(GameSettings.gTrainerBattleOpponent_A)
-			local rivalIds
-			if GameSettings.game == 3 then -- FRLG
-				rivalIds = { [326] = true, [327] = true, [328] = true }
-			else -- RSE
-				rivalIds = { [520] = true, [523] = true, [526] = true, [529] = true, [532] = true, [535] = true }
+			local lastBattleStatus = TrackerAPI.getBattleOutcome()
+			local lastFoughtTrainerId = TrackerAPI.getOpponentTrainerId()
+			local rivalIds = {}
+			if Gen1TrainerData and Gen1TrainerData.makeId then
+				for trainerNumber = 1, 9 do
+					rivalIds[Gen1TrainerData.makeId(25, trainerNumber)] = true
+				end
 			end
 			-- Won the battle against the first rival
 			return lastBattleStatus == 1 and rivalIds[lastFoughtTrainerId] ~= nil and chosenCorrectly

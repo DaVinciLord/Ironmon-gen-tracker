@@ -124,7 +124,10 @@ end
 ---Returns the `trainerId` of the opposing trainer being fought in battle
 ---@return number trainerId
 function TrackerAPI.getOpponentTrainerId()
-	return Memory.readword(GameSettings.gTrainerBattleOpponent_A)
+	if Gen1TrainerData and Gen1TrainerData.getCurrentTrainerId then
+		return Gen1TrainerData.getCurrentTrainerId()
+	end
+	return 0
 end
 
 ---Returns a `Program.GameTrainer` table of Trainer data from the game
@@ -166,7 +169,17 @@ end
 ---Returns the outcome status of the last battle (or current battle)
 ---@return number outcome Returns one of: 0 = In battle, 1 = Player won, 2 = Player lost, 4 = Fled, 7 = Caught
 function TrackerAPI.getBattleOutcome()
-	return Memory.readbyte(GameSettings.gBattleOutcome)
+	if Battle and Battle.inActiveBattle and Battle.inActiveBattle() then
+		return 0
+	end
+	if not GameSettings.battleResult then
+		return 0
+	end
+	-- RBY wBattleResult: 0 = win, 1 = lose, 2 = draw. Besteon API: 1 = won, 2 = lost.
+	local result = Memory.readbyte(GameSettings.battleResult) or 0
+	if result == 0 then return 1 end
+	if result == 1 then return 2 end
+	return result
 end
 
 ---Returns true if the trainer has been defeated by the player; false otherwise

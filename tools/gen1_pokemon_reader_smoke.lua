@@ -5,7 +5,7 @@ local repoRoot = toolsDir:gsub("tools[/\\]$", "")
 
 local bytes = {}
 Memory = { readbyte = function(address) return bytes[address] or 0 end }
-dofile(repoRoot .. "ironmon_tracker/gen1/PokemonReader.lua")
+dofile(repoRoot .. "ironmon_tracker/PokemonDataReader.lua")
 
 local function put(address, ...)
 	for index, value in ipairs({ ... }) do bytes[address + index - 1] = value end

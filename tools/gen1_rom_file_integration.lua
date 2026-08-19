@@ -8,7 +8,7 @@ local file = assert(io.open(romPath, "rb"))
 local rom = file:read("*a")
 file:close()
 
-dofile(repoRoot .. "ironmon_tracker/gen1/GameProfiles.lua")
+dofile(repoRoot .. "ironmon_tracker/GameProfiles.lua")
 
 local function byte(offset)
 	return rom:byte(offset + 1) or 0
@@ -57,7 +57,7 @@ end
 -- trainer-class pointer. This catches regional offset drift immediately.
 Constants = { BLANKLINE = "--", HIDDEN_INFO = "?", Words = { POKEMON = "Pokemon" } }
 dofile(repoRoot .. "ironmon_tracker/data/PokemonData.lua")
-dofile(repoRoot .. "ironmon_tracker/gen1/SpeciesMap.lua")
+dofile(repoRoot .. "ironmon_tracker/data/SpeciesMap.lua")
 for dexId = 1, 151 do
 	local internalId = assert(Gen1SpeciesMap.getInternalId(dexId))
 	local pointer = word(offset(profile.rom.levelUpMoves) + (internalId - 1) * 2)

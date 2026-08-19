@@ -248,7 +248,7 @@ function LogTabTrainerDetails.drawTab()
 
 	-- GYM LEADER BADGE
 	if data.x.gymNumber ~= nil then
-		local badgePrefix = Constants.Badges[GameSettings.game].Prefix
+		local badgePrefix = GameSettings.badgePrefix or "FRLG"
 		local badgeName = badgePrefix .. "_badge" .. data.x.gymNumber
 		local badgeImage = FileManager.buildImagePath(FileManager.Folders.Badges, badgeName, FileManager.Extensions.BADGE)
 		Drawing.drawImage(badgeImage, LogOverlay.TabBox.x + 44, LogOverlay.TabBox.y + 2)
@@ -263,7 +263,7 @@ function LogTabTrainerDetails.drawTab()
 		nameText = data.t.customName
 	end
 	-- Grunts don't have unique names, so append their trainer ID for easier referencing
-	local isGrunt = { [TrainerData.Classes.TeamRocketGrunt] = true, [TrainerData.Classes.TeamAquaGrunt] = true, [TrainerData.Classes.TeamMagmaGrunt] = true, }
+	local isGrunt = { [TrainerData.Classes.TeamRocketGrunt] = true, }
 	if isGrunt[TrainerData.getTrainerInfo(data.t.id).class or false] then
 		nameText = string.format("%s #%s", nameText, data.t.id)
 	end

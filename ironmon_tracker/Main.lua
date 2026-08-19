@@ -105,46 +105,12 @@ function Main.Run()
 			Main.frameAdvance()
 		end
 	else
-		-- mGBA specific callbacks
-		if Main.startCallbackId == nil then
-			Main.startCallbackId = callbacks:add("start", Main.Run)
-		end
-		if Main.resetCallbackId == nil then
-			 -- start doesn't get trigged on-reset
-			Main.resetCallbackId = callbacks:add("reset", function()
-				Main.ExitSafely(false)
-				Main.Run()
-			end)
-		end
-		if Main.stopCallbackId == nil then
-			Main.stopCallbackId = callbacks:add("stop", function()
-				Main.ExitSafely(false)
-				MGBA.removeActiveRunCallbacks()
-			end)
-		end
-		if Main.shutdownCallbackId == nil then
-			Main.shutdownCallbackId = callbacks:add("shutdown", function()
-				Main.ExitSafely(false)
-				MGBA.removeActiveRunCallbacks()
-			end)
-		end
-		if Main.crashedCallbackId == nil then
-			Main.crashedCallbackId = callbacks:add("crashed", function()
-				Main.ExitSafely(true)
-				MGBA.removeActiveRunCallbacks()
-			end)
-		end
-
-		if emu == nil then
-			print("> Waiting for a game ROM to be loaded... (mGBA Emulator -> File -> Load ROM...)")
-			return
-		else
-			MGBA.setupActiveRunCallbacks()
-		end
+		print("> This Gen 1 tracker only supports BizHawk. mGBA is not supported.")
+		return
 	end
 
 	-- Verify that at least one of the Tracker files on the filesystem are accessible (no diacritics/accented characters in the absolute path to the file)
-	local verificationPath = FileManager.prependDir(FileManager.Files.ADDRESS_OVERRIDES)
+	local verificationPath = FileManager.prependDir(FileManager.Files.TRACKER_CORE)
 	if not FileManager.fileExists(verificationPath) then
 		Main.DisplayError("The Tracker cannot access its files: Issue with folder's location.\n\nCheck that there are no diacritics/accented characters in the full folder path to your Tracker folder. For example: é ñ ü")
 		print("> [ERROR] Unable to access file path to:")
@@ -220,7 +186,7 @@ function Main.Run()
 			return IronmonTracker.startTracker()
 		end
 	else
-		MGBA.printStartupInstructions()
+		print("> This Gen 1 tracker only supports BizHawk. mGBA is not supported.")
 	end
 end
 
@@ -513,16 +479,9 @@ function Main.LoadRom(filepath)
 		end
 		client.openrom(filepath)
 		return true
-	else
-		---@diagnostic disable-next-line: undefined-global
-		emu:saveStateFile(backupFilepath .. FileManager.Extensions.MGBA_SAVESTATE, C.SAVESTATE.ALL)
-		local success = emu:loadFile(filepath)
-		if success then
-			MGBA.hasPrintedInstructions = false
-			emu:reset()
-		end
-		return success
 	end
+	print("> This Gen 1 tracker only supports BizHawk. mGBA is not supported.")
+	return false
 end
 
 function Main.LoadNextRom()
@@ -534,8 +493,6 @@ function Main.LoadNextRom()
 	if Main.IsOnBizhawk() then
 		Drawing.clearImageCache()
 		console.clear() -- Clearing the console for each new game helps with troubleshooting issues
-	else
-		MGBA.clearConsole()
 	end
 
 	local nextRomInfo

@@ -1120,7 +1120,6 @@ end
 ---@param params string?
 ---@return string response
 function EventData.getProgress(params)
-	local includeSevii = Utils.containsText(params, "sevii", true)
 	local info = {}
 	local badgesObtained, maxBadges = 0, 8
 	for i = 1, maxBadges, 1 do
@@ -1133,18 +1132,14 @@ function EventData.getProgress(params)
 	local saveBlock1Addr = Utils.getSaveBlock1Addr()
 	local totalDefeated, totalTrainers = 0, 0
 	for mapId, route in pairs(RouteData.Info) do
-		-- Don't check sevii islands (id = 230+) by default
-		if mapId < 230 or includeSevii then
-			if route.trainers and #route.trainers > 0 then
-				local defeatedTrainers, totalInRoute = Program.getDefeatedTrainersByLocation(mapId, saveBlock1Addr)
-				totalDefeated = totalDefeated + #defeatedTrainers
-				totalTrainers = totalTrainers + totalInRoute
-			end
+		if route.trainers and #route.trainers > 0 then
+			local defeatedTrainers, totalInRoute = Program.getDefeatedTrainersByLocation(mapId, saveBlock1Addr)
+			totalDefeated = totalDefeated + #defeatedTrainers
+			totalTrainers = totalTrainers + totalInRoute
 		end
 	end
-	table.insert(info, string.format("%s%s: %s/%s (%0.1f%%)",
+	table.insert(info, string.format("%s: %s/%s (%0.1f%%)",
 		"Trainers defeated",
-		includeSevii and ", including Sevii" or "",
 		totalDefeated,
 		totalTrainers,
 		totalDefeated / totalTrainers * 100))

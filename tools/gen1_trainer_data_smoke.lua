@@ -35,8 +35,9 @@ Program = {
 TrackerAPI = {}
 Gen1SpeciesMap = { getDexId = function(id) return id + 1000 end }
 
-dofile("ironmon_tracker/gen1/TrainerData.lua")
-Gen1TrainerData.applyRuntime()
+dofile("ironmon_tracker/data/Gen1TrainerData.lua")
+TrackerAPI.getOpponentTrainerId = Gen1TrainerData.getCurrentTrainerId
+Program.readTrainerGameData = Gen1TrainerData.readTrainer
 Gen1TrainerData.initialize()
 
 assert(#TrainerData.OrderedIds == 396, "Yellow must expose every native trainer party")

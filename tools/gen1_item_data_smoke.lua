@@ -8,7 +8,7 @@ MiscData = {
 	HealingType = { Constant = "Constant", Percentage = "Percentage" },
 	StatusType = { Poison = 2, Burn = 3, Freeze = 4, Sleep = 1, Paralyze = 5, All = 100 },
 }
-dofile(repoRoot .. "ironmon_tracker/gen1/ItemData.lua")
+dofile(repoRoot .. "ironmon_tracker/data/MiscData.lua")
 
 assert(MiscData.getTotalItems() == 255)
 assert(MiscData.Items[4] == "Poke Ball" and MiscData.PokeBalls[4])

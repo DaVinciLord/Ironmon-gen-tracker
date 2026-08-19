@@ -22,86 +22,9 @@ Program = {
 	},
 	DebugDrawing = {},
 	Addresses = {
-		battleStructDefault = 0x2000000, -- gSharedMem
-		nicknameCharEnd = 0xFF,
-		hitmarkerFlag80000 = 0x80000, -- A special value for gHitMarker
-		moveResultsFlag29 = 0x29, -- A special value for gMoveResultFlags
-
-		offsetFlashLevel = 0x30,
-		offsetStarterMonChoiceFRLG = 0x62,
-		offsetStarterMonChoiceRSE = 0x46,
-		offsetRepelStepCountFRLG = 0x40,
-		offsetRepelStepCountRSE = 0x42,
-		offsetGrowthRateIndex = 0x13,
-		offsetMapHeaderLayoutId = 0x12, -- mapLayoutId
-		offsetPokemonGettingExp = 0x10, -- expGetterMonId
-		offsetBattlePokemonStatStages = 0x18,
-		offsetBattlePokemonTypes = 0x21,
-		offsetBattlePokemonDoublesPartner = 0xB0,
-		offsetBattleMoves = 0x1,
-		offsetBattleMoveFlags = 0x8,
-		offsetEvoInfoTaskId = 0x2,
-		offsetTaskIsActive = 0x4,
-		offsetTrainerFlagStart = 0x500,
-		offsetSysFlagStartFRLG = 0x800,
-		offsetSysFlagStartRSE = 0x860,
-		offsetSysFlagSafariModeFRLG = 0x0,
-		offsetSysFlagSafariModeRSE = 0x2C,
-		offsetBattleResultsCurrentTurn = 0x13,
-		offsetBattleResultsEnemyMoveId = 0x24,
-		offsetBattleResultsLastAttackerMove = 0x22,
-		offsetBattleCommConfirmedCount = 0x4,
-		offsetBattleCommLevitate = 0x6,
-		offsetPokemonSubstruct = 0x20,
-		offsetPokemonStatus = 0x50,
-		offsetPokemonStatsLvCurHp = 0x54,
-		offsetPokemonStatsMaxHpAtk = 0x58,
-		offsetPokemonStatsDefSpe = 0x5C,
-		offsetPokemonStatsSpaSpd = 0x60,
-		offsetRivalName = 0x3A4C, -- SaveBlock1
-		offsetOptionsButtonMode = 0x13, -- SaveBlock2
-		offsetPokedex = 0x18, -- SaveBlock2
-		offsetPokedexOwned = 0x10, -- SaveBlock2's Pokedex struct
-		offsetPokedexSeen = 0x44, -- SaveBlock2's Pokedex struct
-		offsetTrainerClass = 0x01,
-		offsetTrainerGender = 0x02,
-		offsetTrainerPic = 0x03,
-		offsetTrainerName = 0x04,
-		offsetTrainerItems = 0x10,
-		offsetTrainerDoubleBattle = 0x18,
-		offsetTrainerFlagsAI = 0x1C,
-		offsetTrainerPartySize = 0x20,
-		offsetTrainerPartyPtr = 0x24,
-		offsetTrainerMonLevel = 0x02,
-		offsetTrainerMonSpecies = 0x04,
-		offsetTrainerMonItem = 0x06,
-		offsetTrainerMonNoItemMove1 = 0x06,
-		offsetTrainerMonItemMove1 = 0x08,
-
-		sizeofBaseStatsPokemon = 0x1C,
-		sizeofExpTablePokemon = 0x194,
-		sizeofExpTableLevel = 0x4,
-		sizeofTrainer = 0x28,
-		sizeofTrainerName = 12,
-		sizeofTrainerClass = 13,
-		sizeofMaxTrainerItems = 4,
-		sizeofBattlePokemon = 0x58,
-		sizeofBattleMove = 0xC,
-		sizeofTaskStruct = 0x28,
-		sizeofTMHMMoveId = 0x2,
-		sizeofGameStat = 0x4,
-		sizeofLastAttackerMove = 0x2,
-		sizeofPokemonStruct = 0x64,
-		sizeofPokemonNickname = 0xA,
-		sizeofTrainerMonWithDefaultMoves = 8,
-		sizeofTrainerMonWithCustomMoves = 16,
-		sizeofTrainerItem = 0x02,
-		sizeofTrainerMonCustomMove = 0x02,
+		sizeofPokemonStruct = 44,
 	},
-	Values = {
-		ShinyOdds = 8, -- n/65536
-		ButtonModeLR = 1, -- 0:NORMAL(HELP), 1:LR, 2:L_EQUALS_A; default setting for new game is 0
-	},
+	Values = {},
 }
 
 Program.GameData = {
@@ -339,11 +262,7 @@ function Program.initialize()
 	Program.GameData.PlayerTeam = {}
 	Program.GameData.EnemyTeam = {}
 
-	-- Check if requirement for Friendship evos has changed (Default:219, MakeEvolutionsFaster:159)
-	local friendshipRequired = Memory.readbyte(GameSettings.FriendshipRequiredToEvo) + 1
-	if friendshipRequired > 1 and friendshipRequired <= PokemonData.Values.FriendshipRequiredToEvo then
-		Program.GameData.friendshipRequired = friendshipRequired
-	end
+	Program.Addresses.sizeofPokemonStruct = Gen1PokemonReader.PartyStructSize
 
 	Program.Pedometer:initialize()
 	Program.GameTimer:initialize()
@@ -402,7 +321,7 @@ function Program.redraw(forced)
 		if TeamViewArea.isDisplayed() then
 			TeamViewArea.drawScreen()
 		end
-	else
+	elseif MGBA and MGBA.ScreenUtils then
 		MGBA.ScreenUtils.updateTextBuffers()
 	end
 
@@ -486,6 +405,7 @@ function Program.update()
 		end
 
 		Program.updateMapLocation() -- trying this here to solve many future problems
+		Program.snapshotRodItem()
 
 		if not Program.GameTimer.hasStarted and Program.isValidMapLocation() then
 			Program.GameTimer:start()
@@ -548,7 +468,7 @@ function Program.update()
 
 			-- Check if summary screen has being shown
 			if not Tracker.Data.hasCheckedSummary then
-				if Memory.readbyte(GameSettings.sMonSummaryScreen) ~= 0 then
+				if GameSettings.sMonSummaryScreen and Memory.readbyte(GameSettings.sMonSummaryScreen) ~= 0 then
 					Tracker.Data.hasCheckedSummary = true
 				end
 			end
@@ -569,7 +489,7 @@ function Program.update()
 			end
 
 			-- Update step count only if the option is enabled
-			if Program.Pedometer:isInUse() then
+			if Program.Pedometer:isInUse() and GameSettings.gameStatsOffset then
 				Program.Pedometer.totalSteps = Utils.getGameStat(Constants.GAME_STATS.STEPS)
 			end
 
@@ -699,436 +619,29 @@ function Program.removeDebugDrawing(label)
 end
 
 function Program.checkForStarterSelection()
-	-- Only bother checking if the player doesn't have a Pokémon in their party
-	if TrackerAPI.getPlayerPokemon() ~= nil then
-		-- Player just received the Pokémon, so swap back to main Tracker Screen
-		if Program.isViewingStarter then
-			Program.isViewingStarter = false
-			Program.changeScreenView(TrackerScreen)
-		end
-		return
-	end
-
-	-- For FRLG, the starter ball selection process is known through a SpecialVar result
-	-- For RSE, this is instead processed through the tasks system, as data inside one task
-
-	local starterSpecies
-	if GameSettings.game == 3 then -- FRLG
-		local varResult = Memory.readword(GameSettings.gSpecialVar_Result)
-		-- Choice dialogue open / Starter chosen but not received yet
-		if varResult == 1 or varResult == 255 then -- 1 (YES), 255 (Choice dialogue open)
-			local offset = 0x4
-			starterSpecies = Memory.readword(Utils.getSaveBlock1Addr() + GameSettings.gameVarsOffset + offset)
-		end
-	elseif GameSettings.Task_HandleConfirmStarterInput ~= nil then -- RSE
-		local confirmAddr
-		if CustomCode.RomHacks.isNatDexVersionOrLower("1.1.3") then
-			confirmAddr = GameSettings.Task_HandleConfirmStarterInput_NatDex_113
-		else
-			confirmAddr = GameSettings.Task_HandleConfirmStarterInput
-		end
-		local taskFuncAddr = Memory.readdword(GameSettings.gTasks)
-		if taskFuncAddr >= confirmAddr and taskFuncAddr < confirmAddr + 10 then
-			local tStarterSelectionOffset = 0x8
-			local choiceIndex = Memory.readword(GameSettings.gTasks + tStarterSelectionOffset)
-			local choiceToRivalId = { [0] = 520, [1] = 523, [2] = 526 }
-			local trainerGame = TrackerAPI.getTrainerGameData(choiceToRivalId[choiceIndex] or 0)
-			if trainerGame and trainerGame.party then
-				starterSpecies = (trainerGame.party[1] or {}).pokemonID
-			end
-		end
-	end
-
-	-- Change screen if the starter selection is/isnt in process
-	if PokemonData.isValid(starterSpecies) and Program.currentScreen == TrackerScreen then
-		Program.isViewingStarter = true
-		if Main.IsOnBizhawk() then
-			InfoScreen.changeScreenView(InfoScreen.Screens.POKEMON_INFO, starterSpecies)
-		else
-			MGBA.Screens.LookupPokemon:setData(starterSpecies, true)
-		end
-	elseif not PokemonData.isValid(starterSpecies) and Program.currentScreen == InfoScreen then
-		Program.isViewingStarter = false
-		Program.changeScreenView(TrackerScreen)
-	end
+	Gen1Runtime.checkForStarterSelection()
 end
-
----Returns the current map tile coordinates of the player.
----@return table<string, number> tile { x = number, y = number }
 function Program.getPlayerMapTile()
-	local saveBlock1Addr = Utils.getSaveBlock1Addr()
-	-- The player's map tile coordinates (struct Coords16) are stored as two s16 values at the start of SaveBlock1
-	return {
-		x = Memory.readword(saveBlock1Addr + 0x0),
-		y = Memory.readword(saveBlock1Addr + 0x2),
-	}
+	return Gen1Runtime.getPlayerTilePosition()
 end
-
----Returns the current flash level, with 0 being fully bright and 8 being fully black.
----@return number flashLevel
+function Program.getPlayerTilePosition()
+	return Gen1Runtime.getPlayerTilePosition()
+end
 function Program.readFlashLevel()
-	local saveblock1Addr = Utils.getSaveBlock1Addr()
-	local flashLevel = Memory.readbyte(saveblock1Addr + Program.Addresses.offsetFlashLevel)
-	return flashLevel
+	return Gen1Runtime.readFlashLevel()
 end
-
 function Program.updateRepelSteps()
-	-- Checks for an active repel and updates the current steps remaining
-	-- Game uses a variable for the repel steps remaining, which remains at 0 when there's no active repel
-	local saveblock1Addr = Utils.getSaveBlock1Addr()
-	local repelStepCountOffset
-	if GameSettings.game == 3 then
-		repelStepCountOffset = Program.Addresses.offsetRepelStepCountFRLG
-	else
-		repelStepCountOffset = Program.Addresses.offsetRepelStepCountRSE
-	end
-	local repelStepCount = Memory.readbyte(saveblock1Addr + GameSettings.gameVarsOffset + repelStepCountOffset)
-	if repelStepCount ~= nil and repelStepCount > 0 then
-		Program.ActiveRepel.inUse = true
-		if repelStepCount ~= Program.ActiveRepel.stepCount then
-			Program.ActiveRepel.stepCount = repelStepCount
-			-- Duration is defaulted to normal repel (100 steps), check if super or max is used instead
-			if repelStepCount > Program.ActiveRepel.duration then
-				if repelStepCount <= 200 then
-					-- Super Repel
-					Program.ActiveRepel.duration = 200
-				elseif repelStepCount <= 250 then
-					-- Max Repel
-					Program.ActiveRepel.duration = 250
-				end
-			end
-		end
-	elseif repelStepCount == 0 then
-		-- Reset the active repel data when none is active (remaining step count 0)
-		Program.ActiveRepel.inUse = false
-		Program.ActiveRepel.stepCount = 0
-		Program.ActiveRepel.duration = 100
-	end
+	Gen1Runtime.updateRepelSteps()
 end
-
--- Read in game data for both the Player's entire team and the Enemy's entire team
 function Program.updatePokemonTeams()
-	-- Check if it's a new game (no Pokémon yet)
-	if not Tracker.Data.isNewGame and Program.GameData.PlayerTeam[1] == nil then
-		Tracker.Data.isNewGame = true
-	end
-
-	local previousLeadMon = Program.GameData.PlayerTeam[1] or {}
-
-	local addressOffset = 0
-	for i = 1, 6, 1 do
-		-- Lookup information on the player's Pokemon first
-		local personality = Memory.readdword(GameSettings.pstats + addressOffset)
-		local trainerID = Memory.readdword(GameSettings.pstats + addressOffset + 4)
-
-		if personality ~= 0 or trainerID ~= 0 then
-			local pokemon = Program.readNewPokemon(GameSettings.pstats + addressOffset, personality)
-			if Program.validPokemonData(pokemon) then
-				Tracker.verifyDataForPlayer(pokemon.trainerID)
-
-				-- Include experience information for each Pokemon in the player's team
-				pokemon.currentExp, pokemon.totalExp = Program.getNextLevelExp(pokemon.pokemonID, pokemon.level, pokemon.experience)
-
-				Program.GameData.PlayerTeam[i] = pokemon
-			end
-		else
-			Program.GameData.PlayerTeam[i] = nil
-		end
-
-		-- Then lookup information on the opposing Pokemon
-		personality = Memory.readdword(GameSettings.estats + addressOffset)
-		trainerID = Memory.readdword(GameSettings.estats + addressOffset + 4)
-
-		if personality ~= 0 or trainerID ~= 0 then
-			local pokemon = Program.readNewPokemon(GameSettings.estats + addressOffset, personality)
-			if Program.validPokemonData(pokemon) then
-				-- Double-check a race condition where current PP values are wildly out of range if retrieved right before a battle begins
-				if not Battle.inActiveBattle() then
-					for _, move in pairs(pokemon.moves) do
-						if move.id ~= 0 then
-							move.pp = tonumber(MoveData.Moves[move.id].pp) -- set value to max PP
-						end
-					end
-				end
-
-				Program.GameData.EnemyTeam[i] = pokemon
-			end
-		else
-			Program.GameData.EnemyTeam[i] = nil
-		end
-
-		-- Next Pokemon - Each is offset by 100 bytes
-		addressOffset = addressOffset + Program.Addresses.sizeofPokemonStruct
-	end
-
+	Gen1Runtime.updatePokemonTeams()
 end
-
 function Program.readNewPokemon(startAddress, personality)
-	-- Pokemon Data structure: https://bulbapedia.bulbagarden.net/wiki/Pok%C3%A9mon_data_structure_(Generation_III)
-	local otid = Memory.readdword(startAddress + 4)
-	local magicword = Utils.bit_xor(personality, otid) -- The XOR encryption key for viewing the Pokemon data
-
-	local aux = personality % 24 + 1
-	local growthoffset = (MiscData.TableData.growth[aux] - 1) * 12
-	local attackoffset = (MiscData.TableData.attack[aux] - 1) * 12
-	local effortoffset = (MiscData.TableData.effort[aux] - 1) * 12
-	local miscoffset = (MiscData.TableData.misc[aux] - 1) * 12
-
-	-- Pokemon Data substructure: https://bulbapedia.bulbagarden.net/wiki/Pok%C3%A9mon_data_substructures_(Generation_III)
-	local growth1 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + growthoffset), magicword)
-	local growth2 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + growthoffset + 4), magicword) -- Experience
-	local growth3 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + growthoffset + 8), magicword)
-	local attack1 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + attackoffset), magicword)
-	local attack2 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + attackoffset + 4), magicword)
-	local attack3 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + attackoffset + 8), magicword)
-	local effort1 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + effortoffset), magicword)
-	local effort2 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + effortoffset + 4), magicword)
-	local misc2 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + miscoffset + 4), magicword)
-
-	local nickname = ""
-	for i=0, Program.Addresses.sizeofPokemonNickname - 1, 1 do
-		local charByte = Memory.readbyte(startAddress + 8 + i)
-		if charByte == Program.Addresses.nicknameCharEnd then break end -- end of sequence
-		nickname = nickname .. (GameSettings.GameCharMap[charByte] or Constants.HIDDEN_INFO)
-	end
-	nickname = Utils.formatSpecialCharacters(nickname)
-
-	-- Unused data memory reads
-	-- local effort3 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + effortoffset + 8), magicword)
-	-- local misc3   = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + miscoffset + 8), magicword)
-
-	-- Checksum, currently unused
-	-- local cs = Utils.addhalves(growth1) + Utils.addhalves(growth2) + Utils.addhalves(growth3)
-	-- 		+ Utils.addhalves(attack1) + Utils.addhalves(attack2) + Utils.addhalves(attack3)
-	-- 		+ Utils.addhalves(effort1) + Utils.addhalves(effort2) + Utils.addhalves(effort3)
-	-- 		+ Utils.addhalves(misc1) + Utils.addhalves(misc2) + Utils.addhalves(misc3)
-	-- cs = cs % 65536
-
-	local species = Utils.getbits(growth1, 0, 16) -- Pokemon's Pokedex ID
-	local abilityNum = Utils.getbits(misc2, 31, 1) -- [0 or 1] to determine which ability, available in PokemonData
-
-	-- Check for shininess: https://bulbapedia.bulbagarden.net/wiki/Personality_value#Shininess
-	local trainerID = Utils.getbits(otid, 0, 16)
-	local secretID = Utils.getbits(otid, 16, 16)
-	local p1 = math.floor(personality / 65536)
-	local p2 = personality % 65536
-	local isShiny = Utils.bit_xor(Utils.bit_xor(Utils.bit_xor(trainerID, secretID), p1), p2) < Program.Values.ShinyOdds
-	local hasPokerus
-	if GameSettings.game ~= 3 then -- PokeRus doesn't exist in FRLG due to lack of passing time
-		local misc1 = Utils.bit_xor(Memory.readdword(startAddress + Program.Addresses.offsetPokemonSubstruct + miscoffset), magicword)
-		-- First 4 bits are number of days until Pokerus is cured, Second 4 bits are the strain variation
-		hasPokerus = Utils.getbits(misc1, 0, 8) > 0
-	end
-
-	-- Determine status condition
-	local status_aux = Memory.readdword(startAddress + Program.Addresses.offsetPokemonStatus)
-	local sleep_turns_result = 0
-	local status_result = 0
-	if status_aux == 0 then --None
-		status_result = 0
-	elseif status_aux < 8 then -- Sleep
-		sleep_turns_result = status_aux
-		status_result = 1
-	elseif status_aux == 8 then -- Poison
-		status_result = 2
-	elseif status_aux == 16 then -- Burn
-		status_result = 3
-	elseif status_aux == 32 then -- Freeze
-		status_result = 4
-	elseif status_aux == 64 then -- Paralyze
-		status_result = 5
-	elseif status_aux == 128 then -- Toxic Poison
-		status_result = 6
-	end
-
-	-- Can likely improve this further using memory.read_bytes_as_array but would require testing to verify
-	local level_and_currenthp = Memory.readdword(startAddress + Program.Addresses.offsetPokemonStatsLvCurHp)
-	local maxhp_and_atk = Memory.readdword(startAddress + Program.Addresses.offsetPokemonStatsMaxHpAtk)
-	local def_and_speed = Memory.readdword(startAddress + Program.Addresses.offsetPokemonStatsDefSpe)
-	local spatk_and_spdef = Memory.readdword(startAddress + Program.Addresses.offsetPokemonStatsSpaSpd)
-
-	return Program.DefaultPokemon:new({
-		personality = personality,
-		nickname = nickname,
-		trainerID = trainerID,
-		pokemonID = species,
-		heldItem = Utils.getbits(growth1, 16, 16),
-		experience = growth2,
-		friendship = Utils.getbits(growth3, 8, 8),
-		level = Utils.getbits(level_and_currenthp, 0, 8),
-		gender = MiscData.getMonGender(species, personality),
-		nature = personality % 25,
-		isEgg = Utils.getbits(misc2, 30, 1), -- [0 or 1] to determine if mon is still an egg (1 if true)
-		isShiny = isShiny,
-		hasPokerus = hasPokerus, -- Not realistically available in FRLG
-		abilityNum = abilityNum,
-		status = status_result,
-		sleep_turns = sleep_turns_result,
-		curHP = Utils.getbits(level_and_currenthp, 16, 16),
-		stats = {
-			hp = Utils.getbits(maxhp_and_atk, 0, 16),
-			atk = Utils.getbits(maxhp_and_atk, 16, 16),
-			def = Utils.getbits(def_and_speed, 0, 16),
-			spa = Utils.getbits(spatk_and_spdef, 0, 16),
-			spd = Utils.getbits(spatk_and_spdef, 16, 16),
-			spe = Utils.getbits(def_and_speed, 16, 16),
-		},
-		statStages = { hp = 6, atk = 6, def = 6, spa = 6, spd = 6, spe = 6, acc = 6, eva = 6 },
-		moves = {
-			{ id = Utils.getbits(attack1, 0, 16), level = 1, pp = Utils.getbits(attack3, 0, 8) },
-			{ id = Utils.getbits(attack1, 16, 16), level = 1, pp = Utils.getbits(attack3, 8, 8) },
-			{ id = Utils.getbits(attack2, 0, 16), level = 1, pp = Utils.getbits(attack3, 16, 8) },
-			{ id = Utils.getbits(attack2, 16, 16), level = 1, pp = Utils.getbits(attack3, 24, 8) },
-		},
-		evs = {
-			hp = Utils.getbits(effort1, 0, 8),
-			atk = Utils.getbits(effort1, 8, 8),
-			def = Utils.getbits(effort1, 16, 8),
-			spa = Utils.getbits(effort2, 0, 8),
-			spd = Utils.getbits(effort2, 8, 8),
-			spe = Utils.getbits(effort1, 24, 8),
-		},
-		ivs = Utils.convertIVNumberToTable(misc2),
-	})
+	return Gen1Runtime.readPartyPokemon(startAddress)
 end
-
----Reads in Trainer game data from memory.
----@param trainerId number
----@return table trainer A `Program.GameTrainer` object
 function Program.readTrainerGameData(trainerId)
-	local trainer = Program.GameTrainer:new({
-		trainerId = trainerId,
-		defeated = Program.hasDefeatedTrainer(trainerId),
-	})
-
-	local startAddress = GameSettings.gTrainers + (trainerId * Program.Addresses.sizeofTrainer)
-	trainer.partyFlags = Memory.readbyte(startAddress)
-	trainer.trainerPic = Memory.readbyte(startAddress + Program.Addresses.offsetTrainerPic)
-	trainer.doubleBattle = Memory.readbyte(startAddress + Program.Addresses.offsetTrainerDoubleBattle) ~= 0
-	trainer.aiFlags = Memory.readdword(startAddress + Program.Addresses.offsetTrainerFlagsAI) -- AI_SCRIPT_CHECK_BAD_MOVE(1 << 0) | AI_SCRIPT_TRY_TO_FAINT(1 << 2) | AI_SCRIPT_CHECK_VIABILITY(1 << 1)
-	trainer.partySize = Memory.readbyte(startAddress + Program.Addresses.offsetTrainerPartySize)
-	trainer.items = {
-		Memory.readword(startAddress + Program.Addresses.offsetTrainerItems),
-		Memory.readword(startAddress + Program.Addresses.offsetTrainerItems + Program.Addresses.sizeofTrainerItem * 1),
-		Memory.readword(startAddress + Program.Addresses.offsetTrainerItems + Program.Addresses.sizeofTrainerItem * 2),
-		Memory.readword(startAddress + Program.Addresses.offsetTrainerItems + Program.Addresses.sizeofTrainerItem * 3),
-	}
-
-	-- GENDER
-	local genderBit = Utils.getbits(Memory.readbyte(startAddress + Program.Addresses.offsetTrainerGender), 7, 1)
-	if genderBit == 0 then
-		trainer.gender = MiscData.Gender.MALE
-	elseif genderBit == 1 then
-		trainer.gender = MiscData.Gender.FEMALE
-	else
-		trainer.gender = MiscData.Gender.UNKNOWN
-	end
-
-	-- TRAINER CLASS
-	local classId = Memory.readbyte(startAddress + Program.Addresses.offsetTrainerClass)
-	local classStartAddr = GameSettings.gTrainerClassNames + (classId * Program.Addresses.sizeofTrainerClass)
-	trainer.trainerClass = ""
-	for i = 0, Program.Addresses.sizeofTrainerClass - 1, 1 do
-		local charByte = Memory.readbyte(classStartAddr + i)
-		if charByte == Program.Addresses.nicknameCharEnd then break end -- end of sequence
-		trainer.trainerClass = trainer.trainerClass .. (GameSettings.GameCharMap[charByte] or Constants.HIDDEN_INFO)
-	end
-	trainer.trainerClass = Utils.formatSpecialCharacters(trainer.trainerClass)
-
-	-- TRAINER NAME
-	local trainerNameAddr
-	-- Don't use the Rival's true name if playing FRLG, as that is hidden information used to calc enemy Pokémon natures
-	if GameSettings.game == 3 and TrainerData.isRival(trainerId) then
-		trainerNameAddr = Utils.getSaveBlock1Addr() + Program.Addresses.offsetRivalName
-	else
-		trainerNameAddr = startAddress + Program.Addresses.offsetTrainerName
-	end
-	trainer.trainerName = ""
-	for i = 0, Program.Addresses.sizeofTrainerName - 1, 1 do
-		local charByte = Memory.readbyte(trainerNameAddr + i)
-		if charByte == Program.Addresses.nicknameCharEnd then break end -- end of sequence
-		trainer.trainerName = trainer.trainerName .. (GameSettings.GameCharMap[charByte] or Constants.HIDDEN_INFO)
-	end
-	trainer.trainerName = Utils.formatSpecialCharacters(trainer.trainerName)
-
-	-- TRAINER PARTY MONS
-	local function readPartyPokemon(partyPtr)
-		local partyData = {}
-
-		-- #define F_TRAINER_PARTY_CUSTOM_MOVESET (1 << 0) even = default moveset, odd = custom moveset
-		-- #define F_TRAINER_PARTY_HELD_ITEM      (1 << 1) 2 or greater = held item, 1 or lower = no item
-		if trainer.partyFlags == 0 then -- TrainerMonNoItemDefaultMoves (flag: 0 << 0)
-			for i = 0, trainer.partySize - 1, 1 do
-				local offset = i * Program.Addresses.sizeofTrainerMonWithDefaultMoves
-				table.insert(partyData, {
-					iv = Memory.readword(partyPtr + offset), -- u16 iv;
-					level = Memory.readbyte(partyPtr + offset + Program.Addresses.offsetTrainerMonLevel), -- u8 lvl;
-					species = Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonSpecies), -- u16 species;
-				})
-			end
-		elseif trainer.partyFlags == 1 then -- TrainerMonNoItemCustomMoves (flag: 1 << 0)
-			-- TODO: Untested, not available in FRLG
-			for i = 0, trainer.partySize - 1, 1 do
-				local offset = i * Program.Addresses.sizeofTrainerMonWithCustomMoves
-				table.insert(partyData, {
-					iv = Memory.readword(partyPtr + offset), -- u16 iv;
-					level = Memory.readbyte(partyPtr + offset + Program.Addresses.offsetTrainerMonLevel), -- u8 lvl;
-					species = Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonSpecies), -- u16 species;
-					moves = { -- u16 moves[MAX_MON_MOVES];
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonNoItemMove1),
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonNoItemMove1 + Program.Addresses.sizeofTrainerMonCustomMove * 1),
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonNoItemMove1 + Program.Addresses.sizeofTrainerMonCustomMove * 2),
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonNoItemMove1 + Program.Addresses.sizeofTrainerMonCustomMove * 3),
-					}
-				})
-			end
-		elseif trainer.partyFlags == 2 then -- TrainerMonItemDefaultMoves (flag: 1 << 1)
-			for i = 0, trainer.partySize - 1, 1 do
-				local offset = i * Program.Addresses.sizeofTrainerMonWithDefaultMoves
-				table.insert(partyData, {
-					iv = Memory.readword(partyPtr + offset), -- u16 iv;
-					level = Memory.readbyte(partyPtr + offset + Program.Addresses.offsetTrainerMonLevel), -- u8 lvl;
-					species = Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonSpecies), -- u16 species;
-					heldItem = Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonItem),-- u16 heldItem;
-				})
-			end
-		elseif trainer.partyFlags == 3 then -- TrainerMonItemCustomMoves (flag: 1 << 0 | 1 << 1)
-			for i = 0, trainer.partySize - 1, 1 do
-				local offset = i * Program.Addresses.sizeofTrainerMonWithCustomMoves
-				table.insert(partyData, {
-					iv = Memory.readword(partyPtr + offset), -- u16 iv;
-					level = Memory.readbyte(partyPtr + offset + Program.Addresses.offsetTrainerMonLevel), -- u8 lvl;
-					species = Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonSpecies), -- u16 species;
-					heldItem = Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonItem),-- u16 heldItem;
-					moves = { -- u16 moves[MAX_MON_MOVES];
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonItemMove1),
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonItemMove1 + Program.Addresses.sizeofTrainerMonCustomMove * 1),
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonItemMove1 + Program.Addresses.sizeofTrainerMonCustomMove * 2),
-						Memory.readword(partyPtr + offset + Program.Addresses.offsetTrainerMonItemMove1 + Program.Addresses.sizeofTrainerMonCustomMove * 3),
-					}
-				})
-			end
-		end
-		return partyData
-	end
-
-	trainer.party = {}
-	local partyPtr = Memory.readdword(startAddress + Program.Addresses.offsetTrainerPartyPtr)
-	local partyData = readPartyPokemon(partyPtr)
-	for _, pokemon in ipairs(partyData or {}) do
-		table.insert(trainer.party, {
-			pokemonID = pokemon.species or 0,
-			level = pokemon.level or 0,
-			ivs = math.floor(pokemon.iv * 31 / 255), -- fixedIV = iv * MAX_PER_STAT_IVS(31) / 255
-			heldItem = pokemon.heldItem or 0,
-			moves = pokemon.moves or {}, -- Holds "Custom Moves", as defined for a tiny subset of trainers
-		})
-	end
-
-	return trainer
+	return Gen1TrainerData.readTrainer(trainerId)
 end
-
--- Returns two values [numAlive, total] for a given Trainer's Pokémon team.
 function Program.getTeamCounts()
 	local numAlive, total = 0, 0
 	for i = 1, 6, 1 do
@@ -1148,80 +661,20 @@ end
 -- currentExp: A value between 0 and 'totalExp'
 -- totalExp: The amount of exp needed to reach the next level
 function Program.getNextLevelExp(pokemonID, level, experience)
-	if not PokemonData.isValid(pokemonID) or level == nil or level >= 100 or experience == nil or GameSettings.gExperienceTables == nil then
-		return 0, 100 -- arbitrary returned values to indicate this information isn't found and it's 0% of the way to next level
+	if not PokemonData.isValid(pokemonID) or not level or level >= 100 or not experience then
+		return 0, 100
 	end
-
-	local growthRateIndex = Memory.readbyte(GameSettings.gBaseStats + (pokemonID * Program.Addresses.sizeofBaseStatsPokemon) + Program.Addresses.offsetGrowthRateIndex)
-	local expTableOffset = GameSettings.gExperienceTables + (growthRateIndex * Program.Addresses.sizeofExpTablePokemon) + (level * Program.Addresses.sizeofExpTableLevel)
-	local expAtLv = Memory.readdword(expTableOffset)
-	local expAtNextLv = Memory.readdword(expTableOffset + Program.Addresses.sizeofExpTableLevel)
-
-	local currentExp = experience - expAtLv
-	local totalExp = expAtNextLv - expAtLv
-
-	return currentExp, totalExp
+	local internal = PokemonData.Pokemon[pokemonID] or {}
+	local atLevel = Gen1DataAdapter.expForLevel(internal.growthRate, level)
+	local atNextLevel = Gen1DataAdapter.expForLevel(internal.growthRate, level + 1)
+	return math.max(0, math.min(experience - atLevel, atNextLevel - atLevel)), math.max(1, atNextLevel - atLevel)
 end
-
 function Program.updatePCHeals()
-	-- Updates PC Heal tallies and handles auto-tracking PC Heal counts when the option is on
-	-- Currently checks the total number of heals from pokecenters and from mom
-	-- Does not include whiteouts, as those don't increment either of these gamestats
-
-	-- Save blocks move and are re-encrypted right as the battle starts
-	if Battle.inActiveBattle() then
-		return
-	end
-
-	-- Make sure the player is in a map location that can perform a PC heal
-	if not RouteData.Locations.CanPCHeal[Program.GameData.mapId] then
-		return
-	end
-
-	local gameStat_UsedPokecenter = Utils.getGameStat(Constants.GAME_STATS.USED_POKECENTER)
-	-- Turns out Game Freak are weird and only increment mom heals in RSE, not FRLG
-	local gameStat_RestedAtHome = Utils.getGameStat(Constants.GAME_STATS.RESTED_AT_HOME)
-
-	local combinedHeals = gameStat_UsedPokecenter + gameStat_RestedAtHome
-
-	if combinedHeals ~= Tracker.Data.gameStatsHeals then
-		-- Update the local tally if there is a new heal
-		Tracker.Data.gameStatsHeals = combinedHeals
-		-- Only change the displayed PC Heals count when the option is on and auto-tracking is enabled
-		if Options["Track PC Heals"] and TrackerScreen.Buttons.PCHealAutoTracking.toggleState then
-			if Options["PC heals count downward"] then
-				-- Automatically count down
-				Tracker.Data.centerHeals = Tracker.Data.centerHeals - 1
-				if Tracker.Data.centerHeals < 0 then Tracker.Data.centerHeals = 0 end
-			else
-				-- Automatically count up
-				Tracker.Data.centerHeals = Tracker.Data.centerHeals + 1
-				if Tracker.Data.centerHeals > 99 then Tracker.Data.centerHeals = 99 end
-			end
-		end
-	end
+	Gen1Runtime.updatePCHeals()
 end
-
----Returns a byte such that each badge is a bit packed into the byte. 1st badge is least-significant bit (position 0)
----@return number badgeBits
 function Program.readBadgeBits()
-	-- Don't bother checking badge data if in the pre-game intro screen (where old data exists)
-	if not Program.isValidMapLocation() then
-		return 0
-	end
-	local saveblock1Addr = Utils.getSaveBlock1Addr()
-	if GameSettings.game == 1 then -- Ruby/Sapphire
-		return Utils.getbits(Memory.readword(saveblock1Addr + GameSettings.badgeOffset), 7, 8)
-	elseif GameSettings.game == 2 then -- Emerald
-		return Utils.getbits(Memory.readword(saveblock1Addr + GameSettings.badgeOffset), 7, 8)
-	elseif GameSettings.game == 3 then -- FireRed/LeafGreen
-		return Memory.readbyte(saveblock1Addr + GameSettings.badgeOffset)
-	end
-	return 0
+	return Gen1Runtime.readBadgeBits()
 end
-
----Updates the Badge buttons on Tracker Screen. Also returns the gym number of any badge obtained since last update; 0 if none
----@return number newBadgeObtained
 function Program.updateBadgesObtained()
 	-- Don't bother checking badge data if in the pre-game intro screen (where old data exists)
 	if not Program.isValidMapLocation() then
@@ -1244,22 +697,20 @@ function Program.updateBadgesObtained()
 	return newBadgeObtained
 end
 
+function Program.snapshotRodItem()
+	Gen1Runtime.snapshotRodItem()
+end
+
+function Program.getStarterChoice()
+	return Gen1Runtime.getStarterChoice()
+end
+
 function Program.updateMapLocation()
-	local newMapId = Memory.readword(GameSettings.gMapHeader + Program.Addresses.offsetMapHeaderLayoutId)
-
-	-- If the player is in a new area, auto-lookup for mGBA screen
-	if not Main.IsOnBizhawk() and newMapId ~= Program.GameData.mapId then
-		local isFirstLocation = Program.GameData.mapId == nil or Program.GameData.mapId == 0
-		MGBA.Screens.LookupRoute:setData(newMapId, isFirstLocation)
-	end
-	Program.GameData.mapId = newMapId
+	Gen1Runtime.updateMapLocation()
 end
-
--- More or less used to determine if the player has begun playing the game, returns true if so.
 function Program.isValidMapLocation()
-	return Program.GameData.mapId ~= nil and Program.GameData.mapId ~= 0
+	return Gen1Runtime.isValidMapLocation()
 end
-
 function Program.HandleExit()
 	if not Main.IsOnBizhawk() then
 		return
@@ -1283,130 +734,25 @@ function Program.focusBizhawkWindow()
 	end
 end
 
-local function refreshExtras()
-	local p1 = Tracker.getPokemon(1, true) or {}
-	local p2 = RandomizerLog.Data.Pokemon and RandomizerLog.Data.Pokemon[p1.pokemonID] or {}
-	return p1.ivs, p1.evs, p2.BaseStats, (p1.level or 0), (p1.nature or 0), (p1.stats or {})
-end
-
--- Returns a table that contains {pokemonID, level, and moveId} of the player's Pokemon that is currently learning a new move via experience level-up.
 function Program.getLearnedMoveInfoTable()
-	local battleMsg = Memory.readdword(GameSettings.gBattlescriptCurrInstr)
-
-	-- If the battle message relates to learning a new move, read in that move id
-	-- Note: The very last address (excluded) is called for any level-up, not just level-ups involving learning a new move
-	if GameSettings.BattleScript_LearnMoveLoop <= battleMsg and battleMsg < GameSettings.BattleScript_LearnMoveReturn then
-		local moveToLearnId = Memory.readword(GameSettings.gMoveToLearn)
-
-		local battleStructAddress
-		if GameSettings.gBattleStructPtr ~= nil then -- Pointer unavailable in RS
-			battleStructAddress = Memory.readdword(GameSettings.gBattleStructPtr)
-		else
-			battleStructAddress = Program.Addresses.battleStructDefault
-		end
-
-		local partyIndex = Memory.readbyte(battleStructAddress + Program.Addresses.offsetPokemonGettingExp) + 1 -- Party index of player (1-6)
-		local pokemon = Tracker.getPokemon(partyIndex, true)
-		if pokemon ~= nil then
-			--Utils.printDebug("Move: %s, Battle Script: %s, Pokemon: %s, Level: %s", moveToLearnId, battleMsg, pokemon.pokemonID, pokemon.level)
-			return {
-				pokemonID = pokemon.pokemonID,
-				level = pokemon.level,
-				moveId = moveToLearnId,
-			}
-		end
-
-		return {
-			pokemonID = nil,
-			level = nil,
-			moveId = moveToLearnId,
-		}
-	end
-
-	return {
-		pokemonID = nil,
-		level = nil,
-		moveId = nil,
-	}
+	return Gen1Runtime.getLearnedMoveInfoTable()
 end
 
--- Useful for dynamically getting the Pokemon's types if they have changed somehow (Color change, Transform, etc)
 function Program.getPokemonTypes(isOwn, isLeft)
-	local ownerAddressOffset = Utils.inlineIf(isOwn, 0, Program.Addresses.sizeofBattlePokemon)
-	local leftAddressOffset = Utils.inlineIf(isLeft, 0, Program.Addresses.offsetBattlePokemonDoublesPartner)
-	local typesData = Memory.readword(GameSettings.gBattleMons + Program.Addresses.offsetBattlePokemonTypes + ownerAddressOffset + leftAddressOffset)
-	return {
-		PokemonData.TypeIndexMap[Utils.getbits(typesData, 0, 8)],
-		PokemonData.TypeIndexMap[Utils.getbits(typesData, 8, 8)],
-	}
+	return Gen1Runtime.getPokemonTypes(isOwn)
 end
-
--- Updates 'inCatchingTutorial' and 'hasCompletedTutorial' based on if the player has/hasn't completed the catching tutorial
 function Program.updateCatchingTutorial()
-	if Program.hasCompletedTutorial then return end
-
-	local tutorialFlag = Memory.readbyte(GameSettings.sSpecialFlags)
-
-	-- At some point after the tutorial has begun, it will end (Flag=0)
-	if Program.inCatchingTutorial and tutorialFlag == 0 then
-		Program.hasCompletedTutorial = true
-	end
-
-	Program.inCatchingTutorial = (tutorialFlag == 3)
-	if Program.inCatchingTutorial then
-		Battle.recentBattleWasTutorial = true
-	end
+	Gen1Runtime.updateCatchingTutorial()
 end
-
 function Program.isInEvolutionScene()
-	local evoInfo
-	--Ruby and Sapphire reference sEvoInfo (EvoInfo struct) directly. All other Gen 3 games instead store a pointer to the EvoInfo struct which needs to be read first
-	if GameSettings.game ~= 1 then
-		evoInfo = Memory.readdword(GameSettings.sEvoStructPtr)
-	else
-		evoInfo = GameSettings.sEvoInfo
-	end
-	-- third byte of EvoInfo is dedicated to the taskId
-	local taskID = Memory.readbyte(evoInfo + Program.Addresses.offsetEvoInfoTaskId)
-
-	--only 16 tasks possible max in gTasks
-	if taskID > 15 then return false end
-
-	--Check for Evolution Task (Task_EvolutionScene + 1)
-	local taskFunc = Memory.readdword(GameSettings.gTasks + (Program.Addresses.sizeofTaskStruct * taskID))
-	if taskFunc ~= GameSettings.Task_EvolutionScene then return false end
-
-	--Check if the Task is active
-	local isActive = Memory.readbyte(GameSettings.gTasks + (Program.Addresses.sizeofTaskStruct * taskID) + Program.Addresses.offsetTaskIsActive)
-	return isActive == 1
+	return Gen1Runtime.isInEvolutionScene()
 end
-
--- Returns true if player is in the start menu (or the subsequent pokedex/pokemon/bag/etc menus)
 function Program.isInStartMenu()
-	-- Current Issues:
-	-- 1) Sometimes this window ID gets unset for a brief duration during the transition back to the start menu
-	-- 2) This window ID doesn't exist at all in Ruby/Sapphire, yet to figure out an alternative
-	if GameSettings.game == 1 then return false end -- Skip checking for Ruby/Sapphire
-
-	local startMenuWindowId = Memory.readbyte(GameSettings.sStartMenuWindowId)
-	return startMenuWindowId == 1
+	return Gen1Runtime.isInStartMenu()
 end
-
----Forcibly change the in-game option for "Button Mode" from "HELP" to "LR"; allowing additional Tracker controls
----@param forced? boolean Optional, if true will force change the setting regardless of game being played or existing setting
 function Program.changeGameSettingForLR(forced)
-	-- Do not change this setting if playing FireRed NatDex, as that rom hack defaults to ButtonMode:LR
-	if not forced and GameSettings.game == 3 and CustomCode.RomHacks.isPlayingNatDex() then
-		return
-	end
-	local addr2 = Utils.getSaveBlock2Addr()
-	local currentSetting = Memory.readbyte(addr2 + Program.Addresses.offsetOptionsButtonMode)
-	if forced or currentSetting == 0 then -- 0 is the default setting for the game
-		Memory.writebyte(addr2 + Program.Addresses.offsetOptionsButtonMode, Program.Values.ButtonModeLR)
-	end
+	Gen1Runtime.changeGameSettingForLR()
 end
-
--- Pokemon is valid if it has a valid id, helditem, and each move that exists is a real move.
 function Program.validPokemonData(pokemonData)
 	if pokemonData == nil then return false end
 
@@ -1432,203 +778,26 @@ end
 
 -- Gets the extra pixels for screen rounding
 function Program.getExtras()
-	local extras = { lefts = {}, rights = {}, bumps = {} }
-	local x, y, z, x2, y2, z2 = refreshExtras()
-	if not x or not y then return extras end
-	local LEFT_MIN, LEFT_MAX = 0, 31
-	local RIGHT_MIN, RIGHT_MAX = 0, 255
-	local LOWER_RIGHT_MAX = 510
-	extras.lowerleft = true
-	for key, val in pairs(x or {}) do
-		if val < LEFT_MIN or val > LEFT_MAX then
-			extras.lefts[key] = true
-			extras.upperleft = true
-		end
-		if extras.lowerleft and val ~= LEFT_MAX then
-			extras.lowerleft = false
-		end
-	end
-	local t = 0
-	for key, val in pairs(y or {}) do
-		if val < RIGHT_MIN or val > RIGHT_MAX then
-			extras.rights[key] = true
-			extras.upperright = true
-		end
-		t = t + val
-	end
-	if t > LOWER_RIGHT_MAX then
-		extras.lowerright = true
-	end
-	if z then
-		local bumps = {}
-		for i, key in ipairs(Constants.OrderedLists.STATSTAGES) do
-			if z[key] then
-				local minPart1 = 2 * z[key] + LEFT_MIN + math.floor(RIGHT_MIN / 4)
-				local maxPart1 = 2 * z[key] + LEFT_MAX + math.floor(RIGHT_MAX / 4)
-				local finalPart = i == 1 and (x2 + 10) or 5
-				local minPart2 = math.floor(minPart1 * x2 / 100) + finalPart
-				local maxPart2 = math.floor(maxPart1 * x2 / 100) + finalPart
-				local finalMult = Utils.getNatureMultiplier(key, y2)
-				bumps[key] = { min = math.floor(minPart2 * finalMult), max = math.floor(maxPart2 * finalMult), }
-			end
-		end
-		for key, val in pairs(bumps) do
-			local bump = z2[key]
-			if bump < val.min or bump > val.max then
-				extras.bumps[key] = true
-				extras.anybumps = true
-			end
-		end
-	end
-	return extras
+	return Gen1Runtime.getExtras()
 end
-
---- Returns true if the player is actively in the Safari Zone; false otherwise
---- @param saveBlock1Addr number? (Optional) Include the SaveBlock 1 address if known to avoid extra memory reads
---- @return boolean inSafariZone
 function Program.isInSafariZone(saveBlock1Addr)
-	saveBlock1Addr = saveBlock1Addr or Utils.getSaveBlock1Addr()
-	local offsetSafariMode
-	if GameSettings.game == 3 then
-		offsetSafariMode = Program.Addresses.offsetSysFlagStartFRLG + Program.Addresses.offsetSysFlagSafariModeFRLG
-	else
-		offsetSafariMode = Program.Addresses.offsetSysFlagStartRSE + Program.Addresses.offsetSysFlagSafariModeRSE
-	end
-	local safariModeAddr = saveBlock1Addr + GameSettings.gameFlagsOffset + math.floor(offsetSafariMode / 8)
-	local safariModeBit = offsetSafariMode % 8
-	local safariModeVal = Memory.readbyte(safariModeAddr)
-	return Utils.getbits(safariModeVal, safariModeBit, 1) ~= 0
+	return Gen1Runtime.isInSafariZone()
 end
-
---- Returns true if the trainer has been defeated by the player; false otherwise
---- @param trainerId number
---- @param saveBlock1Addr number? (Optional) Include the SaveBlock 1 address if known to avoid extra memory reads
---- @return boolean isDefeated
 function Program.hasDefeatedTrainer(trainerId, saveBlock1Addr)
-	-- Don't reveal defeated trainers if player isn't actively playing the game (e.g. title screen w/ old save data)
-	if not TrainerData.Trainers[trainerId or false] or not Program.isValidMapLocation() then
-		return false
-	end
-	saveBlock1Addr = saveBlock1Addr or Utils.getSaveBlock1Addr()
-	local idAddrOffset = math.floor((Program.Addresses.offsetTrainerFlagStart + trainerId) / 8)
-	local idBit = (Program.Addresses.offsetTrainerFlagStart + trainerId) % 8
-	local trainerFlagAddr = saveBlock1Addr + GameSettings.gameFlagsOffset + idAddrOffset
-	local result = Memory.readbyte(trainerFlagAddr)
-	return Utils.getbits(result, idBit, 1) ~= 0
+	return Gen1TrainerData.hasDefeatedTrainer(trainerId)
 end
-
---- Returns a list of trainerIds of trainers defeated in a route/location, as well as the total number of trainers there
---- @param mapId number
---- @param saveBlock1Addr number? (Optional) Include the SaveBlock 1 address if known to avoid extra memory reads
---- @return table defeatedTrainers, number totalTrainers
 function Program.getDefeatedTrainersByLocation(mapId, saveBlock1Addr)
-	local route = RouteData.Info[mapId or false]
-	if not route then return {}, 0 end
-	saveBlock1Addr = saveBlock1Addr or Utils.getSaveBlock1Addr()
-	local defeatedTrainers = {}
-	local totalTrainers = 0
-	for _, trainerId in ipairs(route.trainers or {}) do
-		if TrainerData.shouldUseTrainer(trainerId) then
-			totalTrainers = totalTrainers + 1
-			if Program.hasDefeatedTrainer(trainerId, saveBlock1Addr) then
-				table.insert(defeatedTrainers, trainerId)
-			end
-		end
-	end
-	return defeatedTrainers, totalTrainers
+	return Gen1TrainerData.getDefeatedTrainersByLocation(mapId)
 end
-
---- Returns a list of trainerIds of trainers defeated in the combined area (Use RouteData.CombinedAreas), as well as the total number of trainers in those areas
---- @param mapIdList table
---- @param saveBlock1Addr number? (Optional) Include the SaveBlock 1 address if known to avoid extra memory reads
---- @return table defeatedTrainers, number totalTrainers
 function Program.getDefeatedTrainersByCombinedArea(mapIdList, saveBlock1Addr)
-	if type(mapIdList) ~= "table" then return {}, 0 end
-	saveBlock1Addr = saveBlock1Addr or Utils.getSaveBlock1Addr()
-	local totalTrainers = 0
-	local defeatedTrainers = {}
-	for _, mapId in ipairs(mapIdList) do
-		local defeatedList, total = Program.getDefeatedTrainersByLocation(mapId, saveBlock1Addr)
-		totalTrainers = totalTrainers + total
-		for _, trainerId in ipairs(defeatedList) do
-			table.insert(defeatedTrainers, trainerId)
-		end
-	end
-	return defeatedTrainers, totalTrainers
+	return Gen1TrainerData.getDefeatedTrainersByCombinedArea(mapIdList)
 end
-
---- @param tmhmNumber number The TM/HM number to use for move lookup
---- @param isHM? boolean If this is an HM number; default: false
---- @return number moveId The moveId corresponding to the tm/hm number
 function Program.getMoveIdFromTMHMNumber(tmhmNumber, isHM)
-	tmhmNumber = tmhmNumber - 1 -- TM 01 is at address position 0
-	if isHM then
-		tmhmNumber = tmhmNumber + 50
-	end
-	return Memory.readword(GameSettings.sTMHMMoves + (tmhmNumber * Program.Addresses.sizeofTMHMMoveId))
+	return Gen1Runtime.getMoveIdFromTMHMNumber(tmhmNumber, isHM)
 end
-
 function Program.updateBagItems()
-	Program.GameData.Items = {
-		healingTotal = 0,
-		healingPercentage = 0,
-		PokeBalls = {},
-		HPHeals = {},
-		PPHeals = {},
-		StatusHeals = {},
-		EvoStones = {},
-		Other = {},
-	}
-	local items = Program.GameData.Items
-
-	local key = Utils.getEncryptionKey(2) -- Want a 16-bit key
-	local saveBlock1Addr = Utils.getSaveBlock1Addr()
-	local addressesToScan = {
-		[saveBlock1Addr + GameSettings.bagPocket_Items_offset] = GameSettings.bagPocket_Items_Size,
-		[saveBlock1Addr + GameSettings.bagPocket_Berries_offset] = GameSettings.bagPocket_Berries_Size,
-		[saveBlock1Addr + GameSettings.bagPocket_Balls_offset] = GameSettings.bagPocket_Balls_Size,
-		-- Don't have a use for these yet, so not reading them from memory
-		-- [saveBlock1Addr + GameSettings.bagPocket_TmHm_offset] = GameSettings.bagPocket_TmHm_Size,
-	}
-	for address, size in pairs(addressesToScan) do
-		for i = 0, (size - 1), 1 do
-			local itemid_and_quantity = Memory.readdword(address + i * 4)
-			local itemID = Utils.getbits(itemid_and_quantity, 0, 16)
-			-- Only add to items if the item exists
-			if MiscData.Items[itemID] then
-				local quantity = Utils.getbits(itemid_and_quantity, 16, 16)
-				if key ~= nil then
-					quantity = Utils.bit_xor(quantity, key)
-				end
-				if quantity > 0 then
-					if MiscData.PokeBalls[itemID] then
-						items.PokeBalls[itemID] = quantity
-					end
-					if MiscData.HealingItems[itemID] then
-						items.HPHeals[itemID] = quantity
-					end
-					if MiscData.PPItems[itemID] then
-						items.PPHeals[itemID] = quantity
-					end
-					if MiscData.StatusItems[itemID] then
-						items.StatusHeals[itemID] = quantity
-					end
-					if MiscData.EvolutionStones[itemID] then
-						items.EvoStones[itemID] = quantity
-					end
-					-- If the item wasn't categorized anywhere, mark as "Other"
-					if not (items.PokeBalls[itemID] or items.HPHeals[itemID] or items.PPHeals[itemID] or items.StatusHeals[itemID] or items.EvoStones[itemID]) then
-						items.Other[itemID] = quantity
-					end
-				end
-			end
-		end
-	end
-
-	-- After updating items in bag, recalculate lead mon heals info
-	Program.recalcLeadPokemonHealingInfo()
+	Gen1Runtime.updateBagItems()
 end
-
 function Program.recalcLeadPokemonHealingInfo()
 	if not Battle.isViewingOwn then
 		return
@@ -1665,27 +834,7 @@ end
 ---Returns sorted lists of obtained TM & HM items in the bag
 ---@return table tms, table hms
 function Program.getTMsHMsBagItems()
-	local tms, hms = {}, {}
-	local key = Utils.getEncryptionKey(2) -- Want a 16-bit key
-	local address = Utils.getSaveBlock1Addr() + GameSettings.bagPocket_TmHm_offset
-	for i = 0, (GameSettings.bagPocket_TmHm_Size - 1), 1 do
-		local itemid_and_quantity = Memory.readdword(address + i * 4)
-		local itemID = Utils.getbits(itemid_and_quantity, 0, 16)
-		if itemID ~= 0 then
-			local quantity = Utils.getbits(itemid_and_quantity, 16, 16)
-			if key ~= nil then
-				quantity = Utils.bit_xor(quantity, key)
-			end
-			if MiscData.TMs[itemID] then
-				table.insert(tms, { id = itemID, quantity = quantity })
-			elseif MiscData.HMs[itemID] then
-				table.insert(hms, { id = itemID, quantity = quantity })
-			end
-		end
-	end
-	table.sort(tms, function(a,b) return a.id < b.id end)
-	table.sort(hms, function(a,b) return a.id < b.id end)
-	return tms, hms
+	return Gen1Runtime.getTMsHMsBagItems()
 end
 
 ---@class IPokemon

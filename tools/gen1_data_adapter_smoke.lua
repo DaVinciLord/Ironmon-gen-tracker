@@ -12,7 +12,7 @@ GameSettings = { GEN = 1 }
 
 dofile(repoRoot .. "ironmon_tracker/data/PokemonData.lua")
 dofile(repoRoot .. "ironmon_tracker/data/MoveData.lua")
-dofile(repoRoot .. "ironmon_tracker/gen1/DataAdapter.lua")
+dofile(repoRoot .. "ironmon_tracker/data/DataAdapter.lua")
 
 assert(#PokemonData.Pokemon == 151, "Gen 1 dataset must stop at Mew")
 assert(PokemonData.Pokemon[151].name == "Mew")

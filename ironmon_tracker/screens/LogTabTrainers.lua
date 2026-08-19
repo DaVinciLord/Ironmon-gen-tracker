@@ -7,24 +7,8 @@ LogTabTrainers = {
 		highlight = "Intermediate text",
 	},
 	TabIcons = {
-		BoyRS = {
-			image = FileManager.buildImagePath("player", "boy-rs", ".png"),
-			w = 15, h = 14,
-		},
-		BoyE = {
-			image = FileManager.buildImagePath("player", "boy-e", ".png"),
-			w = 15, h = 14,
-		},
 		BoyFRLG = {
 			image = FileManager.buildImagePath("player", "boy-frlg", ".png"),
-			w = 15, h = 14,
-		},
-		GirlRS = {
-			image = FileManager.buildImagePath("player", "girl-rs", ".png"),
-			w = 15, h = 14,
-		},
-		GirlE = {
-			image = FileManager.buildImagePath("player", "girl-e", ".png"),
 			w = 15, h = 14,
 		},
 		GirlFRLG = {
@@ -60,12 +44,8 @@ end
 -- Returns the boy(i=1) or girl(i=2) trainer head icon based on the game being played
 function LogTabTrainers.getTabIcons(index)
 	local seedChoice = (index or Main.currentSeed or 1) % 2
-	local trainerHeadIcons = {
-		[1] = { [0] = LogTabTrainers.TabIcons.GirlRS, [1] = LogTabTrainers.TabIcons.BoyRS, }, -- Ruby/Sapphire
-		[2] = { [0] = LogTabTrainers.TabIcons.GirlE, [1] = LogTabTrainers.TabIcons.BoyE, }, -- Emerald
-		[3] = { [0] = LogTabTrainers.TabIcons.GirlFRLG, [1] = LogTabTrainers.TabIcons.BoyFRLG, }, -- FireRed/LeafGreen
-	}
-	return { trainerHeadIcons[GameSettings.game or 3][seedChoice] }
+	local trainerHeadIcons = { [0] = LogTabTrainers.TabIcons.GirlFRLG, [1] = LogTabTrainers.TabIcons.BoyFRLG }
+	return { trainerHeadIcons[seedChoice] }
 end
 
 function LogTabTrainers.rebuild()
@@ -240,7 +220,7 @@ function LogTabTrainers.drawTrainerPortraitInfo(button, shadowcolor)
 	end
 
 	-- Grunts don't have unique names, so append their trainer ID for easier referencing
-	local isGrunt = { [TrainerData.Classes.TeamRocketGrunt] = true, [TrainerData.Classes.TeamAquaGrunt] = true, [TrainerData.Classes.TeamMagmaGrunt] = true, }
+	local isGrunt = { [TrainerData.Classes.TeamRocketGrunt] = true, }
 	if isGrunt[TrainerData.getTrainerInfo(button.id).class or false] then
 		nameText = string.format("%s #%s", nameText, button.id)
 	end

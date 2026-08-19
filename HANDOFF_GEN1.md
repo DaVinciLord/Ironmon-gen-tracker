@@ -4,29 +4,20 @@
 
 Build a complete Generation 1-only IronMON tracker from the current Besteon tracker architecture, informed by the NDS tracker where useful. It must support Red/Blue/Yellow US/EU and French Yellow, preserve current validated information, use native RBY mechanics and memory layouts, and remove features/data that do not exist in Generation 1.
 
-This objective is **not complete**. Automated coverage is strong for the native data layer, but no full interactive BizHawk validation has been completed and several inherited GBA paths remain in loaded modules.
+This objective is **not complete**. Native data, battle, trainer-defeat, encounter-area, and overworld helpers now have automated coverage on the current branch, but no full interactive BizHawk validation has been completed.
 
 ## Authoritative workspace
 
-- Active isolated worktree: `/tmp/ironmon-gen1-complete`
-- Branch: `agent/gen1-complete-rebuild`
-- Current handoff commit before this document: `3ae6b0ec`
-- Original user worktree (dirty; do not overwrite): `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/Ironmon-gen-tracker`
-- Besteon reference clone: `/tmp/ironmon-besteon-reference`
-- NDS reference clone: `/tmp/ironmon-nds-reference`
-- pret Red/Blue disassembly: `/tmp/pret-pokered`
-- pret Yellow disassembly: `/tmp/pret-pokeyellow`
-- UPR ZX jar: `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/PokeRandoZX-v4_6_1/PokeRandoZX.jar`
+- Branch: current working branch (do not create `/tmp` worktrees)
 - Real validated French Yellow ROM: `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/roms/seeds/YellowKaizo062.gbc`
 - Matching real log: `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/roms/seeds/YellowKaizo062.gbc.log`
-
-The `/tmp` paths may disappear after a reboot. The branch and commits must be preserved or moved before that happens.
+- UPR ZX jar: `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/PokeRandoZX-v4_6_1/PokeRandoZX.jar`
 
 ## Implemented and currently passing
 
 ### Native game profiles and memory
 
-- R/B US/EU, Yellow US/EU, and Yellow FR profiles in `ironmon_tracker/gen1/GameProfiles.lua`.
+- R/B US/EU, Yellow US/EU, and Yellow FR profiles in `ironmon_tracker/GameProfiles.lua`.
 - Historical randomized header aliases currently recognized for Red Kaizo and Yellow Kaizo.
 - Native BizHawk Game Boy System Bus mappings for WRAM and ROM.
 - Yellow FR addresses were checked against the real ROM/runtime information; do not replace them with a blanket regional offset.
@@ -52,8 +43,10 @@ The `/tmp` paths may disappear after a reboot. The branch and commits must be pr
 ### Battle and trainers
 
 - The inherited 1,162-line GBA battle core was replaced with a small native singles-only RBY state contract.
-- Wild/trainer battle detection, enemy observation, enemy move tracking, stat stages, view toggling, begin/end hooks and Battle Details are native.
-- Battle Details shows RBY HP, Attack, Defense, Special, Speed, accuracy/evasion stages, moves and PP.
+- Battle.lua is the RBY battle backend with the Besteon public API (no GBA Battle.lua, no post-load `.apply()`).
+- Program.lua memory readers are native Gen 1 (party, bag, badges, map, TM/HM, Safari, repel, PC heals). They delegate to `Runtime.lua` and `data/Gen1TrainerData.lua` instead of patching GBA function pointers after load.
+- Battle Details is the Besteon effects screen; GameFuncs read RBY battle-status bits in the same file.
+- GBA Hoenn/FRLG map dumps, GBA item tables, and GBA trainer-id dumps were removed from RouteData, MiscData, RandomizerLog, and TrainerData.
 - Native trainer class/party IDs, class counts, ROM party decoding and final-rival detection.
 - Game Over/loss/final victory no longer reads GBA outcome/opponent addresses.
 - Battle restart savestate is created on battle entry.
@@ -80,7 +73,7 @@ The `/tmp` paths may disappear after a reboot. The branch and commits must be pr
 
 ## Automated verification
 
-Run from `/tmp/ironmon-gen1-complete`:
+Run from the repository root:
 
 ```sh
 set -e
@@ -92,7 +85,7 @@ git diff --check
 git status --short
 ```
 
-At handoff time there are 19 smoke tests. The ROM integration proves the real Yellow FR profile can locate 151 stat records, 165 moves, 151 evolution/learnset pointers and 47 trainer-class pointers. This does **not** prove interactive emulator behavior.
+At handoff time there are 23 smoke tests. The ROM integration proves the real Yellow FR profile can locate 151 stat records, 165 moves, 151 evolution/learnset pointers and 47 trainer-class pointers. This does **not** prove interactive emulator behavior.
 
 ## Required work remaining — functional priority
 
@@ -115,37 +108,17 @@ Only Yellow FR has a real ROM available in the current evidence. Obtain lawful t
 
 ### P0 — defeated trainers and route completion
 
-- `Gen1TrainerData.applyRuntime()` currently sets `Program.hasDefeatedTrainer = function() return false end`.
-- `GameOverScreen.updateDefeatedTrainersCount()` currently returns zero.
-- Trainer route screens therefore cannot accurately show fought/unfought state.
-- Implement native event-flag/defeated-trainer tracking for RBY or a reliable session-based alternative that survives tracker reloads as appropriate.
-- Verify gym, rival, Rocket, Elite Four and rematch/duplicate-class edge cases.
+Implemented on the current branch (session + `.TDAT` persistence, gym leaders inferred from badges, static gym/E4/rival maps plus trainers remembered where they are fought). Still needs BizHawk verification for gym, rival, Rocket, Elite Four and rematch/duplicate-class edge cases.
 
 ### P0 — encounter-area classification
 
-- Runtime encounter tracking currently records wild encounters as `LAND`.
-- Distinguish grass/cave, surfing, Old Rod, Good Rod and Super Rod using native RBY state/map data.
-- Confirm the route overlay and scouting data do not merge distinct encounter tables.
-- Audit the special `0x100` synthetic mapping used while parsing global rod tables.
+Implemented: walking, surfing, Old/Good/Super Rod are distinct `RouteData.EncounterArea` tables. Global rod tables stay on Pallet Town (`0x00`), not the synthetic `0x100` map. Still needs BizHawk confirmation that scouting does not merge tables.
 
 ### P0 — loaded GBA code paths that can still crash
 
-There are still many inherited GBA references in loaded files, especially `Program.lua`, `Utils.lua`, `Constants.lua`, `FileManager.lua`, `CustomCode.lua`, `Options.lua`, `Tracker.lua`, `EventData.lua`, and language resources. Search with:
+The former `ironmon_tracker/gen1/` folder is gone. Modules now live next to Besteon (`GameProfiles.lua`, `PokemonDataReader.lua`, `Runtime.lua`, `data/DataAdapter.lua`, `data/SpeciesMap.lua`, `data/Gen1RouteData.lua`, `data/Gen1TrainerData.lua`, `data/Gen1RandomizerLog.lua`). Item tables are native in `MiscData.lua`. `TrackerAPI.getOpponentTrainerId` / `getBattleOutcome` read RBY WRAM. Save-block, encryption, nature and mGBA load paths are stubs or explicit BizHawk-only errors. `PokemonData.buildData` / `MoveData.buildData` call the native ROM readers.
 
-```sh
-rg -n 'gBattle|gBattler|BattleScript|Ruby|Sapphire|Emerald|FireRed|LeafGreen|FRLG|GBA|MGBA|ability|abilities|nature|heldItem|doubleBattle' ironmon_tracker --glob '*.lua' --glob '*.json'
-```
-
-At handoff, 55 files still match at least one legacy term. Some are harmless text/comments; others are callable functions. Audit by call graph and actual BizHawk traces, not by search count alone.
-
-Known examples:
-
-- `Program.getLearnedMoveInfoTable()` is GBA-specific. The Gen 1 runtime currently overrides it with an empty result to prevent crashes; native move-learning prompt detection remains to implement.
-- `Program.getExtras()` is GBA/nature-based. It is currently overridden with empty screen-rounding data.
-- Large sections of `Program.lua` (starter selection, PC heals, repel, Safari, evolution/menu detection, trainer flags and bag readers) still use GBA addresses even where a Gen 1 override does not yet exist.
-- `Main.lua`, `Input.lua` and `CustomCode.lua` still contain dormant mGBA branches/callback references.
-- `Utils.lua` retains GBA save-block, encryption, nature and starter helpers.
-- Debug modules are almost entirely GBA-specific and should be removed or rewritten.
+Remaining source cleanup (not a BizHawk crash risk if unused): Hoenn trainer class names, leftover GBA `Program.Addresses` constants, Gen 3 `MoveData.Values` ids, rse/gachamon/walking-sprite assets, and Debug GBA helpers.
 
 ### P1 — move-learning detection
 
@@ -238,7 +211,7 @@ Do not merely hide a field while leaving a callable GBA reader behind.
 5. **RBY capture is not the Gen 3 shake formula.** The native implementation uses two random checks with different random domains by Ball.
 6. **RBY has one Special stat.** Never recreate `spa/spd` aliases in active display/calculation paths merely to satisfy inherited code.
 7. **Passing smoke tests do not prove UI safety.** Most inherited screens require BizHawk globals and are not loaded end-to-end by the smoke suite.
-8. **Preserve the user's dirty original worktree.** Continue in the isolated branch/worktree unless explicitly instructed otherwise.
+8. **Continue on the current branch.** Do not introduce `/tmp` worktrees unless explicitly requested.
 
 ## Suggested next sequence
 

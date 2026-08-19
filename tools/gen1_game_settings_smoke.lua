@@ -25,7 +25,7 @@ Memory = {
 	end,
 }
 
-dofile(repoRoot .. "ironmon_tracker/gen1/GameProfiles.lua")
+dofile(repoRoot .. "ironmon_tracker/GameProfiles.lua")
 dofile(repoRoot .. "ironmon_tracker/GameSettings.lua")
 
 Memory.gameCode = Gen1GameProfiles.GameCodes.RED_US
@@ -33,10 +33,14 @@ assert(GameSettings.initialize())
 assert(GameSettings.GEN == 1 and GameSettings.currentProfile.id == "red_us")
 assert(GameSettings.partyMon1 == 0x0200116B)
 assert(GameSettings.gamename == "Pokemon Red (US/EU)")
+assert(GameSettings.isYellow ~= true)
+assert(GameSettings.usesStarterChoice())
 
 Memory.gameCode = Gen1GameProfiles.GameCodes.YELLOW_FR
 assert(GameSettings.initialize())
 assert(GameSettings.currentProfile.id == "yellow_fr" and GameSettings.isFrenchYellow)
+assert(GameSettings.isYellow)
+assert(not GameSettings.usesStarterChoice(), "Yellow has no grass/fire/water starter choice")
 assert(GameSettings.language == "French")
 assert(GameSettings.partyMon1 == 0x0200116F)
 assert(GameSettings.levelUpMoves == 0x0803B1E8)

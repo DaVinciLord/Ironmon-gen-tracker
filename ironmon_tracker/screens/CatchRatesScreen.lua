@@ -284,7 +284,7 @@ function CatchRatesScreen.refreshDataValues(pokemon)
 	-- ALL CATCH RATES
 	SCREEN.Data.catchRates = {}
 	local estimatedHP = math.floor(hpMax * (SCREEN.Data.hpPercent + SCREEN.Data.hpAdjust) / 100 + 0.5)
-	local terrain = Memory.readword(GameSettings.gBattleTerrain) -- Used for Dive Ball only
+	local terrain = 0 -- Dive Ball / GBA terrain do not exist in RBY
 	for ballId, _ in ipairs(MiscData.PokeBalls or {}) do
 		SCREEN.Data.catchRates[ballId] = PokemonData.calcCatchRate(
 			pokemon.pokemonID,

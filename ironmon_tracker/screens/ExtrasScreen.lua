@@ -198,7 +198,6 @@ function ExtrasScreen.createButtons()
 		{ "Display repel usage", "OptionDisplayRepelUsage", },
 		{ "Display pedometer", "OptionDisplayPedometer", },
 		{ "Display play time", "OptionDisplayPlayTime", },
-		{ "Display gender", "OptionDisplayGender", },
 		{ "Animated Pokemon popout", "OptionAnimatedPokemonPopout", },
 	}
 

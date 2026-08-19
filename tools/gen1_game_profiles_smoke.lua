@@ -3,7 +3,7 @@ local scriptPath = debug.getinfo(1, "S").source:sub(2)
 local toolsDir = scriptPath:match("^(.*[/\\])") or ""
 local repoRoot = toolsDir:gsub("tools[/\\]$", "")
 
-dofile(repoRoot .. "ironmon_tracker/gen1/GameProfiles.lua")
+dofile(repoRoot .. "ironmon_tracker/GameProfiles.lua")
 
 local codes = Gen1GameProfiles.GameCodes
 local red = assert(Gen1GameProfiles.get(codes.RED_US))
@@ -19,8 +19,13 @@ assert(Gen1GameProfiles.get(codes.YELLOW_KAIZO) == yellow)
 assert(not Gen1GameProfiles.isSupported(0x414C0042), "Crystal must not be accepted by the Gen 1-only tracker")
 assert(not Gen1GameProfiles.isSupported(0x42504545), "Emerald must not be accepted by the Gen 1-only tracker")
 
-assert(red.wram.partyCount == 0x02001163 and red.wram.partySpecies == 0x02001164)
+assert(red.wram.walkBikeSurf == 0x02001700 and red.wram.repelSteps == 0x020010DB)
+assert(red.wram.moveNum == 0x020010E0 and red.wram.whichPokemon == 0x02000F92)
+assert(yellowFr.wram.walkBikeSurf == 0x02001704 and yellowFr.wram.repelSteps == 0x020010DF)
+assert(yellowFr.wram.moveNum == 0x020010E4 and yellowFr.wram.whichPokemon == 0x02000F96)
 assert(red.wram.playerSelectedMove == 0x02000CDC and red.wram.battleState == 0x02001057)
+assert(red.wram.playerBattleStatus1 == 0x02001062 and red.wram.enemyBattleStatus1 == 0x02001067)
+assert(red.wram.paydayMoney == 0x02000CE5 and red.wram.playerDisabledMoveNumber == 0x02000CEE)
 assert(red.wram.trainerClass == 0x02001031 and red.wram.trainerNumber == 0x0200105D)
 assert(red.rom.levelUpMoves == 0x0803B05C and red.rom.trainers == 0x08039D3B)
 assert(yellow.wram.partyCount == 0x02001162 and yellow.wram.partySpecies == 0x02001163)

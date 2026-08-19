@@ -141,11 +141,7 @@ NavigationMenu.Buttons = {
 	},
 	MirageButton = {
 		getText = function(self)
-			if GameSettings.game == 3 then
-				return "Reveal Mew by Truck"
-			else
-				return "Mirage Island Portal"
-			end
+			return "Reveal Mew by Truck"
 		end,
 		image = Constants.PixelImages.POKEBALL,
 		type = Constants.ButtonTypes.ICON_BORDER,

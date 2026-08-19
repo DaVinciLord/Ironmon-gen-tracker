@@ -419,12 +419,7 @@ end
 
 function LogOverlay.getPlayerIconHead()
 	local seedChoice = (Main.currentSeed or 1) % 2
-	local trainerHeadIcons = {
-		[1] = { [0] = "girl-rs", [1] = "boy-rs", }, -- Ruby/Sapphire
-		[2] = { [0] = "girl-e", [1] = "boy-e", }, -- Emerald
-		[3] = { [0] = "girl-frlg", [1] = "boy-frlg", }, -- FireRed/LeafGreen
-	}
-	local trainerHead = trainerHeadIcons[GameSettings.game][seedChoice]
+	local trainerHead = ({ [0] = "girl-frlg", [1] = "boy-frlg", })[seedChoice]
 	return FileManager.buildImagePath("player", trainerHead, FileManager.Extensions.TRAINER)
 end
 

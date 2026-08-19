@@ -40,7 +40,7 @@ FileManager = {
 dofile("ironmon_tracker/data/PokemonData.lua")
 dofile("ironmon_tracker/data/MoveData.lua")
 dofile("ironmon_tracker/data/RandomizerLog.lua")
-dofile("ironmon_tracker/gen1/RandomizerLog.lua")
+dofile("ironmon_tracker/data/Gen1RandomizerLog.lua")
 
 assert(RandomizerLog.parseLog(logPath), "randomizer log parsing failed")
 

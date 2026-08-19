@@ -179,15 +179,16 @@ function GameOptionsScreen.createButtons()
 	startY = Constants.SCREEN.MARGIN + TAB_HEIGHT + 14
 	local optionKeyMapOther = {
 		{ "Can click trainers on screen", "OptionCanClickTrainers", },
-		{ "Show starter ball info", "OptionShowStarterBallInfo", },
 		{ "Hide stats until summary shown", "OptionHideStatsUntilSummary", },
 		{ "Show nicknames", "OptionShowNicknames", },
 		{ "Show experience points bar", "OptionShowExpBar", },
 		{ "Show heals as whole number", "OptionShowHealsAsValue", },
-		{ "Determine friendship readiness", "OptionDetermineFriendship", },
 		{ "Show data for vanilla game", "OptionShowVanillaGameData", },
 		{ "Open Book Play Mode", "OptionOpenBookPlayMode", },
 	}
+	if GameSettings.usesStarterChoice() then
+		table.insert(optionKeyMapOther, 2, { "Show starter ball info", "OptionShowStarterBallInfo", })
+	end
 	for _, optionTuple in ipairs(optionKeyMapOther) do
 		SCREEN.Buttons[optionTuple[1]] = {
 			type = Constants.ButtonTypes.CHECKBOX,

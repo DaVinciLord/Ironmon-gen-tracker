@@ -485,8 +485,8 @@ function TrackerScreen.initialize()
 
 	-- Buttons for each badge
 	local badgeWidth = 16
-	local badgeInfoTable = Constants.Badges[GameSettings.game] or {}
-	local badgePrefix = badgeInfoTable.Prefix or "FRLG" -- just picked a default
+	local badgePrefix = GameSettings.badgePrefix or (Constants.Badges[GameSettings.game] or {}).Prefix or "FRLG"
+	local badgeInfoTable = { Prefix = badgePrefix, IconOffsets = GameSettings.badgeXOffsets or { 0, 0, 0, 0, 0, 0, 0, 0 } }
 	local kerningOffsets = badgeInfoTable.IconOffsets or {}
 	for index = 1, 8, 1 do
 		local badgeName = "badge" .. index
@@ -899,6 +899,8 @@ function TrackerScreen.randomlyChooseBall()
 end
 
 function TrackerScreen.canShowBallPicker()
+	-- Yellow always gives Pikachu; there is no three-ball starter choice.
+	if not GameSettings.usesStarterChoice() then return false end
 	-- If the player is in the lab without any Pokemon
 	return Options["Show random ball picker"] and RouteData.Locations.IsInLab[Program.GameData.mapId] and Tracker.getPokemon(1, true) == nil
 end
@@ -937,7 +939,7 @@ function TrackerScreen.drawScreen()
 
 	-- Lower boxes
 	TrackerScreen.drawCarouselArea(displayData)
-	if Tracker.getPokemon(1, true) == nil and Options["Show on new game screen"] then -- show favorites
+	if Tracker.getPokemon(1, true) == nil and Options["Show on new game screen"] and GameSettings.usesStarterChoice() then -- show favorites
 		TrackerScreen.drawFavorites()
 	else
 		TrackerScreen.drawMovesArea(displayData)
@@ -1219,7 +1221,7 @@ function TrackerScreen.drawStatsArea(data)
 		local statValueText = Utils.inlineIf(data.p[statKey] == 0, Constants.BLANKLINE, data.p[statKey])
 		if not Battle.isViewingOwn and PokemonData.canShowUnknownStats() then
 			textColor = Theme.COLORS["Intermediate text"]
-		elseif not Options["Color stat numbers by nature"] then
+		else
 			textColor = Theme.COLORS["Default text"]
 		end
 

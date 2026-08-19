@@ -31,8 +31,8 @@ put(GameSettings.moveData + (59 - 1) * 6, 59, 0, 120, 0x19, 229, 5) -- Blizzard
 
 dofile(repoRoot .. "ironmon_tracker/data/PokemonData.lua")
 dofile(repoRoot .. "ironmon_tracker/data/MoveData.lua")
-dofile(repoRoot .. "ironmon_tracker/gen1/SpeciesMap.lua")
-dofile(repoRoot .. "ironmon_tracker/gen1/DataAdapter.lua")
+dofile(repoRoot .. "ironmon_tracker/data/SpeciesMap.lua")
+dofile(repoRoot .. "ironmon_tracker/data/DataAdapter.lua")
 
 PokemonData.initialize()
 MoveData.initialize()

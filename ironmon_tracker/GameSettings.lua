@@ -3,7 +3,7 @@
 GameSettings = { generation = 1, GEN = 1 }
 
 function GameSettings.initialize()
-	local gameCode = Utils.reverseEndian32(Memory.read32(Gen1GameProfiles.HeaderAddress))
+	local gameCode = Utils.reverseEndian32(Memory.read32(Gen1GameProfiles.HeaderAddress) or 0)
 	local profile = Gen1GameProfiles.get(gameCode)
 	if not profile then
 		GameSettings.gamename = "Unsupported Game"
@@ -21,13 +21,20 @@ function GameSettings.initialize()
 	GameSettings.fullVersionName = profile.name
 	GameSettings.generation = 1
 	GameSettings.GEN = 1
+	GameSettings.isYellow = profile.version == "Yellow"
 	GameSettings.isFrenchYellow = profile.id == "yellow_fr"
-	GameSettings.badgePrefix = "RBY"
+	GameSettings.badgePrefix = "FRLG"
 	GameSettings.badgeXOffsets = { 0, 0, 0, 0, 0, 0, 0, 0 }
 	GameSettings.wram, GameSettings.rom = profile.wram, profile.rom
 	for name, address in pairs(profile.wram) do GameSettings[name] = address end
 	for name, address in pairs(profile.rom) do GameSettings[name] = address end
 	return true
+end
+
+---Red/Blue let the player pick one of three starters. Yellow always gives
+---Pikachu, so starter-ball and favorite-starter UI is unused.
+function GameSettings.usesStarterChoice()
+	return GameSettings.isYellow ~= true
 end
 
 ---Legacy extension entry point. Address profiles cannot replace the native RBY

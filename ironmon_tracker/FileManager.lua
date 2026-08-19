@@ -116,26 +116,25 @@ FileManager.LuaCode = {
 	{ name = "TrackerAPI", filepath = "TrackerAPI.lua", },
 	{ name = "Utils", filepath = "Utils.lua", },
 	{ name = "Memory", filepath = "Memory.lua", },
-	{ name = "Gen1GameProfiles", filepath = "gen1" .. FileManager.slash .. "GameProfiles.lua", },
-	{ name = "Gen1PokemonReader", filepath = "gen1" .. FileManager.slash .. "PokemonReader.lua", },
+	{ name = "Gen1GameProfiles", filepath = "GameProfiles.lua", },
+	{ name = "Gen1PokemonReader", filepath = "PokemonDataReader.lua", },
 	{ name = "GameSettings", filepath = "GameSettings.lua", },
 	{ name = "StructEncoder", filepath = "StructEncoder.lua", },
 	-- Data files
 	{ name = "PokemonData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "PokemonData.lua", },
-	{ name = "Gen1SpeciesMap", filepath = "gen1" .. FileManager.slash .. "SpeciesMap.lua", },
+	{ name = "Gen1SpeciesMap", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "SpeciesMap.lua", },
 	{ name = "PokemonRevoData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "PokemonRevoData.lua", },
 	{ name = "MoveData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "MoveData.lua", },
-	{ name = "Gen1DataAdapter", filepath = "gen1" .. FileManager.slash .. "DataAdapter.lua", },
+	{ name = "Gen1DataAdapter", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "DataAdapter.lua", },
 	{ name = "MiscData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "MiscData.lua", },
-	{ name = "Gen1ItemData", filepath = "gen1" .. FileManager.slash .. "ItemData.lua", },
 	{ name = "RouteData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "RouteData.lua", },
-	{ name = "Gen1RouteData", filepath = "gen1" .. FileManager.slash .. "RouteData.lua", },
+	{ name = "Gen1RouteData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "Gen1RouteData.lua", },
 	{ name = "DataHelper", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "DataHelper.lua", },
 	{ name = "EventData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "EventData.lua", },
 	{ name = "RandomizerLog", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "RandomizerLog.lua", },
 	{ name = "TrainerData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "TrainerData.lua", },
-	{ name = "Gen1TrainerData", filepath = "gen1" .. FileManager.slash .. "TrainerData.lua", },
-	{ name = "Gen1RandomizerLog", filepath = "gen1" .. FileManager.slash .. "RandomizerLog.lua", },
+	{ name = "Gen1TrainerData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "Gen1TrainerData.lua", },
+	{ name = "Gen1RandomizerLog", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "Gen1RandomizerLog.lua", },
 	{ name = "TrainerMapData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "TrainerMapData.lua", },
 	{ name = "SpriteData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "SpriteData.lua", },
 	-- Second set of core files
@@ -149,8 +148,7 @@ FileManager.LuaCode = {
 	{ name = "Battle", filepath = "Battle.lua", },
 	{ name = "Pickle", filepath = "Pickle.lua", },
 	{ name = "Tracker", filepath = "Tracker.lua", },
-	{ name = "Gen1BattleRuntime", filepath = "gen1" .. FileManager.slash .. "BattleRuntime.lua", },
-	{ name = "Gen1Runtime", filepath = "gen1" .. FileManager.slash .. "Runtime.lua", },
+	{ name = "Gen1Runtime", filepath = "Runtime.lua", },
 	-- Network files
 	{ name = "Network", filepath = FileManager.Folders.Network .. FileManager.slash .. "Network.lua", },
 	{ name = "EventHandler", filepath = FileManager.Folders.Network .. FileManager.slash .. "EventHandler.lua", },
@@ -208,21 +206,6 @@ FileManager.LuaCode = {
 -- Data files that can be loaded at runtime when needed (they aren't available until loaded)
 -- The table key is the versioncolor, and the value is a table of data key labels and their filepaths
 FileManager.LuaData = {
-	Ruby = {
-		TrainerRoutes = FileManager.Folders.DataCode .. FileManager.slash .. "RSTrainerRouteData.lua",
-        },
-	Sapphire = {
-		TrainerRoutes = FileManager.Folders.DataCode .. FileManager.slash .. "RSTrainerRouteData.lua",
-        },
-	Emerald = {
-		TrainerRoutes = FileManager.Folders.DataCode .. FileManager.slash .. "EmeraldTrainerRouteData.lua",
-	},
-	FireRed = {
-		TrainerRoutes = FileManager.Folders.DataCode .. FileManager.slash .. "FRLGTrainerRouteData.lua",
-	},
-	LeafGreen = {
-		TrainerRoutes = FileManager.Folders.DataCode .. FileManager.slash .. "FRLGTrainerRouteData.lua",
-	},
 	All = {},
 }
 
@@ -275,6 +258,22 @@ function FileManager.folderExists(folderpath)
 	return false
 end
 
+-- Linux (and NLua/BizHawk) can io.open() a directory. That must not count as a file,
+-- or later dofile() throws: "cannot read ironmon_tracker/: est un dossier".
+local function canOpenAsFile(path)
+	local openOk, file = pcall(io.open, path, "r")
+	if not openOk or file == nil then
+		return false
+	end
+	local readOk, _, readErr = pcall(function()
+		return file:read(1)
+	end)
+	pcall(function() io.close(file) end)
+	-- Directories: read returns nil + "Is a directory" / "est un dossier".
+	-- Empty files: read returns nil with no error and are still valid files.
+	return readOk and readErr == nil
+end
+
 -- Returns the path that allows opening a file at 'filepath', if one exists and it can be opened; otherwise, returns nil
 ---@return string|nil filepath
 function FileManager.getPathIfExists(filepath)
@@ -282,18 +281,16 @@ function FileManager.getPathIfExists(filepath)
 
 	-- Empty filepaths "" can be opened successfully on Linux, as directories are considered files
 	if filepath == "" then return nil end
+	local lastChar = filepath:sub(-1)
+	if lastChar == "/" or lastChar == "\\" then return nil end
 
-	local file = io.open(filepath, "r")
-	if file ~= nil then
-		io.close(file)
+	if canOpenAsFile(filepath) then
 		return filepath
 	end
 
 	-- Otherwise check the absolute path of the file
 	filepath = FileManager.prependDir(filepath)
-	file = io.open(filepath, "r")
-	if file ~= nil then
-		io.close(file)
+	if canOpenAsFile(filepath) then
 		return filepath
 	end
 
@@ -446,6 +443,11 @@ end
 function FileManager.loadLuaData(gameKey, dataKey)
 	local gameDataTable = FileManager.LuaData[gameKey or false] or {}
 	local dataFilepath = gameDataTable[dataKey or false] or ""
+	-- Gen 1 versioncolors (Red/Blue/Yellow) have no GBA trainer-route tables.
+	-- An empty relative path would resolve to the `ironmon_tracker/` folder.
+	if dataFilepath == "" then
+		return nil
+	end
 
 	local filepath = FileManager.getPathIfExists(FileManager.Folders.TrackerCode .. FileManager.slash .. dataFilepath)
 	if not filepath then

@@ -63,7 +63,7 @@ Theme.Buttons = {
 		clickableArea = { Constants.SCREEN.WIDTH + 9, Constants.SCREEN.MARGIN + 97, Constants.SCREEN.RIGHT_GAP - 12, 10 },
 		optionKey = "Color stat numbers by nature",
 		toggleState = false,
-		isVisible = function() return Theme.Screen.displayingThemeManager end,
+		isVisible = function() return false end,
 		updateSelf = function(self)
 			self.toggleState = (Options[self.optionKey] == true)
 		end,

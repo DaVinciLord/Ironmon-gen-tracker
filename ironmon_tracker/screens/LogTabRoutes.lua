@@ -11,10 +11,6 @@ LogTabRoutes = {
 			image = FileManager.buildImagePath("icons", "tiny-map-kanto", ".png"),
 			x = 1, w = 15, h = 11,
 		},
-		Hoenn = {
-			image = FileManager.buildImagePath("icons", "tiny-map-hoenn", ".png"),
-			x = 1, w = 15, h = 11,
-		},
 	},
 	chosenIcon = nil,
 	defaultSortKey = "WildPokemonLevel",
@@ -42,14 +38,8 @@ function LogTabRoutes.refreshButtons()
 	end
 end
 
--- Returns the Hoenn(i=1) or Kanto(i=3) map icon
-function LogTabRoutes.getTabIcons(gameIndex)
-	gameIndex = gameIndex or GameSettings.game
-	if gameIndex == 1 or gameIndex == 2 then
-		return { LogTabRoutes.TabIcons.Hoenn }
-	else
-		return { LogTabRoutes.TabIcons.Kanto }
-	end
+function LogTabRoutes.getTabIcons()
+	return { LogTabRoutes.TabIcons.Kanto }
 end
 
 function LogTabRoutes.rebuild()

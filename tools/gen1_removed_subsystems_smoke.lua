@@ -31,4 +31,24 @@ for _, path in ipairs({
 	assert(not content:find("AnimationManager", 1, true), path .. " still calls AnimationManager")
 end
 
+local gameOptions = read("ironmon_tracker/screens/GameOptionsScreen.lua")
+assert(not gameOptions:find('"Determine friendship readiness"', 1, true), "friendship option must not be shown")
+local extras = read("ironmon_tracker/screens/ExtrasScreen.lua")
+assert(not extras:find('"Display gender"', 1, true), "gender option must not be shown")
+
+local trainerData = read("ironmon_tracker/data/TrainerData.lua")
+assert(trainerData:find('"frlg-" ..', 1, true), "trainer sprites must use the frlg- prefix")
+assert(not trainerData:find("Wally", 1, true), "Hoenn-only trainer classes must be removed")
+assert(not trainerData:find("TeamAquaGrunt", 1, true), "Team Aqua must not remain as a trainer class")
+assert(not trainerData:find("hasPostfix", 1, true), "RSE/FRLG sprite postfixes must not remain")
+
+local logOverlay = read("ironmon_tracker/screens/LogOverlay.lua")
+assert(logOverlay:find("boy-frlg", 1, true), "log overlay must use FRLG player heads")
+assert(not logOverlay:find("boy-rs", 1, true), "log overlay must not index RSE player heads")
+
+local trackerScreen = read("ironmon_tracker/screens/TrackerScreen.lua")
+assert(trackerScreen:find("usesStarterChoice", 1, true), "Yellow must hide starter favorites and ball picker")
+local streamer = read("ironmon_tracker/screens/StreamerScreen.lua")
+assert(streamer:find("usesStarterChoice", 1, true), "Yellow must hide favorite-starter picker")
+
 print("Gen 1 removed subsystem smoke tests passed")

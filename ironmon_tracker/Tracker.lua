@@ -59,6 +59,8 @@ Tracker.DefaultData = {
 	centerHeals = 0,
 	-- Tally of auto-tracked heals, separate to allow manual adjusting of centerHeals
 	gameStatsHeals = 0,
+	-- Native RBY trainer ids (class * 0x100 + party number) defeated this save
+	defeatedTrainers = {},
 	-- Tally of fishing encounters, to track when one occurs
 	gameStatsFishing = 0,
 	-- Tally of rock smash uses, to track encounters
@@ -75,6 +77,7 @@ function Tracker.DefaultData:new(o)
 	o.safariEncounters = o.safariEncounters or {}
 	o.hiddenPowers = o.hiddenPowers or {}
 	o.initialMoveset = o.initialMoveset or {}
+	o.defeatedTrainers = o.defeatedTrainers or {}
 	setmetatable(o, self)
 	self.__index = self
 	return o
@@ -112,9 +115,12 @@ function Tracker.getPokemon(slotNumber, isOwn, excludeEggs)
 	if pokemon == nil then
 		return nil
 	end
-	-- Personality of 0 is okay for some real trainers, usually occurs in Battle
-	if pokemon.personality == 0 and (pokemon.trainerID or 0) == 0 then
-		return nil
+	-- GBA empty-slot sentinel. RBY has no personality value; a real party
+	-- member can also have trainerID 0, so do not hide Gen 1 Pokémon here.
+	if GameSettings.GEN ~= 1 then
+		if pokemon.personality == 0 and (pokemon.trainerID or 0) == 0 then
+			return nil
+		end
 	end
 
 	-- Return Ghost dummy instead of showing the hidden mon's data, but still show its level

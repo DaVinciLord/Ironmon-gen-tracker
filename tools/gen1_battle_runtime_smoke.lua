@@ -19,11 +19,7 @@ Tracker = {
 	TrackRouteEncounter = function() end,
 	TrackMove = function(id, move, level) table.insert(trackedMoves, { id, move, level }) end,
 }
-Battle = {
-	inBattleScreen = false, dataReady = false, isViewingOwn = true, isViewingLeft = true,
-	Combatants = {}, CurrentRoute = {}, trySwapScreenBackToMain = function() end,
-}
-Program = { Frames = {}, GameData = { mapId = 12 }, redraw = function() end }
+Program = { Frames = {}, GameData = { mapId = 12 }, redraw = function() end, isValidMapLocation = function() return true end }
 Options = { ["Auto swap to enemy"] = true }
 Input = { StatHighlighter = { resetSelectedStat = function() end } }
 CustomCode = { afterBattleBegins = function() end, afterBattleEnds = function() end, afterBattleDataUpdate = function() end }
@@ -33,43 +29,55 @@ GameOverScreen = {
 	createTempSaveState = function() saveStatesCreated = saveStatesCreated + 1 end,
 	openIfEnded = function(trainerId) endedTrainerId = trainerId end,
 }
+InfoScreen = { clearScreenData = function() end }
+TrainerInfoScreen = {}
+TrainersOnRouteScreen = {}
+RandomEvosScreen = {}
+MoveHistoryScreen = {}
+CatchRatesScreen = {}
+TypeDefensesScreen = {}
+CoverageCalcScreen = {}
+HealsInBagScreen = {}
+BattleDetailsScreen = { clearBuiltData = function() end }
+TrackerScreen = {}
+TrainerData = { FinalTrainer = {} }
 
-dofile(repoRoot .. "ironmon_tracker/gen1/BattleRuntime.lua")
+dofile(repoRoot .. "ironmon_tracker/Battle.lua")
 
 bytes[GameSettings.partyCount] = 1
 bytes[GameSettings.battleState] = 1
 bytes[GameSettings.enemyMove] = 0
-Gen1BattleRuntime.updateBattleStatus()
-assert(Gen1BattleRuntime.inActiveBattle() and Battle.isWildEncounter)
+Battle.updateBattleStatus()
+assert(Battle.inActiveBattle() and Battle.isWildEncounter)
 assert(Battle.isViewingOwn == false, "Auto swap must show the enemy")
 assert(#encounters == 1 and encounters[1][1] == 94 and encounters[1][2] == true)
 assert(saveStatesCreated == 1 and Battle.opposingTrainerId == 0)
 
 bytes[GameSettings.enemyMove] = 95
-Gen1BattleRuntime.processEnemyMove()
+Battle.updateHighAccuracy()
 assert(#trackedMoves == 1 and trackedMoves[1][2] == 95)
 bytes[GameSettings.enemyMove] = 50 -- not in the enemy's actual moveset
-Gen1BattleRuntime.processEnemyMove()
+Battle.updateHighAccuracy()
 assert(#trackedMoves == 1, "Mimic/Transform-only moves must not be attributed to the species")
 
 for offset, value in ipairs({ 8, 7, 6, 9, 5, 10 }) do
 	bytes[GameSettings.playerStatStages + offset - 1] = value
 	bytes[GameSettings.playerStatStages + 0x14 + offset - 1] = 14 - value
 end
-Gen1BattleRuntime.updateStatStages()
+Battle.updateLowAccuracy()
 assert(own.statStages.atk == 7 and own.statStages.special == 8 and own.statStages.eva == 9)
 assert(enemy.statStages.atk == 5 and enemy.statStages.special == 4 and enemy.statStages.eva == 3)
 
 bytes[GameSettings.battleState] = 0
-Gen1BattleRuntime.updateBattleStatus()
-assert(not Gen1BattleRuntime.inActiveBattle() and Battle.isViewingOwn)
+Battle.updateBattleStatus()
+assert(not Battle.inActiveBattle() and Battle.isViewingOwn)
 assert(own.statStages.special == 6)
 assert(endedTrainerId == 0, "Wild battles must not retain a trainer id")
 
 bytes[GameSettings.battleState] = 2
-Gen1BattleRuntime.begin(2, enemy)
+Battle.begin(2, enemy)
 assert(Battle.opposingTrainerId == 0x2B02 and saveStatesCreated == 2)
-Gen1BattleRuntime.finish()
+Battle.endCurrentBattle()
 assert(endedTrainerId == 0x2B02, "Trainer id must survive until the native game-over check")
 
 print("Gen 1 battle runtime smoke tests passed")

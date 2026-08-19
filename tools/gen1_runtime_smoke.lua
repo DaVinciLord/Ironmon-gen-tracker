@@ -15,6 +15,7 @@ Gen1DataAdapter = {
 	TypeIndexMap = { [0x17] = "electric", [0x00] = "normal", [0x03] = "poison" },
 }
 GameSettings = {
+	usesStarterChoice = function() return true end,
 	partyCount = 0x200,
 	partyMon1 = 0x300,
 	battleState = 0x400,
@@ -43,8 +44,8 @@ TeamViewArea = {}
 StartupScreen = {}
 TrackerScreen = {}
 
-dofile(repoRoot .. "ironmon_tracker/gen1/PokemonReader.lua")
-dofile(repoRoot .. "ironmon_tracker/gen1/Runtime.lua")
+dofile(repoRoot .. "ironmon_tracker/PokemonDataReader.lua")
+dofile(repoRoot .. "ironmon_tracker/Runtime.lua")
 
 local function put(address, ...)
 	for index, value in ipairs({ ... }) do bytes[address + index - 1] = value end
@@ -94,6 +95,17 @@ bytes[GameSettings.currentMap] = 0x0C
 Gen1Runtime.updateMapLocation()
 assert(Program.GameData.mapId == 0x0C)
 assert(Gen1Runtime.isValidMapLocation())
+
+-- Pallet Town is map 0. The working Yellow FR tracker still updated the party.
+bytes[GameSettings.currentMap] = 0
+bytes[GameSettings.partyCount] = 0
+Gen1Runtime.updateMapLocation()
+assert(Program.GameData.mapId == 0)
+assert(Gen1Runtime.isValidMapLocation(), "Pallet Town (map 0) is a real in-game location")
+Gen1Runtime.updatePokemonTeams()
+assert(Program.GameData.PlayerTeam[1] and Program.GameData.PlayerTeam[1].level == 25,
+	"party must be read from species slots even if partyCount reads as 0")
+assert((Program.GameData.PlayerTeam[1].personality or 0) ~= 0)
 bytes[GameSettings.badges] = 0x25
 assert(Gen1Runtime.readBadgeBits() == 0x25)
 

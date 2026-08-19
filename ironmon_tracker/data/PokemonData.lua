@@ -169,8 +169,7 @@ PokemonData.Evolutions = {
 
 function PokemonData.initialize()
 	PokemonData.knownTotal = nil
-	PokemonData.buildData()
-	PokemonData.checkIfDataIsRandomized()
+	Gen1DataAdapter.initializePokemonData()
 end
 
 function PokemonData.updateResources()
@@ -226,138 +225,13 @@ function PokemonData.updateResources()
 	PE.WATER37_REV.detailed = { RPED.WATER.detailed, RPED.LEVEL.detailed .. " 37", }
 end
 
----Read in PokemonData from game memory: https://github.com/pret/pokefirered/blob/master/include/pokemon.h#L208
----@param forced boolean? Optional, forces the data to be read in from the game
 function PokemonData.buildData(forced)
-	-- if not forced or someNonExistentCondition then -- Currently Unused/unneeded
-	-- 	return
-	-- end
-	local expReadFunc = Memory.getReadFunc(PokemonData.Addresses.sizeofExpYield)
-	for id = 1, PokemonData.getTotal(), 1 do
-		local pokemon = PokemonData.Pokemon[id] or PokemonData.BlankPokemon
-		pokemon.pokemonID = id
-
-		if id < 252 or id > 276 then -- Skip fake Pokemon
-			local addrOffset = GameSettings.gBaseStats + (id * Program.Addresses.sizeofBaseStatsPokemon)
-
-			-- BST (6 bytes)
-			local baseHPAttack = Memory.readword(addrOffset + PokemonData.Addresses.offsetBaseStats)
-			local baseDefenseSpeed = Memory.readword(addrOffset + PokemonData.Addresses.offsetBaseStats + 2)
-			local baseSpASpD = Memory.readword(addrOffset + PokemonData.Addresses.offsetBaseStats + 4)
-			pokemon.baseStats = {
-				hp = Utils.getbits(baseHPAttack, 0, 8),
-				atk = Utils.getbits(baseHPAttack, 8, 8),
-				def = Utils.getbits(baseDefenseSpeed, 0, 8),
-				spe = Utils.getbits(baseDefenseSpeed, 8, 8),
-				spa = Utils.getbits(baseSpASpD, 0, 8),
-				spd = Utils.getbits(baseSpASpD, 8, 8)
-			}
-			pokemon.bstCalculated = 0
-			for _, baseStat in pairs(pokemon.baseStats) do
-				pokemon.bstCalculated = pokemon.bstCalculated + baseStat
-			end
-
-			-- Types (2 bytes)
-			local typesData = Memory.readword(addrOffset + PokemonData.Addresses.offsetTypes)
-			local typeOne = Utils.getbits(typesData, 0, 8)
-			local typeTwo = Utils.getbits(typesData, 8, 8)
-			pokemon.types = {
-				PokemonData.TypeIndexMap[typeOne],
-				typeOne ~= typeTwo and PokemonData.TypeIndexMap[typeTwo] or PokemonData.Types.EMPTY,
-			}
-
-			--Catch Rate (1 byte)
-			pokemon.catchRate = Memory.readbyte(addrOffset + PokemonData.Addresses.offsetCatchRate)
-
-			-- Exp Yield ([1] byte)
-			pokemon.expYield = expReadFunc(addrOffset + PokemonData.Addresses.offsetExpYield)
-
-			-- Base Friendship (1 byte)
-			pokemon.friendshipBase = Memory.readbyte(addrOffset + PokemonData.Addresses.offsetBaseFriendship)
-		end
-	end
+	Gen1DataAdapter.initializePokemonData()
 end
 
 --- Compare data from game memory with original game data to determine what's been randomized
 function PokemonData.checkIfDataIsRandomized()
-	-- Reset to default of false (not-randomized)
-	for key, _ in pairs(PokemonData.IsRand) do
-		PokemonData.IsRand[key] = false
-	end
-
-	-- Arbitrarilty check three different pokemon for randomized information
-	local bulbasaur = PokemonData.Pokemon[1]
-	local lapras = PokemonData.Pokemon[131]
-	local shuckle = PokemonData.Pokemon[213]
-
-	-- Check for randomized Pokémon typings
-	if bulbasaur.types[1] ~= PokemonData.Types.GRASS or bulbasaur.types[2] ~= PokemonData.Types.POISON then
-		PokemonData.IsRand.types = true
-	elseif lapras.types[1] ~= PokemonData.Types.WATER or lapras.types[2] ~= PokemonData.Types.ICE then
-		PokemonData.IsRand.types = true
-	elseif shuckle.types[1] ~= PokemonData.Types.BUG or shuckle.types[2] ~= PokemonData.Types.ROCK then
-		PokemonData.IsRand.types = true
-	end
-
-	-- Check for randomized Pokémon stats
-	if bulbasaur.baseStats.hp ~= 45 or bulbasaur.baseStats.atk ~= 49 or bulbasaur.baseStats.def ~= 49
-		or bulbasaur.baseStats.spa ~= 65 or bulbasaur.baseStats.spd ~= 65 or bulbasaur.baseStats.spe ~= 45 then
-		PokemonData.IsRand.stats = true
-	elseif lapras.baseStats.hp ~= 130 or lapras.baseStats.atk ~= 85 or lapras.baseStats.def ~= 80
-		or lapras.baseStats.spa ~= 85 or lapras.baseStats.spd ~= 95 or lapras.baseStats.spe ~= 60 then
-		PokemonData.IsRand.stats = true
-	elseif shuckle.baseStats.hp ~= 20 or shuckle.baseStats.atk ~= 10 or shuckle.baseStats.def ~= 230
-		or shuckle.baseStats.spa ~= 10 or shuckle.baseStats.spd ~= 230 or shuckle.baseStats.spe ~= 5 then
-		PokemonData.IsRand.stats = true
-	end
-
-	-- Check for randomized Pokémon move learn sets
-	local bulbasaurMoveset = PokemonData.readLevelUpMoves(bulbasaur.pokemonID)
-	if #bulbasaurMoveset >= 3 then
-		if bulbasaurMoveset[1].id ~= 33 or bulbasaurMoveset[1].level ~= 1 -- Tackle at level 1
-			or bulbasaurMoveset[2].id ~= 45 or bulbasaurMoveset[2].level ~= 4 -- Growl at level 4
-			or bulbasaurMoveset[3].id ~= 73 or bulbasaurMoveset[3].level ~= 7 -- Leech Seed at level 7
-			then
-				PokemonData.IsRand.moveLearnSet = true
-		end
-	end
-	if not PokemonData.IsRand.moveLearnSet then
-		local laprasMoveset = PokemonData.readLevelUpMoves(lapras.pokemonID)
-		if #laprasMoveset >= 3 then
-			if laprasMoveset[1].id ~= 55 or laprasMoveset[1].level ~= 1 -- Water Gun at level 1
-				or laprasMoveset[2].id ~= 45 or laprasMoveset[2].level ~= 1 -- Growl at level 1
-				or laprasMoveset[3].id ~= 47 or laprasMoveset[3].level ~= 1 -- Sing at level 1
-				then
-					PokemonData.IsRand.moveLearnSet = true
-			end
-		end
-	end
-	if not PokemonData.IsRand.moveLearnSet then
-		local shuckleMoveset = PokemonData.readLevelUpMoves(shuckle.pokemonID)
-		if #shuckleMoveset >= 3 then
-			if shuckleMoveset[1].id ~= 132 or shuckleMoveset[1].level ~= 1 -- Constrict at level 1
-				or shuckleMoveset[2].id ~= 110 or shuckleMoveset[2].level ~= 1 -- Withdraw at level 1
-				or shuckleMoveset[3].id ~= 35 or shuckleMoveset[3].level ~= 9 -- Wrap at level 9
-				then
-					PokemonData.IsRand.moveLearnSet = true
-			end
-		end
-	end
-
-	-- Check for randomized Pokémon base friendship values
-	local baseFriendship = PokemonData.Values.DefaultBaseFriendship
-	if bulbasaur.friendshipBase ~= baseFriendship or lapras.friendshipBase ~= baseFriendship or shuckle.friendshipBase ~= baseFriendship then
-		PokemonData.IsRand.friendshipBase = true
-	end
-
-	-- Check for randomized Pokémon experience yield values
-	if bulbasaur.expYield ~= PokemonData.Values.ExpYieldBulbasaur then
-		PokemonData.IsRand.expYield = true
-	elseif lapras.expYield ~= PokemonData.Values.ExpYieldLapras then
-		PokemonData.IsRand.expYield = true
-	elseif shuckle.expYield ~= PokemonData.Values.ExpYieldShuckle then
-		PokemonData.IsRand.expYield = true
-	end
+	-- Randomization flags are set by Gen1DataAdapter.initializePokemonData().
 end
 
 ---Returns true if the Pokémon data in this game is randomized (not vanilla), based on game data memory checks
@@ -424,67 +298,15 @@ end
 ---@param pokemonID number
 ---@return table pokemon If no mon found, returns PokemonData.BlankPokemon
 function PokemonData.getNatDexCompatible(pokemonID)
-	local pokemon = PokemonData.Pokemon[pokemonID or false]
-	if pokemon then
-		return pokemon
-	end
-	local baseGameTotal = 411
-	local hasNatDexAccess = CustomCode.RomHacks.isPlayingNatDex()
-	if pokemonID > baseGameTotal and hasNatDexAccess then
-		local natdexExt = TrackerAPI.getExtensionSelf(CustomCode.RomHacks.ExtensionKeys.NatDex)
-		if natdexExt and natdexExt.Data and natdexExt.Data.natDexMons then
-			local adjustedId = pokemonID - baseGameTotal
-			return natdexExt.Data.natDexMons[adjustedId] or PokemonData.BlankPokemon
-		end
-	end
-	return PokemonData.BlankPokemon
+	return PokemonData.Pokemon[pokemonID or false] or PokemonData.BlankPokemon
 end
 
-local idInternalToNat = {
-	[277] = 252, [278] = 253, [279] = 254, [280] = 255, [281] = 256, [282] = 257, [283] = 258, [284] = 259,
-	[285] = 260, [286] = 261, [287] = 262, [288] = 263, [289] = 264, [290] = 265, [291] = 266, [292] = 267, [293] = 268, [294] = 269,
-	[295] = 270, [296] = 271, [297] = 272, [298] = 273, [299] = 274, [300] = 275, [304] = 276, [305] = 277, [309] = 278, [310] = 279,
-	[392] = 280, [393] = 281, [394] = 282, [311] = 283, [312] = 284, [306] = 285, [307] = 286, [364] = 287, [365] = 288, [366] = 289,
-	[301] = 290, [302] = 291, [303] = 292, [370] = 293, [371] = 294, [372] = 295, [335] = 296, [336] = 297, [350] = 298, [320] = 299,
-	[315] = 300, [316] = 301, [322] = 302, [355] = 303, [382] = 304, [383] = 305, [384] = 306, [356] = 307, [357] = 308, [337] = 309,
-	[338] = 310, [353] = 311, [354] = 312, [386] = 313, [387] = 314, [363] = 315, [367] = 316, [368] = 317, [330] = 318, [331] = 319,
-	[313] = 320, [314] = 321, [339] = 322, [340] = 323, [321] = 324, [351] = 325, [352] = 326, [308] = 327, [332] = 328, [333] = 329,
-	[334] = 330, [344] = 331, [345] = 332, [358] = 333, [359] = 334, [380] = 335, [379] = 336, [348] = 337, [349] = 338, [323] = 339,
-	[324] = 340, [326] = 341, [327] = 342, [318] = 343, [319] = 344, [388] = 345, [389] = 346, [390] = 347, [391] = 348, [328] = 349,
-	[329] = 350, [385] = 351, [317] = 352, [377] = 353, [378] = 354, [361] = 355, [362] = 356, [369] = 357, [411] = 358, [376] = 359,
-	[360] = 360, [346] = 361, [347] = 362, [341] = 363, [342] = 364, [343] = 365, [373] = 366, [374] = 367, [375] = 368, [381] = 369,
-	[325] = 370, [395] = 371, [396] = 372, [397] = 373, [398] = 374, [399] = 375, [400] = 376, [401] = 377, [402] = 378, [403] = 379,
-	[407] = 380, [408] = 381, [404] = 382, [405] = 383, [406] = 384, [409] = 385, [410] = 386,
-}
-local idNatToInternal = {
-	[252] = 277, [253] = 278, [254] = 279, [255] = 280, [256] = 281, [257] = 282, [258] = 283, [259] = 284,
-	[260] = 285, [261] = 286, [262] = 287, [263] = 288, [264] = 289, [265] = 290, [266] = 291, [267] = 292, [268] = 293, [269] = 294,
-	[270] = 295, [271] = 296, [272] = 297, [273] = 298, [274] = 299, [275] = 300, [276] = 304, [277] = 305, [278] = 309, [279] = 310,
-	[280] = 392, [281] = 393, [282] = 394, [283] = 311, [284] = 312, [285] = 306, [286] = 307, [287] = 364, [288] = 365, [289] = 366,
-	[290] = 301, [291] = 302, [292] = 303, [293] = 370, [294] = 371, [295] = 372, [296] = 335, [297] = 336, [298] = 350, [299] = 320,
-	[300] = 315, [301] = 316, [302] = 322, [303] = 355, [304] = 382, [305] = 383, [306] = 384, [307] = 356, [308] = 357, [309] = 337,
-	[310] = 338, [311] = 353, [312] = 354, [313] = 386, [314] = 387, [315] = 363, [316] = 367, [317] = 368, [318] = 330, [319] = 331,
-	[320] = 313, [321] = 314, [322] = 339, [323] = 340, [324] = 321, [325] = 351, [326] = 352, [327] = 308, [328] = 332, [329] = 333,
-	[330] = 334, [331] = 344, [332] = 345, [333] = 358, [334] = 359, [335] = 380, [336] = 379, [337] = 348, [338] = 349, [339] = 323,
-	[340] = 324, [341] = 326, [342] = 327, [343] = 318, [344] = 319, [345] = 388, [346] = 389, [347] = 390, [348] = 391, [349] = 328,
-	[350] = 329, [351] = 385, [352] = 317, [353] = 377, [354] = 378, [355] = 361, [356] = 362, [357] = 369, [358] = 411, [359] = 376,
-	[360] = 360, [361] = 346, [362] = 347, [363] = 341, [364] = 342, [365] = 343, [366] = 373, [367] = 374, [368] = 375, [369] = 381,
-	[370] = 325, [371] = 395, [372] = 396, [373] = 397, [374] = 398, [375] = 399, [376] = 400, [377] = 401, [378] = 402, [379] = 403,
-	[380] = 407, [381] = 408, [382] = 404, [383] = 405, [384] = 406, [385] = 409, [386] = 410,
-}
-
---- Converts a Gen 3 Internal Dex # to its matching National Pokédex #
---- @param pokemonID integer The Pokémon ID to convert (Gen 3 internal Pokédex #)
---- @return integer
 function PokemonData.dexMapInternalToNational(pokemonID)
-	return idInternalToNat[pokemonID or 0] or pokemonID
+	return pokemonID
 end
 
---- Converts a National Pokédex # to its matching Gen 3 Internal Dex #
---- @param pokemonID integer The Pokémon ID to convert (National Pokédex #)
---- @return integer
 function PokemonData.dexMapNationalToInternal(pokemonID)
-	return idNatToInternal[pokemonID or 0] or pokemonID
+	return pokemonID
 end
 
 function PokemonData.getIdFromName(pokemonName)
@@ -525,7 +347,6 @@ function PokemonData.getEffectiveness(pokemonID)
 	end
 
 	local pokemon = PokemonData.Pokemon[pokemonID]
-	local isPlayingNatDex = CustomCode.RomHacks.isPlayingNatDex()
 
 	for moveType, typeMultiplier in pairs(MoveData.TypeToEffectiveness) do
 		local total = 1
@@ -535,9 +356,7 @@ function PokemonData.getEffectiveness(pokemonID)
 		if pokemon.types and pokemon.types[2] ~= pokemon.types[1] and typeMultiplier[pokemon.types[2]] ~= nil then
 			total = total * typeMultiplier[pokemon.types[2]]
 		end
-		-- Only calculate fairy type effectiveness if nat dex is being playing
-		local fairyOkay = moveType ~= PokemonData.Types.FAIRY or isPlayingNatDex
-		if effectiveness[total] ~= nil and fairyOkay then
+		if effectiveness[total] ~= nil then
 			table.insert(effectiveness[total], moveType)
 		end
 	end
@@ -556,133 +375,18 @@ end
 ---@param battleTurn number? Optional, defaults to 0; first turn of a battle
 ---@return number
 function PokemonData.calcCatchRate(pokemonID, hpMax, hpCurrent, level, status, ball, terrain, battleTurn)
-	if not PokemonData.isValid(pokemonID) or hpMax <= 0 or hpCurrent <= 0 then
-		return 0
-	end
-	level = level or 5
-	status = status or MiscData.StatusType.None
-	ball = ball or 4
-	terrain = terrain or 0
-	battleTurn = battleTurn or 0
-
-	-- Calculations based off of: https://bulbapedia.bulbagarden.net/wiki/Catch_rate#Capture_method_(Generation_III-IV)
-
-	-- Estimate wild Pokémon's HP percent; round to nearest 10th
-	local estimatedCurrHP = math.floor(math.ceil(hpCurrent / hpMax * 10) / 10 * hpMax)
-
-	-- Changing to more closely resemble the actual in-game formula
-	local hpMultiplier = (hpMax * 3 - estimatedCurrHP * 2) / (hpMax * 3)
-
-	-- Determine base catch rate
-	local pokemon = PokemonData.Pokemon[pokemonID]
-	local baseCatchRate = pokemon.catchRate or 0
-
-	-- Determine ball type bonus multiplier
-	local ballBonusMap = {
-		[1] = 255, -- Master Ball
-		[2] = 20, -- Ultra Ball
-		[3] = 15, -- Great Ball
-		[4] = 10, -- Poke Ball
-		[5] = 15, -- Safari Ball
-		[6] = 30, -- Net Ball; only for WATER or BUG types
-		[7] = 35, -- Dive Ball; only when map type is UNDERWATER
-		[8] = 40, -- Nest Ball; subtract level of enemy, floor is 10
-		[9] = 30, -- Repeat Ball; only if pokemon is flagged as caught already
-		[10] = 10, -- Timer Ball; add turn counter, caps at 40
-		[11] = 10, -- Luxury Ball
-		[12] = 10, -- Premier Ball
-	}
-	local ballBonus
-	if ball <= 5 or ball >= 11 then
-		ballBonus = ballBonusMap[ball] or 10 -- default: poké ball
-	elseif ball == 6 and (pokemon.types[1] == PokemonData.Types.WATER or pokemon.types[2] == PokemonData.Types.WATER or pokemon.types[1] == PokemonData.Types.BUG or pokemon.types[2] == PokemonData.Types.BUG) then
-		ballBonus = ballBonusMap[ball]
-	elseif ball == 7 and terrain == 3 then -- terrain 3: UNDERWATER
-		ballBonus = ballBonusMap[ball]
-	elseif ball == 8 then
-		ballBonus = math.max(10, 40 - level)
-	elseif ball == 9 then
-		local dexAddr = Utils.getSaveBlock2Addr() + Program.Addresses.offsetPokedex + Program.Addresses.offsetPokedexOwned
-		local bitIndex = math.floor((pokemonID - 1) / 8)
-		local bitRemainder = (pokemonID - 1) % 8
-		local dexValue = Memory.readbyte(dexAddr + bitIndex)
-		if Utils.getbits(dexValue, bitRemainder, 1) == 1 then -- if 1, has caught the mon previously
-			ballBonus = ballBonusMap[ball]
-		end
-	elseif ball == 10 then
-		ballBonus = math.min(10 + battleTurn, 40)
-	end
-	ballBonus = (ballBonus or 10) / 10
-
-	-- Determine status bonus multiplier
-	local statusBonusMap = {
-		[MiscData.StatusType.None] = 1,
-		[MiscData.StatusType.Burn] = 1.5,
-		[MiscData.StatusType.Freeze] = 2,
-		[MiscData.StatusType.Paralyze] = 1.5,
-		[MiscData.StatusType.Poison] = 1.5,
-		[MiscData.StatusType.Toxic] = 1.5,
-		[MiscData.StatusType.Sleep] = 2,
-	}
-	local statusBonus
-	-- Note: In R/S, toxic does not increase catch rate
-	if status == MiscData.StatusType.Toxic and (GameSettings.game == 1 or GameSettings.game == 2) then
-		statusBonus = 1
-	else
-		statusBonus = statusBonusMap[status] or 1 -- default: none
-	end
-
-	--Number between 0 and a lot; 255+ means guaranteed catch
-	local rawCatchRate = math.floor(math.floor(baseCatchRate * ballBonus * hpMultiplier) * statusBonus)
-	local processedCatchRate = 0
-	local percentage = 0
-	if rawCatchRate <=0 then
-		percentage = 0
-	elseif rawCatchRate > 254 then
-		percentage = 100
-	else
-		--Process rate is between 0 and 65535, represents chance of a 'ball shake'
-		processedCatchRate = math.floor(1048560 / math.floor(math.sqrt(math.floor(math.sqrt(math.floor(16711680/rawCatchRate))))))
-		processedCatchRate = math.floor(processedCatchRate / 65535 * 100) / 100
-		--4 Ball shakes to catch. Technically comes out to dividing the original rate by 255, but using this formula to keep the cacluation consistent with the actual game's method
-		percentage = math.floor(processedCatchRate * processedCatchRate * processedCatchRate * processedCatchRate * 100)
-	end
-	if percentage < 0 then
-		return 0
-	elseif percentage > 100 then
-		return 100
-	else
-		return percentage
-	end
+	return Gen1DataAdapter.calcCatchRate(pokemonID, hpMax, hpCurrent, level, status, ball)
 end
 
 ---Reads from the game data all of the level-up moves learned by a Pokémon species
 ---@param pokemonID number
 ---@return table<number, table<string, number>> learnedMoves A list moves, each entry as a table: { id = number, level = number }
 function PokemonData.readLevelUpMoves(pokemonID)
-	local learnedMoves = {}
 	if not PokemonData.isValid(pokemonID) then
-		return learnedMoves
+		return {}
 	end
-
-	-- https://github.com/pret/pokefirered/blob/d2c592030d78d1a46df1cba562a3c7af677dbf21/src/data/pokemon/level_up_learnsets.h
-	-- gLevelUpLearnsets is an array of addresses for all Pokémon species; each entry is a 4 byte address
-	local levelUpLearnsetPtr = Memory.readdword(GameSettings.gLevelUpLearnsets + (pokemonID * PokemonData.Addresses.sizeofLevelUpLearnset))
-	local levelUpReadFunc = Memory.getReadFunc(PokemonData.Addresses.sizeofLevelUpMove)
-
-	-- MAX of 100 iterations, as a failsafe
-	for i=0, 99, 1 do
-		-- Each entry is [2] bytes formatted as: #define LEVEL_UP_MOVE(lvl, move) ((lvl << 9) | move)
-		local levelUpMove = levelUpReadFunc(levelUpLearnsetPtr + (i * PokemonData.Addresses.sizeofLevelUpMove))
-		if levelUpMove == PokemonData.Addresses.endFlagLevelUp then
-			break
-		end
-		local moveId = Utils.getbits(levelUpMove, PokemonData.Addresses.offsetLevelUpMoveId, PokemonData.Addresses.sizeofLevelUpMoveId)
-		local level = Utils.getbits(levelUpMove, PokemonData.Addresses.offsetLevelUpMoveLv, PokemonData.Addresses.sizeofLevelUpMoveLv)
-		table.insert(learnedMoves, { id = moveId, level = level })
-	end
-
-	return learnedMoves
+	local _, moves = Gen1DataAdapter.readEvolutionsAndMoves(pokemonID)
+	return moves or {}
 end
 
 PokemonData.TypeIndexMap = {

@@ -90,7 +90,7 @@ function CustomCode.loadKnownExtensions()
 	CustomCode.ExtensionCount = #filesLoaded.successful
 
 	if not Main.IsOnBizhawk() then
-		MGBA.buildExtensionOptionMaps()
+		return
 	end
 
 	if not CustomCode.printedLoadedExts then
@@ -590,22 +590,7 @@ end
 ---Returns true if the rom loaded is NatDex modified, and the extension is enabled and running
 ---@return boolean
 function CustomCode.RomHacks.isPlayingNatDex()
-	local EXT_KEY = CustomCode.RomHacks.ExtensionKeys.NatDex
-	local CACHE_KEY = "isPlaying"
-	local cacheValue = CustomCode.RomHacks.getCache(EXT_KEY, CACHE_KEY)
-	if cacheValue ~= nil then
-		return cacheValue
-	end
-
-	if not TrackerAPI.isExtensionEnabled(EXT_KEY) then
-		CustomCode.RomHacks.cacheData(EXT_KEY, CACHE_KEY, false)
-		return false
-	end
-	-- The NatDex extension has a built-in method for checking if it's being used
-	local extension = TrackerAPI.getExtensionSelf(EXT_KEY) or {}
-	local isPlaying = type(extension.checkIfNatDexROM) == "function" and extension:checkIfNatDexROM()
-	CustomCode.RomHacks.cacheData(EXT_KEY, CACHE_KEY, isPlaying)
-	return isPlaying
+	return false
 end
 
 ---Returns true if the NatDex rom and extension are of a specific version or lower (for checking compatibility)

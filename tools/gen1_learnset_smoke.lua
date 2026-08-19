@@ -15,8 +15,8 @@ end
 
 dofile("ironmon_tracker/data/PokemonData.lua")
 dofile("ironmon_tracker/data/MoveData.lua")
-dofile("ironmon_tracker/gen1/SpeciesMap.lua")
-dofile("ironmon_tracker/gen1/DataAdapter.lua")
+dofile("ironmon_tracker/data/SpeciesMap.lua")
+dofile("ironmon_tracker/data/DataAdapter.lua")
 Gen1SpeciesMap.rebuildDexMap()
 
 local bulbasaurInternal = assert(Gen1SpeciesMap.getInternalId(1))
@@ -32,6 +32,8 @@ put(learnsetAddress,
 local evolutions, moves = Gen1DataAdapter.readEvolutionsAndMoves(1)
 assert(#evolutions == 1 and evolutions[1].level == 16 and evolutions[1].species == 2)
 assert(#moves == 2 and moves[1].level == 7 and moves[1].id == 73 and moves[2].id == 22)
+assert(not Gen1DataAdapter.isRandomizedLearnset(moves))
+assert(Gen1DataAdapter.isRandomizedLearnset({ { id = 33, level = 1 }, { id = 45, level = 1 } }))
 local publicMoves = PokemonData.readLevelUpMoves(1)
 assert(#publicMoves == 2 and publicMoves[2].level == 13)
 
