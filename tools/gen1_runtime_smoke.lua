@@ -9,13 +9,17 @@ Gen1SpeciesMap = {
 	getDexId = function(internalId) return internalId == 0x54 and 25 or nil end,
 	getName = function(internalId) return internalId == 0x54 and "PIKACHU" or nil end,
 }
-PokemonData = { Pokemon = { [25] = { growthRate = 0 } } }
-Gen1DataAdapter = { expForLevel = function(_, level) return level ^ 3 end }
+PokemonData = { Pokemon = { [25] = { growthRate = 0 } }, Types = { UNKNOWN = "unknown", EMPTY = "" } }
+Gen1DataAdapter = {
+	expForLevel = function(_, level) return level ^ 3 end,
+	TypeIndexMap = { [0x17] = "electric", [0x00] = "normal", [0x03] = "poison" },
+}
 GameSettings = {
 	partyCount = 0x200,
 	partyMon1 = 0x300,
 	battleState = 0x400,
 	enemyMon = 0x500,
+	battleMon = 0x550,
 	currentMap = 0x600,
 	badges = 0x700,
 	bagCount = 0x800,
@@ -77,6 +81,12 @@ put(GameSettings.enemyMon + 25, 30, 20, 10, 5)
 Gen1Runtime.updatePokemonTeams()
 assert(Program.GameData.EnemyTeam[1].level == 30)
 assert(Program.GameData.EnemyTeam[1].trainerID == -1)
+
+put(GameSettings.battleMon + 5, 0x17, 0x17)
+put(GameSettings.enemyMon + 5, 0x00, 0x03)
+local ownTypes, enemyTypes = Gen1Runtime.getPokemonTypes(true), Gen1Runtime.getPokemonTypes(false)
+assert(ownTypes[1] == "electric" and ownTypes[2] == "")
+assert(enemyTypes[1] == "normal" and enemyTypes[2] == "poison")
 
 bytes[GameSettings.currentMap] = 0x0C
 Gen1Runtime.updateMapLocation()

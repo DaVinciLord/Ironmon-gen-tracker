@@ -69,6 +69,14 @@ function Gen1Runtime.readBadgeBits()
 	return Memory.readbyte(GameSettings.badges) or 0
 end
 
+function Gen1Runtime.getPokemonTypes(isOwn)
+	local address = (isOwn and GameSettings.battleMon or GameSettings.enemyMon) + 5
+	local first = Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address)] or PokemonData.Types.UNKNOWN
+	local second = Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 1)] or PokemonData.Types.UNKNOWN
+	if second == first then second = PokemonData.Types.EMPTY end
+	return { first, second }
+end
+
 local function emptyItems()
 	return { healingTotal = 0, healingPercentage = 0, healingValue = 0,
 		PokeBalls = {}, HPHeals = {}, PPHeals = {}, StatusHeals = {}, EvoStones = {}, Other = {} }
@@ -126,6 +134,7 @@ function Gen1Runtime.apply()
 	Program.updateMapLocation = Gen1Runtime.updateMapLocation
 	Program.isValidMapLocation = Gen1Runtime.isValidMapLocation
 	Program.readBadgeBits = Gen1Runtime.readBadgeBits
+	Program.getPokemonTypes = Gen1Runtime.getPokemonTypes
 	Program.updateBagItems = Gen1Runtime.updateBagItems
 	Program.update = Gen1Runtime.update
 end
