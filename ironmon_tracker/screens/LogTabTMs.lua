@@ -12,6 +12,11 @@ LogTabTMs = {
 			image = FileManager.buildImagePath("icons", "tiny-tm", ".png"),
 		},
 	},
+	-- Right-aligned leader names; keep a gap after the TM text.
+	GymNameGapX = 8,
+	GymNamePadRight = 2,
+	GymBadgeOffsetX = 18,
+	GymBadgeOffsetY = 2,
 }
 
 LogTabTMs.PagedButtons = {}
@@ -105,7 +110,15 @@ function LogTabTMs.buildPagedButtons(gymTMs)
 
 		local button = {
 			type = Constants.ButtonTypes.NO_BORDER,
-			getText = function(self) return string.format("TM%02d  %s", tmNumber, moveName) end,
+			getText = function(self)
+				local label = string.format("TM%02d  %s", tmNumber, moveName)
+				if LogOverlay.Windower.filterGrid ~= "Gym TMs" or not self.box then
+					return label
+				end
+				local tabRight = LogOverlay.TabBox.x + LogOverlay.TabBox.width - LogTabTMs.GymNamePadRight
+				local maxW = tabRight - self.box[1] - 52 - LogTabTMs.GymNameGapX
+				return Utils.shortenText(label, math.max(40, maxW), false)
+			end,
 			textColor = LogTabTMs.Colors.text,
 			tmNumber = tmNumber,
 			moveId = tm.moveId,
@@ -131,12 +144,31 @@ function LogTabTMs.buildPagedButtons(gymTMs)
 	LogTabTMs.buildGymTMButtons()
 end
 
+function LogTabTMs.syncGymLabelBoxes()
+	local tabRight = LogOverlay.TabBox.x + LogOverlay.TabBox.width - LogTabTMs.GymNamePadRight
+	for _, gymButton in pairs(LogTabTMs.GymLabelButtons) do
+		local tmButton = gymButton.tmButton
+		if tmButton and tmButton.box then
+			local minX = tmButton.box[1] + 40
+			local maxW = math.max(24, tabRight - minX)
+			local name = Utils.shortenText(gymButton.rawName or "", maxW, false)
+			gymButton.displayName = name
+			local nameW = Utils.calcWordPixelLength(name)
+			-- NO_BORDER text is drawn at box[1]+1; PixelFont/Linux add another px.
+			local x = tabRight - nameW - 2
+			if x < minX then
+				x = minX
+			end
+			gymButton.box = { x, tmButton.box[2], nameW + 2, 11 }
+		end
+	end
+end
+
 function LogTabTMs.buildGymTMButtons()
 	LogTabTMs.GymLabelButtons = {}
 	local gymTMNav = LogOverlay.NavFilters.TMs.GymTMs
 	LogTabTMs.realignGrid(gymTMNav.group, gymTMNav.sortFunc)
 
-	local gymColOffsetX = 80 + 17
 	for _, tmButton in pairs(LogTabTMs.PagedButtons) do
 		local trainerLog = RandomizerLog.Data.Trainers[tmButton.trainerId or -1] or {}
 
@@ -144,27 +176,36 @@ function LogTabTMs.buildGymTMButtons()
 			local badgePrefix = GameSettings.badgePrefix or "FRLG"
 			local badgeName = badgePrefix .. "_badge" .. tmButton.gymNumber
 			local badgeImage = FileManager.buildImagePath(FileManager.Folders.Badges, badgeName, FileManager.Extensions.BADGE)
-			local gymLabel = string.format("%s %s", Resources.LogOverlay.FilterGym, tmButton.gymNumber or 0)
 
 			local gymButton = {
 				type = Constants.ButtonTypes.NO_BORDER,
-				getText = function(self)
+				tmButton = tmButton,
+				rawName = (function()
 					if Options["Use Custom Trainer Names"] then
-						return Utils.firstToUpperEachWord(trainerLog.customName)
-					else
-						return Utils.firstToUpperEachWord(trainerLog.name)
+						return Utils.firstToUpperEachWord(trainerLog.customName) or ""
 					end
+					return Utils.firstToUpperEachWord(trainerLog.name) or ""
+				end)(),
+				getText = function(self)
+					return self.displayName or self.rawName or ""
 				end,
 				textColor = tmButton.textColor,
 				trainerId = tmButton.trainerId,
 				group = tmButton.group,
-				box = { tmButton.box[1] + gymColOffsetX, tmButton.box[2], 90, 11 },
-				isVisible = function(self) return LogOverlay.Windower.filterGrid == self.group end,
+				box = { 0, 0, 40, 11 },
+				isVisible = function(self)
+					return LogOverlay.Windower.filterGrid == self.group
+						and self.tmButton ~= nil
+						and LogOverlay.Windower.currentPage == self.tmButton.pageVisible
+				end,
 				draw = function(self, shadowcolor)
-					-- Draw badge icon to the left of the TM move
-					Drawing.drawImage(badgeImage, tmButton.box[1] - 18, tmButton.box[2] - 2)
-					-- Draw the gym leader name and gym # to the right of the TM move
-					Drawing.drawText(self.box[1] + 55, self.box[2], gymLabel, Theme.COLORS[self.textColor], shadowcolor)
+					if self.tmButton and self.tmButton.box then
+						Drawing.drawImage(
+							badgeImage,
+							self.tmButton.box[1] - LogTabTMs.GymBadgeOffsetX,
+							self.tmButton.box[2] - LogTabTMs.GymBadgeOffsetY
+						)
+					end
 				end,
 				onClick = function(self)
 					LogOverlay.Windower:changeTab(LogTabTrainerDetails, 1, nil, self.trainerId)
@@ -177,6 +218,7 @@ function LogTabTMs.buildGymTMButtons()
 			table.insert(LogTabTMs.GymLabelButtons, gymButton)
 		end
 	end
+	LogTabTMs.syncGymLabelBoxes()
 end
 
 function LogTabTMs.realignGrid(gridFilter, sortFunc, startingPage)
@@ -195,8 +237,7 @@ function LogTabTMs.realignGrid(gridFilter, sortFunc, startingPage)
 
 	-- Single column for fancy Gym TM display
 	if gridFilter == "Gym TMs" then
-		x = x + 12
-		y = y + 2
+		x = LogOverlay.TabBox.x + 20
 		colSpacer = 200
 		rowSpacer = 5
 	end
@@ -205,6 +246,7 @@ function LogTabTMs.realignGrid(gridFilter, sortFunc, startingPage)
 	LogOverlay.Windower.totalPages = Utils.gridAlign(LogTabTMs.PagedButtons, x, y, colSpacer, rowSpacer, true, maxWidth, maxHeight)
 	LogOverlay.Windower.currentPage = math.min(startingPage, LogOverlay.Windower.totalPages)
 
+	LogTabTMs.syncGymLabelBoxes()
 	LogTabTMs.refreshButtons()
 end
 

@@ -86,4 +86,12 @@ assert(trainerInfo:find("getTrackerHeight()", 1, true),
 assert(trainerInfo:find("cutoffY = Drawing.getTrackerHeight()", 1, true),
 	"the 3x2 party grid must use tracker height as cutoff or the second row is dropped")
 
+local tmsTab = read(repoRoot .. "ironmon_tracker/screens/LogTabTMs.lua")
+assert(not tmsTab:find("gymColOffsetX = 80 + 17", 1, true),
+	"GBA gym TM name column (offset 97) clips leader names on the 160px GB overlay")
+assert(not tmsTab:find("self.box[1] + 55", 1, true),
+	"GBA 'Gym N' text at nameX+55 is drawn in the tracker gap")
+assert(tmsTab:find("tmButton.pageVisible", 1, true),
+	"gym TM labels must follow the TM row page or badges 1 and 8 overlap")
+
 print("Gen 1 screen layout smoke tests passed")

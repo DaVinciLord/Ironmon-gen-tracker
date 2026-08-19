@@ -162,12 +162,22 @@ function LogTabPokemon.realignGrid(gridFilter, sortFunc, startingPage)
 		table.sort(LogTabPokemon.PagedButtons, sortFunc)
 	end
 
-	local x = LogOverlay.TabBox.x + 19
-	local y = LogOverlay.TabBox.y + 2
+	local iconSize = 32
 	local colSpacer = 23
 	local rowSpacer = 4
-	local maxWidth = LogOverlay.TabBox.width + LogOverlay.TabBox.x
-	local maxHeight = LogOverlay.TabBox.height + LogOverlay.TabBox.y
+	local nameOffsetY = 2 -- names are drawn 2px above each icon
+	local box = LogOverlay.TabBox
+	local maxWidth = box.x + box.width
+	local maxHeight = box.y + box.height
+
+	local cols = math.max(1, math.floor((box.width + colSpacer) / (iconSize + colSpacer)))
+	local gridWidth = cols * iconSize + (cols - 1) * colSpacer
+	local x = box.x + math.floor((box.width - gridWidth) / 2 + 0.5)
+
+	local availHeight = math.max(iconSize, box.height - nameOffsetY)
+	local rows = math.max(1, math.floor((availHeight + rowSpacer) / (iconSize + rowSpacer)))
+	local gridHeight = rows * iconSize + (rows - 1) * rowSpacer
+	local y = box.y + nameOffsetY + math.floor((availHeight - gridHeight) / 2 + 0.5)
 
 	LogOverlay.Windower.filterGrid = gridFilter
 	LogOverlay.Windower.totalPages = Utils.gridAlign(LogTabPokemon.PagedButtons, x, y, colSpacer, rowSpacer, false, maxWidth, maxHeight)
