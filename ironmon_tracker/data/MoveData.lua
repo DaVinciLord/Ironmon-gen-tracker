@@ -1,5 +1,39 @@
-MoveData = {
-	totalMoves = 165,
+MoveData = {}
+
+MoveData.Values = {
+	GuillotineId = 12,
+	HornDrillId = 32,
+	LowKickId = 67,
+	FissureId = 90,
+
+	-- Used by Battle Details (RBY status bits)
+	PayDayId = 6,
+	DisableId = 50,
+	MistId = 54,
+	LeechSeedId = 73,
+	RageId = 99,
+	MinimizeId = 107,
+	DefenseCurlId = 111,
+	LightScreenId = 113,
+	ReflectId = 115,
+	FocusEnergyId = 116,
+	BideId = 117,
+	TransformId = 144,
+	SubstituteId = 164,
+}
+
+MoveData.Addresses = {
+	offsetMovePower = 0x0,
+	offsetMoveType = 0x8,
+	offsetMoveAccuracy = 0x10,
+	offsetMovePP = 0x18,
+	offsetMoveFlagsCategory = 0x6,
+
+	sizeofMovePower = 8,
+	sizeofMoveType = 8,
+	sizeofMoveAccuracy = 8,
+	sizeofMovePP = 8,
+	sizeofMoveFlagsCategory = 2,
 }
 
 MoveData.IsRand = {
@@ -7,6 +41,8 @@ MoveData.IsRand = {
 	movePower = false,
 	moveAccuracy = false,
 	movePP = false,
+	moveCategory = false,
+	tms = false,
 }
 
 -- Move categories identify the type of attack a move is: physical, special, or status
@@ -17,28 +53,11 @@ MoveData.Categories = {
 	STATUS = "Status",
 }
 
---List of pokemon types used to cycle through types when the Hidden Power button is clicked
-MoveData.HiddenPowerTypeList = {
-	PokemonData.Types.UNKNOWN,
-	PokemonData.Types.FIGHTING,
-	PokemonData.Types.FLYING,
-	PokemonData.Types.POISON,
-	PokemonData.Types.GROUND,
-	PokemonData.Types.ROCK,
-	PokemonData.Types.BUG,
-	PokemonData.Types.GHOST,
-	PokemonData.Types.STEEL,
-	PokemonData.Types.FIRE,
-	PokemonData.Types.WATER,
-	PokemonData.Types.GRASS,
-	PokemonData.Types.ELECTRIC,
-	PokemonData.Types.PSYCHIC,
-	PokemonData.Types.ICE,
-	PokemonData.Types.DRAGON,
-	PokemonData.Types.DARK,
-}
+-- RBY has no Hidden Power.
+MoveData.HiddenPowerTypeList = {}
+MoveData.HIDDEN_POWER_NOT_SET = nil
 
---Mapping of move types to move categories for gens 1-3
+-- Physical/special split follows type, as in generations 1-3
 MoveData.TypeToCategory = {
 	[PokemonData.Types.NORMAL]   = MoveData.Categories.PHYSICAL,
 	[PokemonData.Types.FIGHTING] = MoveData.Categories.PHYSICAL,
@@ -48,7 +67,6 @@ MoveData.TypeToCategory = {
 	[PokemonData.Types.ROCK]     = MoveData.Categories.PHYSICAL,
 	[PokemonData.Types.BUG]      = MoveData.Categories.PHYSICAL,
 	[PokemonData.Types.GHOST]    = MoveData.Categories.PHYSICAL,
-	[PokemonData.Types.STEEL]    = MoveData.Categories.PHYSICAL,
 	[PokemonData.Types.FIRE]     = MoveData.Categories.SPECIAL,
 	[PokemonData.Types.WATER]    = MoveData.Categories.SPECIAL,
 	[PokemonData.Types.GRASS]    = MoveData.Categories.SPECIAL,
@@ -56,158 +74,241 @@ MoveData.TypeToCategory = {
 	[PokemonData.Types.PSYCHIC]  = MoveData.Categories.SPECIAL,
 	[PokemonData.Types.ICE]      = MoveData.Categories.SPECIAL,
 	[PokemonData.Types.DRAGON]   = MoveData.Categories.SPECIAL,
-	[PokemonData.Types.DARK]     = MoveData.Categories.SPECIAL,
 	[PokemonData.Types.UNKNOWN]  = MoveData.Categories.NONE,
 }
 
 MoveData.TypeToEffectiveness = {
-	normal = { rock = 0.5, ghost = 0, steel = 0.5 },
-	fire = { fire = 0.5, water = 0.5, grass = 2, ice = 2, bug = 2, rock = 0.5, dragon = 0.5, steel = 2 },
+	normal = { rock = 0.5, ghost = 0 },
+	fire = { fire = 0.5, water = 0.5, grass = 2, ice = 2, bug = 2, rock = 0.5, dragon = 0.5 },
 	water = { fire = 2, water = 0.5, grass = 0.5, ground = 2, rock = 2, dragon = 0.5 },
-	grass = { fire = 0.5, water = 2, grass = 0.5, poison = 0.5, ground = 2, flying = 0.5, bug = 0.5, rock = 2, dragon = 0.5, steel = 0.5 },
+	grass = { fire = 0.5, water = 2, grass = 0.5, poison = 0.5, ground = 2, flying = 0.5, bug = 0.5, rock = 2, dragon = 0.5 },
 	electric = { water = 2, grass = 0.5, electric = 0.5, ground = 0, flying = 2, dragon = 0.5 },
-	ice = { fire = 0.5, water = 0.5, grass = 2, ice = 0.5, ground = 2, flying = 2, dragon = 2, steel = 0.5 },
-	fighting = { normal = 2, ice = 2, poison = 0.5, flying = 0.5, psychic = 0.5, bug = 0.5, rock = 2, ghost = 0, dark = 2, steel = 2 },
-	poison = { grass = 2, poison = 0.5,bug=2, ground = 0.5, rock = 0.5, ghost = 0.5, steel = 0 },
-	ground = { fire = 2, grass = 0.5, electric = 2, poison = 2, flying = 0, bug = 0.5, rock = 2, steel = 2 },
-	flying = { grass = 2, electric = 0.5, fighting = 2, bug = 2, rock = 0.5, steel = 0.5 },
-	psychic = { fighting = 2, poison = 2, psychic = 0.5, dark = 0, steel = 0.5 },
-	bug = { fire = 0.5, grass = 2, fighting = 0.5, poison = 2, flying = 0.5, psychic = 2, ghost = 0.5, dark = 2, steel = 0.5 },
-	rock = { fire = 2, ice = 2, fighting = 0.5, ground = 0.5, flying = 2, bug = 2, steel = 0.5 },
-	ghost = { normal = 0, psychic = 0, ghost = 2, dark = 0.5, steel = 0.5 },
-	dragon = { dragon = 2, steel = 0.5 },
-	dark = { fighting = 0.5, psychic = 2, ghost = 2, dark = 0.5, steel = 0.5 },
-	steel = { fire = 0.5, water = 0.5, ice = 2, rock = 2, steel = 0.5, electric = 0.5 },
+	ice = { water = 0.5, grass = 2, ice = 0.5, ground = 2, flying = 2, dragon = 2 },
+	fighting = { normal = 2, ice = 2, poison = 0.5, flying = 0.5, psychic = 0.5, bug = 0.5, rock = 2, ghost = 0 },
+	poison = { grass = 2, poison = 0.5, bug = 2, ground = 0.5, rock = 0.5, ghost = 0.5 },
+	ground = { fire = 2, grass = 0.5, electric = 2, poison = 2, flying = 0, bug = 0.5, rock = 2 },
+	flying = { grass = 2, electric = 0.5, fighting = 2, bug = 2, rock = 0.5 },
+	psychic = { fighting = 2, poison = 2, psychic = 0.5 },
+	bug = { fire = 0.5, grass = 2, fighting = 0.5, poison = 2, flying = 0.5, psychic = 2, ghost = 0.5 },
+	rock = { fire = 2, ice = 2, fighting = 0.5, ground = 0.5, flying = 2, bug = 2 },
+	ghost = { normal = 0, psychic = 0, ghost = 2 }, -- RBY Ghost/Psychic bug
+	dragon = { dragon = 2 },
 }
+
+-- RBY OHKO accuracy is speed-based (see move summaries), not level-based.
+-- Low Kick is a fixed 50 power and is not weight-based.
+MoveData.MoveValueAdjustmentFuncs = {}
 
 -- Is true when a Status move fails/doesn't work against a checked move type
 MoveData.StatusMovesWillFail = {
 	["73"] = { [PokemonData.Types.GRASS] = true, }, -- Leech Seed
-	["77"] = { [PokemonData.Types.STEEL] = true, [PokemonData.Types.POISON] = true, }, -- PoisonPowder
+	["77"] = { [PokemonData.Types.POISON] = true, }, -- PoisonPowder
 	["86"] = { [PokemonData.Types.GROUND] = true, }, -- Thunder Wave
-	["92"] = { [PokemonData.Types.STEEL] = true, [PokemonData.Types.POISON] = true, }, -- Toxic
-	["137"] = { [PokemonData.Types.GHOST] = true, }, -- Glare
-	["139"] = { [PokemonData.Types.STEEL] = true, [PokemonData.Types.POISON] = true, }, -- Poison Gas
-	["261"] = { [PokemonData.Types.FIRE] = true, }, -- Will-O-Wisp
+	["92"] = { [PokemonData.Types.POISON] = true, }, -- Toxic
+	["139"] = { [PokemonData.Types.POISON] = true, }, -- Poison Gas
 }
 
-MoveData.IsTypelessMove = { -- Moves which inflict typeless damage (unaffected by STAB)
-	["248"] = true, -- Future Sight
-	["251"] = true, -- Beat Up
-	["353"] = true, -- Doom Desire
+MoveData.IsTypelessMove = {}
+
+MoveData.IsOHKOMove = {
+	[ "12"] = true, -- Guillotine
+	[ "32"] = true, -- Horn Drill
+	[ "90"] = true, -- Fissure
+}
+
+MoveData.IsRecoilMove = {
+	[ "36"] = true, -- Take Down
+	[ "38"] = true, -- Double-Edge
+	[ "66"] = true, -- Submission
+	["165"] = true, -- Struggle
+}
+
+MoveData.IsNoMissDamagingMove = {
+	["129"] = true, -- Swift
 }
 
 function MoveData.initialize()
-	if GameSettings.GEN==2 then
-		MoveData.totalMoves=251
-	else
-	-- Reads the Move's type, power, accuracy, and pp
-	-- If any data at all was randomized, read in full move data from memory
-	if MoveData.checkIfDataIsRandomized() then
-		-- print("Randomized move data detected, reading from game memory...")
-		for moveId=1, MoveData.totalMoves, 1 do
-			local moveData = MoveData.Moves[moveId]
+	MoveData.knownTotal = nil
 
-			local moveInfo = MoveData.readMoveInfoFromMemory(moveId)
-			if moveInfo ~= nil then
-				moveData.type = moveInfo.type
-				moveData.accuracy = moveInfo.accuracy
-				moveData.pp = moveInfo.pp
+	-- For easier category lookups
+	MoveData.Categories[1] = MoveData.Categories.PHYSICAL
+	MoveData.Categories[2] = MoveData.Categories.SPECIAL
+	MoveData.Categories[3] = MoveData.Categories.STATUS
 
-				-- Don't overwrite manually entered data for moves with special powers (randomizer sets them to "1")
-				if moveInfo.power ~= "1" then
-					moveData.power = moveInfo.power
-				end
+	DataAdapter.initializeMoveData()
+end
 
-				if moveData.power ~= "0" then
-					moveData.category = MoveData.TypeToCategory[moveData.type]
-				end
-			end
+function MoveData.updateResources()
+	for id = 1, MoveData.getTotal(), 1 do
+		local move = MoveData.Moves[id] or MoveData.BlankMove
+		if Resources.Game.MoveNames[id] then
+			move.name = Resources.Game.MoveNames[id]
 		end
-		local datalog = Constants.BLANKLINE .. " New move data loaded: "
-		if MoveData.IsRand.moveType then
-			datalog = datalog .. "Type, "
+		local descTable = Resources.Game.MoveDescriptions[id] or {}
+		if descTable and descTable.Description then
+			move.summary = descTable.Description
 		end
-		if MoveData.IsRand.movePower then
-			datalog = datalog .. "Power, "
-		end
-		if MoveData.IsRand.moveAccuracy then
-			datalog = datalog .. "Accuracy, "
-		end
-		if MoveData.IsRand.movePP then
-			datalog = datalog .. "PP, "
-		end
-		-- print(datalog:sub(1, -3)) -- Remove trailing ", "
 	end
 end
 
+--- Reads the Move's type, power, accuracy, and pp from the game memory.
+---@param forced boolean? Optional, forces the data to be read in from the game
+function MoveData.buildData(forced)
+	DataAdapter.initializeMoveData()
 end
 
 function MoveData.readMoveInfoFromMemory(moveId)
-
-	local moveData = Memory.readdword(GameSettings.gBattleMoves +(moveId-1)*0x06 +0x02)
-
-
-	local  movePower= Utils.getbits(moveData, 0, 8)
-	local moveType= Utils.getbits(moveData, 8, 8)
-	local moveAccuracy = math.ceil(Utils.getbits(moveData, 16, 8)*100 /255)
-	local  movePP = Utils.getbits(moveData, 24, 6)
-
-	return {
-		power = tostring(movePower),
-		type = PokemonData.TypeIndexMap[moveType],
-		accuracy = tostring(moveAccuracy),
-		pp = tostring(movePP),
-	}
+	return DataAdapter.readMoveInfo(moveId)
 end
 
 function MoveData.checkIfDataIsRandomized()
-	local areTypesRandomized = false
-	local arePowersRandomized = false
-	local areAccuraciesRandomized = false
-	local arePPsRandomized = false
-
-	-- Check once if any data was randomized
-	local moveInfo = MoveData.readMoveInfoFromMemory(59) -- Tackle
-
-
-
-	if moveInfo ~= nil then
-		areTypesRandomized = moveInfo.type ~=  PokemonData.Types.ICE
-		arePowersRandomized = moveInfo.power ~= "120"
-		areAccuraciesRandomized = moveInfo.accuracy ~= "70"
-		arePPsRandomized = moveInfo.pp ~= "5"
-	end
-
-	-- Check twice if any data was randomized (Randomizer does *not* force a change)
-	if not areTypesRandomized or not arePowersRandomized or not areAccuraciesRandomized or not arePPsRandomized then
-		moveInfo = MoveData.readMoveInfoFromMemory(56) -- Hydro Pump
-		if moveInfo ~= nil then
-			if moveInfo.type ~= PokemonData.Types.WATER then
-				areTypesRandomized = true
-			end
-			if moveInfo.power ~= "120" then
-				arePowersRandomized = true
-			end
-			if moveInfo.accuracy ~= "80" then
-				areAccuraciesRandomized = true
-			end
-			if moveInfo.pp ~= "5" then
-				arePPsRandomized = true
-			end
-		end
-	end
-
-	MoveData.IsRand.moveType = areTypesRandomized
-	MoveData.IsRand.movePower = arePowersRandomized
-	MoveData.IsRand.moveAccuracy = areAccuraciesRandomized
-	MoveData.IsRand.movePP = arePPsRandomized
-
-	return areTypesRandomized or arePowersRandomized or areAccuraciesRandomized or arePPsRandomized
+	return MoveData.isMoveDataRandomized()
 end
 
+---Returns true if the move data for this game is randomized (not vanilla), based on game data memory checks
+---@return boolean
+function MoveData.isMoveDataRandomized()
+	return MoveData.IsRand.moveType or MoveData.IsRand.movePower or MoveData.IsRand.moveAccuracy or MoveData.IsRand.movePP or MoveData.IsRand.moveCategory
+end
+
+---Returns true if the TMs data for this game is randomized (not vanilla), based on game data memory checks
+---@return boolean
+function MoveData.isTMDataRandomized()
+	return MoveData.IsRand.tms
+end
+
+---Returns true if the moveId is a valid, existing id of a move in MoveData.Moves
+---@param moveId number
+---@return boolean
 function MoveData.isValid(moveId)
-	return moveId ~= nil and moveId >= 1 and moveId <= MoveData.totalMoves
+	return moveId ~= nil and MoveData.Moves[moveId] ~= nil
+end
+
+---Gets the total count of known Moves for this game.
+---@return number
+function MoveData.getTotal()
+	return #MoveData.Moves
+end
+
+--Returns the Move data if the ID is available in the base game, or if NatDex extension exists, try getting data from there
+---@param moveId number
+---@return table move If no move found, returns MoveData.BlankMove
+function MoveData.getNatDexCompatible(moveId)
+	return MoveData.Moves[moveId or false] or MoveData.BlankMove
+end
+
+---Returns true if the move is a One-Hit KO move (i.e. Sheer Cold)
+---@param moveId number|string
+---@return boolean
+function MoveData.isOHKO(moveId)
+	return MoveData.IsOHKOMove[tostring(moveId)] ~= nil
+end
+
+---Returns true if the move causes recoil damage (i.e. Take Down); does NOT include Struggle (id=165)
+---@param moveId number|string
+---@return boolean
+function MoveData.isRecoil(moveId)
+	return MoveData.IsRecoilMove[tostring(moveId)] ~= nil
+end
+
+---Returns true if the move is a No-Miss damaging move (i.e. Swift).
+---@param moveId number|string
+---@return boolean
+function MoveData.isNoMissDamagingMove(moveId)
+	return MoveData.IsNoMissDamagingMove[tostring(moveId)] ~= nil
+end
+
+---Returns the move category of the move, such as Physical, Special, or Status; returns None if move not found
+---@param moveId number|string
+---@param moveType? string Optional, if provided (and not phys/spec split) will use this type to determine the category
+---@return string category
+function MoveData.getCategory(moveId, moveType)
+	local move = MoveData.Moves[tonumber(moveId or "") or -1] or MoveData.BlankMove
+	moveType = moveType or move.type
+	if MoveData.IsRand.moveCategory then
+		return move.category or MoveData.Categories.NONE
+	end
+	return MoveData.TypeToCategory[moveType] or MoveData.Categories.NONE
+end
+
+---Calculate the type & power of Hidden Power using a Pokémon's individual values (hp, atk, def, spa, spd, spe)
+---@param ivs table Must contain key/value pairs for: hp, atk, def, spa, spd, spe
+---@return string moveType The type of the move, or PokemonData.Types.UNKNOWN if it can't be calculated
+---@return integer movePower the power of the move, between 30 and 70 inclusive; or 0 if unknown
+function MoveData.calcHiddenPowerTypeAndPower(ivs)
+	local moveType, movePower = MoveData.HiddenPowerTypeList[1], 0 -- unknown
+	if not ivs or not ivs.hp then
+		return moveType, movePower
+	end
+
+	-- Formula: https://bulbapedia.bulbagarden.net/wiki/Hidden_Power_(move)/Calculation#Generation_III_onward
+	-- Type Bits: If a number is odd, its least significant bit is 1; otherwise (if the number is even), it is 0.
+	local tBits = {
+		hp = ivs.hp % 2,
+		atk = ivs.atk % 2,
+		def = ivs.def % 2,
+		spe = ivs.spe % 2,
+		spa = ivs.spa % 2,
+		spd = ivs.spd % 2,
+	}
+	-- Power Bits: If a variable has a remainder of 2 or 3 when divided by 4, this bit is 1; otherwise, the bit is 0.
+	local pBits = {
+		hp = math.floor((ivs.hp % 4) / 2),
+		atk = math.floor((ivs.atk % 4) / 2),
+		def = math.floor((ivs.def % 4) / 2),
+		spe = math.floor((ivs.spe % 4) / 2),
+		spa = math.floor((ivs.spa % 4) / 2),
+		spd = math.floor((ivs.spd % 4) / 2),
+	}
+	-- Perform the cacluation
+	local typeSum = tBits.hp + (2 * tBits.atk) + (4 * tBits.def) + (8 * tBits.spe) + (16 * tBits.spa) + (32 * tBits.spd)
+	local typeIndex = math.floor(typeSum * 15 / 63) -- results in 0 through 15, inclusive
+	moveType = MoveData.HiddenPowerTypeList[typeIndex + 2] or MoveData.HiddenPowerTypeList[1] -- 1st is "unknown", 2nd is "fighting"
+	local moveSum = pBits.hp + (2 * pBits.atk) + (4 * pBits.def) + (8 * pBits.spe) + (16 * pBits.spa) + (32 * pBits.spd)
+	movePower = math.floor(moveSum * 40 / 63) + 30 -- results in 30 through 70, inclusive
+
+	return moveType, movePower
+end
+
+---Determines (guesses) at the expected numerical power of a given move. For example, average power for multi-hit moves, or max power for HP based moves.
+---@param moveId number
+---@return number
+function MoveData.getExpectedPower(moveId)
+	if not MoveData.isValid(moveId) then
+		return 0
+	end
+
+	-- https://bulbapedia.bulbagarden.net/wiki/Multi-strike_move#Variable_number_of_strikes
+	local multiHitMoves = {
+		[3] = true, [4] = true, [31] = true, [42] = true, [131] = true, [140] = true, [154] = true,
+	}
+	-- https://bulbapedia.bulbagarden.net/wiki/Multi-strike_move#Fixed_number_of_multiple_strikes
+	local doubleHitMoves = {
+		[155] = true, [24] = true, [41] = true,
+	}
+
+	local power = tonumber(MoveData.Moves[moveId].power) or 0
+	if doubleHitMoves[moveId] then
+		return (power * 2)
+	elseif multiHitMoves[moveId] then
+		-- Average of 3 hits
+		return (power * 3)
+	end
+
+	return power
+end
+
+---Adjusts the move table data based on any variable damage calculations, or other attributes; No return, as this edits the move table directly.
+---@param move table
+---@param sourcePokemon? table Optional, as not all move adjustment calculations require a source and/or a target
+---@param targetPokemon? table Optional, as not all move adjustment calculations require a source and/or a target
+function MoveData.adjustVariableMoveValues(move, sourcePokemon, targetPokemon)
+	sourcePokemon = sourcePokemon or {}
+	targetPokemon = targetPokemon or {}
+	local adjustmentFunc = MoveData.MoveValueAdjustmentFuncs[tonumber(move.id or 0) or false]
+	if type(adjustmentFunc) == "function" then
+		adjustmentFunc(move, sourcePokemon, targetPokemon)
+	end
 end
 
 MoveData.BlankMove = {
@@ -245,7 +346,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "2",
@@ -256,7 +356,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " High critical hit ratio. .",
 	},
 	{
 		id = "3",
@@ -267,7 +366,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-		summary = "Hits 2-5 times in one turn. Two: 37.5%, Three: 37.5%, Four: 12.5%, Five: 12.5%. Each hit has a chance to critical or trigger a contact ability.",
 	},
 	{
 		id = "4",
@@ -278,7 +376,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Hits 2-5 times in one turn. .",
 	},
 	{
 		id = "5",
@@ -289,7 +386,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "6",
@@ -299,7 +395,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Scatters coins. .",
 	},
 	{
 		id = "7",
@@ -310,7 +405,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " 10% chance to burn the target. .",
 	},
 	{
 		id = "8",
@@ -321,7 +415,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " 10% chance to freeze the target. .",
 	},
 	{
 		id = "9",
@@ -332,7 +425,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-		summary = "Deals damage and has a 10% chance of paralyzing the opponent.",
 	},
 	{
 		id = "10",
@@ -343,7 +435,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "11",
@@ -354,7 +445,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-		summary = "Deals damage and has no secondary effect.",
 	},
 	{
 		id = "12",
@@ -365,7 +455,7 @@ MoveData.Moves = {
 		accuracy = "30",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Deals 65535 damage. Fails if target is faster. .",
+		variablepower = true,
 	},
 	{
 		id = "13",
@@ -375,7 +465,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Charges turn 1. Hits turn 2. .",
 	},
 	{
 		id = "14",
@@ -385,7 +474,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Attack by 2. .",
 	},
 	{
 		id = "15",
@@ -396,7 +484,6 @@ MoveData.Moves = {
 		accuracy = "95",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "16",
@@ -406,7 +493,6 @@ MoveData.Moves = {
 		pp = "35",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "17",
@@ -417,7 +503,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "18",
@@ -428,7 +513,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
 		priority = "-- 6",
-	 summary = " No competitive use. .",
 	},
 	{
 		id = "19",
@@ -439,7 +523,6 @@ MoveData.Moves = {
 		accuracy = "95",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Flies up on first turn, then strikes the next turn .",
 	},
 	{
 		id = "20",
@@ -450,7 +533,6 @@ MoveData.Moves = {
 		accuracy = "75",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Prevents the target from moving for 2-5 turns. .",
 	},
 	{
 		id = "21",
@@ -461,7 +543,6 @@ MoveData.Moves = {
 		accuracy = "75",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "22",
@@ -472,7 +553,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "23",
@@ -483,7 +563,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 30% chance to make the target flinch. .",
 	},
 	{
 		id = "24",
@@ -494,7 +573,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Hits 2 times in one turn. .",
 	},
 	{
 		id = "25",
@@ -505,7 +583,6 @@ MoveData.Moves = {
 		accuracy = "75",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "26",
@@ -516,7 +593,6 @@ MoveData.Moves = {
 		accuracy = "95",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " User takes 1 HP of damage if it misses. .",
 	},
 	{
 		id = "27",
@@ -527,7 +603,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 30% chance to make the target flinch. .",
 	},
 	{
 		id = "28",
@@ -537,7 +612,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-		summary = "Lowers the target's accuracy stat by one stage. (100% -> 75% -> 60% -> 50% ...)",
 	},
 	{
 		id = "29",
@@ -548,7 +622,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 30% chance to make the target flinch. .",
 	},
 	{
 		id = "30",
@@ -559,7 +632,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "31",
@@ -570,7 +642,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Hits 2-5 times in one turn. .",
 	},
 	{
 		id = "32",
@@ -581,7 +652,7 @@ MoveData.Moves = {
 		accuracy = "30",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Deals 65535 damage. Fails if target is faster. .",
+		variablepower = true,
 	},
 	{
 		id = "33",
@@ -592,7 +663,6 @@ MoveData.Moves = {
 		accuracy = "95",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "34",
@@ -603,7 +673,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 30% chance to paralyze the target. .",
 	},
 	{
 		id = "35",
@@ -614,7 +683,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Prevents the target from moving for 2-5 turns. .",
 	},
 	{
 		id = "36",
@@ -625,7 +693,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Has 1/4 recoil. .",
 	},
 	{
 		id = "37",
@@ -636,7 +703,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Lasts 3-4 turns. Confuses the user afterwards. .",
 	},
 	{
 		id = "38",
@@ -647,7 +713,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Has 1/4 recoil. .",
 	},
 	{
 		id = "39",
@@ -657,7 +722,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-	 summary = " Lowers the target's Defense by 1. .",
 	},
 	{
 		id = "40",
@@ -667,7 +731,6 @@ MoveData.Moves = {
 		pp = "35",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " 20% chance to poison the target. .",
 	},
 	{
 		id = "41",
@@ -677,7 +740,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Hits 2 times. Last hit has 20% chance to poison. .",
 	},
 	{
 		id = "42",
@@ -687,7 +749,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Hits 2-5 times in one turn. .",
 	},
 	{
 		id = "43",
@@ -697,7 +758,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-	 summary = " Lowers the target's Defense by 1. .",
 	},
 	{
 		id = "44",
@@ -708,7 +768,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " 10% chance to make the target flinch. .",
 	},
 	{
 		id = "45",
@@ -718,7 +777,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-	 summary = " Lowers the target's Attack by 1. .",
 	},
 	{
 		id = "46",
@@ -729,7 +787,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
 		priority = "-- 6",
-	 summary = " No competitive use. .",
 	},
 	{
 		id = "47",
@@ -739,7 +796,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "55",
 		category = MoveData.Categories.STATUS,
-	 summary = " Causes the target to fall asleep. .",
 	},
 	{
 		id = "48",
@@ -749,7 +805,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "55",
 		category = MoveData.Categories.STATUS,
-	 summary = " Causes the target to become confused. .",
 	},
 	{
 		id = "49",
@@ -759,7 +814,7 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
-		summary = "Always inflicts exactly 20 HP damage if it hits.",
+		variablepower = true,
 	},
 	{
 		id = "50",
@@ -769,7 +824,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "55",
 		category = MoveData.Categories.STATUS,
-	 summary = " For 0-7 turns, disables one of the target's moves.",
 	},
 	{
 		id = "51",
@@ -779,7 +833,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " 33% chance to lower the target's Defense by 1. .",
 	},
 	{
 		id = "52",
@@ -789,7 +842,6 @@ MoveData.Moves = {
 		pp = "25",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to burn the target. .",
 	},
 	{
 		id = "53",
@@ -799,7 +851,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to burn the target. .",
 	},
 	{
 		id = "54",
@@ -809,7 +860,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " While active, user is protected from stat drops .",
 	},
 	{
 		id = "55",
@@ -819,7 +869,6 @@ MoveData.Moves = {
 		pp = "25",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "56",
@@ -829,7 +878,6 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "80",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "57",
@@ -839,7 +887,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "58",
@@ -849,7 +896,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to freeze the target. .",
 	},
 	{
 		id = "59",
@@ -859,7 +905,6 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "70",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to freeze the target. .",
 	},
 	{
 		id = "60",
@@ -869,7 +914,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to confuse the target. .",
 	},
 	{
 		id = "61",
@@ -879,7 +923,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 10% chance of lowering the target's Speed stat by one stage.",
 	},
 	{
 		id = "62",
@@ -889,7 +932,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 33% chance to lower the target's Attack by 1. .",
 	},
 	{
 		id = "63",
@@ -899,7 +941,6 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Can't move next turn if target or sub is not KOed. .",
 	},
 	{
 		id = "64",
@@ -910,7 +951,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "65",
@@ -921,7 +961,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "66",
@@ -932,7 +971,6 @@ MoveData.Moves = {
 		accuracy = "80",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Has 1/4 recoil. .",
 	},
 	{
 		id = "67",
@@ -943,7 +981,7 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 30% chance to make the target flinch. .",
+		variablepower = true,
 	},
 	{
 		id = "68",
@@ -955,7 +993,7 @@ MoveData.Moves = {
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
 		priority = "-- 5",
-	 summary = " If hit by Normal/Fighting move, deals 2x damage .",
+		variablepower = true,
 	},
 	{
 		id = "69",
@@ -966,7 +1004,7 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Damage = user's level. Can hit Ghost types. .",
+		variablepower = true,
 	},
 	{
 		id = "70",
@@ -977,7 +1015,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "71",
@@ -987,7 +1024,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " User recovers 50% of the damage dealt. .",
 	},
 	{
 		id = "72",
@@ -997,7 +1033,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " User recovers 50% of the damage dealt. .",
 	},
 	{
 		id = "73",
@@ -1007,7 +1042,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "90",
 		category = MoveData.Categories.STATUS,
-	 summary = " 1/8 of target's HP is restored to user every turn. .",
 	},
 	{
 		id = "74",
@@ -1017,7 +1051,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Special by 1. .",
 	},
 	{
 		id = "75",
@@ -1027,7 +1060,6 @@ MoveData.Moves = {
 		pp = "25",
 		accuracy = "95",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " High critical hit ratio. .",
 	},
 	{
 		id = "76",
@@ -1037,7 +1069,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-		summary = "Attacks on the 2nd turn after use, or immediately in sunny weather. Half damage in rain or sandstorm.",
 	},
 	{
 		id = "77",
@@ -1047,7 +1078,6 @@ MoveData.Moves = {
 		pp = "35",
 		accuracy = "75",
 		category = MoveData.Categories.STATUS,
-		summary = "Poisons the target, losing 1/8 of the their max HP at the end of each turn.",
 	},
 	{
 		id = "78",
@@ -1057,7 +1087,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "75",
 		category = MoveData.Categories.STATUS,
-	 summary = " Paralyzes the target. .",
 	},
 	{
 		id = "79",
@@ -1067,7 +1096,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "75",
 		category = MoveData.Categories.STATUS,
-	 summary = " Causes the target to fall asleep. .",
 	},
 	{
 		id = "80",
@@ -1078,7 +1106,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " Lasts 3-4 turns. Confuses the user afterwards. .",
 	},
 	{
 		id = "81",
@@ -1088,7 +1115,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "95",
 		category = MoveData.Categories.STATUS,
-	 summary = " Lowers the target's Speed by 1. .",
 	},
 	{
 		id = "82",
@@ -1098,7 +1124,7 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " Deals 40 HP of damage to the target. .",
+		variablepower = true,
 	},
 	{
 		id = "83",
@@ -1108,7 +1134,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "70",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " Prevents the target from moving for 2-5 turns. .",
 	},
 	{
 		id = "84",
@@ -1118,7 +1143,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 10% chance of paralyzing the target.",
 	},
 	{
 		id = "85",
@@ -1128,7 +1152,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to paralyze the target. .",
 	},
 	{
 		id = "86",
@@ -1138,7 +1161,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-	 summary = " Paralyzes the target. .",
 	},
 	{
 		id = "87",
@@ -1148,7 +1170,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "70",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to paralyze the target. .",
 	},
 	{
 		id = "88",
@@ -1158,7 +1179,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "89",
@@ -1168,7 +1188,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "90",
@@ -1178,7 +1197,7 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "30",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Deals 65535 damage. Fails if target is faster. .",
+		variablepower = true,
 	},
 	{
 		id = "91",
@@ -1189,7 +1208,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Digs underground turn 1, strikes turn 2.",
 	},
 	{
 		id = "92",
@@ -1199,7 +1217,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "85",
 		category = MoveData.Categories.STATUS,
-	 summary = " Badly poisons the target. .",
 	},
 	{
 		id = "93",
@@ -1209,7 +1226,6 @@ MoveData.Moves = {
 		pp = "25",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 10% chance to confuse the target. .",
 	},
 	{
 		id = "94",
@@ -1219,7 +1235,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 33% chance to lower the target's Special by 1. .",
 	},
 	{
 		id = "95",
@@ -1229,7 +1244,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "60",
 		category = MoveData.Categories.STATUS,
-	 summary = " Causes the target to fall asleep. .",
 	},
 	{
 		id = "96",
@@ -1239,7 +1253,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Attack by 1. .",
 	},
 	{
 		id = "97",
@@ -1249,7 +1262,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Speed by 2. .",
 	},
 	{
 		id = "98",
@@ -1261,7 +1273,6 @@ MoveData.Moves = {
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
 		priority = "+ 1",
-	 summary = " Usually goes first. .",
 	},
 	{
 		id = "99",
@@ -1272,7 +1283,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Lasts forever. Raises user's Attack by 1 when hit. .",
 	},
 	{
 		id = "100",
@@ -1282,7 +1292,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Fails when used. .",
 	},
 	{
 		id = "101",
@@ -1292,7 +1301,7 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Damage = user's level. Can hit Normal types. .",
+		variablepower = true,
 	},
 	{
 		id = "102",
@@ -1302,7 +1311,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Random move known by the target replaces this. .",
 	},
 	{
 		id = "103",
@@ -1312,7 +1320,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "85",
 		category = MoveData.Categories.STATUS,
-	 summary = " Lowers the target's Defense by 2. .",
 	},
 	{
 		id = "104",
@@ -1322,7 +1329,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's evasiveness by 1. .",
 	},
 	{
 		id = "105",
@@ -1332,7 +1338,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Heals the user by 50% of its max HP. .",
 	},
 	{
 		id = "106",
@@ -1342,7 +1347,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Defense by 1. .",
 	},
 	{
 		id = "107",
@@ -1352,7 +1356,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's evasiveness by 1. .",
 	},
 	{
 		id = "108",
@@ -1362,7 +1365,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-		summary = "Lowers the target's accuracy stat by one stage. (100% -> 75% -> 60% -> 50% ...)",
 	},
 	{
 		id = "109",
@@ -1372,7 +1374,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-	 summary = " Confuses the target. .",
 	},
 	{
 		id = "110",
@@ -1382,7 +1383,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Defense by 1. .",
 	},
 	{
 		id = "111",
@@ -1392,7 +1392,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Defense by 1. .",
 	},
 	{
 		id = "112",
@@ -1402,7 +1401,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Defense by 2. .",
 	},
 	{
 		id = "113",
@@ -1412,7 +1410,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " While active, user's Special is 2x when damaged.",
 	},
 	{
 		id = "114",
@@ -1422,7 +1419,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Resets all stat changes. Removes foe's status. .",
 	},
 	{
 		id = "115",
@@ -1432,7 +1428,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " While active, the user's Defense is doubled .",
 	},
 	{
 		id = "116",
@@ -1442,7 +1437,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Quarters the user's chance for a critical hit. .",
 	},
 	{
 		id = "117",
@@ -1453,7 +1447,7 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Waits 2-3 turns; deals double the damage taken. .",
+		variablepower = true,
 	},
 	{
 		id = "118",
@@ -1463,7 +1457,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Picks a random move. .",
 	},
 	{
 		id = "119",
@@ -1473,7 +1466,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " User uses the target's last used move against it. .",
 	},
 	{
 		id = "120",
@@ -1483,7 +1475,6 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-		summary = "The target's Defense is halved, effectively doubling the power of this move.",
 	},
 	{
 		id = "121",
@@ -1493,7 +1484,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "75",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "122",
@@ -1504,7 +1494,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 30% chance to paralyze the target. .",
 	},
 	{
 		id = "123",
@@ -1514,7 +1503,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "70",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " 40% chance to poison the target. .",
 	},
 	{
 		id = "124",
@@ -1524,7 +1512,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " 40% chance to poison the target. .",
 	},
 	{
 		id = "125",
@@ -1534,7 +1521,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " 10% chance to make the target flinch. .",
 	},
 	{
 		id = "126",
@@ -1544,7 +1530,6 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "85",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 30% chance to burn the target. .",
 	},
 	{
 		id = "127",
@@ -1555,7 +1540,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "128",
@@ -1566,7 +1550,6 @@ MoveData.Moves = {
 		accuracy = "75",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " Prevents the target from moving for 2-5 turns. .",
 	},
 	{
 		id = "129",
@@ -1576,7 +1559,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "0",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Never misses, even against Dig and Fly.",
 	},
 	{
 		id = "130",
@@ -1587,7 +1569,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Charges turn 1. Hits turn 2. .",
 	},
 	{
 		id = "131",
@@ -1597,7 +1578,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Hits 2-5 times in one turn. .",
 	},
 	{
 		id = "132",
@@ -1608,7 +1588,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 33% chance to lower the target's Speed by 1. .",
 	},
 	{
 		id = "133",
@@ -1618,7 +1597,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Special by 2. .",
 	},
 	{
 		id = "134",
@@ -1628,7 +1606,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "80",
 		category = MoveData.Categories.STATUS,
-	 summary = " Lowers the target's accuracy by 1. .",
 	},
 	{
 		id = "135",
@@ -1638,7 +1615,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-		summary = "Restores up to 50% of the user's max HP. Can be used outside of battle to transfer 20% of max HP to another Pokemon.",
 	},
 	{
 		id = "136",
@@ -1649,7 +1625,6 @@ MoveData.Moves = {
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-		summary = "If the move misses, the user is hurt for 1/2 of the damage it would have dealt.",
 	},
 	{
 		id = "137",
@@ -1659,7 +1634,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "75",
 		category = MoveData.Categories.STATUS,
-	 summary = " Paralyzes the target. .",
 	},
 	{
 		id = "138",
@@ -1669,7 +1643,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " User gains 1/2 HP inflicted. Sleeping target only. .",
 	},
 	{
 		id = "139",
@@ -1679,7 +1652,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "55",
 		category = MoveData.Categories.STATUS,
-	 summary = " Poisons the target. .",
 	},
 	{
 		id = "140",
@@ -1689,7 +1661,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "85",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Hits 2-5 times. 37.5% chance for 2 times, 37.5% for 3 times, 12.5% for 4 times, and 12.5% for 5 times. Avg power ~48.",
 	},
 	{
 		id = "141",
@@ -1700,7 +1671,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " User recovers 50% of the damage dealt. .",
 	},
 	{
 		id = "142",
@@ -1710,7 +1680,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "75",
 		category = MoveData.Categories.STATUS,
-	 summary = " Causes the target to fall asleep. .",
 	},
 	{
 		id = "143",
@@ -1720,7 +1689,6 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Charges turn 1. Hits turn 2. .",
 	},
 	{
 		id = "144",
@@ -1730,7 +1698,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = "Copies target's stats, moves, types, and species.",
 	},
 	{
 		id = "145",
@@ -1740,7 +1707,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "100",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " 33% chance to lower the target's Speed by 1. .",
 	},
 	{
 		id = "146",
@@ -1751,7 +1717,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "147",
@@ -1761,7 +1726,6 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "100",
 		category = MoveData.Categories.STATUS,
-	 summary = " Causes the target to fall asleep. .",
 	},
 	{
 		id = "148",
@@ -1771,7 +1735,6 @@ MoveData.Moves = {
 		pp = "20",
 		accuracy = "70",
 		category = MoveData.Categories.STATUS,
-	 summary = " Lowers the target's accuracy by 1. .",
 	},
 	{
 		id = "149",
@@ -1781,7 +1744,7 @@ MoveData.Moves = {
 		pp = "15",
 		accuracy = "80",
 		category = MoveData.Categories.SPECIAL,
-	 summary = " Random damage from 1 to (user's level*1.5 - 1). .",
+		variablepower = true,
 	},
 	{
 		id = "150",
@@ -1791,7 +1754,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " This move has no effect. .",
 	},
 	{
 		id = "151",
@@ -1801,7 +1763,6 @@ MoveData.Moves = {
 		pp = "40",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Defense by 2. .",
 	},
 	{
 		id = "152",
@@ -1812,7 +1773,6 @@ MoveData.Moves = {
 		accuracy = "85",
 		category = MoveData.Categories.SPECIAL,
 		iscontact = true,
-	 summary = " High critical hit ratio. .",
 	},
 	{
 		id = "153",
@@ -1822,7 +1782,6 @@ MoveData.Moves = {
 		pp = "5",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Target's Def halved during damage. User faints. .",
 	},
 	{
 		id = "154",
@@ -1833,7 +1792,6 @@ MoveData.Moves = {
 		accuracy = "80",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Hits 2-5 times in one turn. .",
 	},
 	{
 		id = "155",
@@ -1843,7 +1801,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " Hits 2 times in one turn. .",
 	},
 	{
 		id = "156",
@@ -1853,7 +1810,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " User sleeps 2 turns and restores HP and status. .",
 	},
 	{
 		id = "157",
@@ -1863,7 +1819,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "158",
@@ -1874,7 +1829,6 @@ MoveData.Moves = {
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " 10% chance to make the target flinch. .",
 	},
 	{
 		id = "159",
@@ -1884,7 +1838,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " Raises the user's Attack by 1. .",
 	},
 	{
 		id = "160",
@@ -1894,7 +1847,6 @@ MoveData.Moves = {
 		pp = "30",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " User becomes the same type as the target. .",
 	},
 	{
 		id = "161",
@@ -1904,7 +1856,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
-	 summary = " No additional effect. .",
 	},
 	{
 		id = "162",
@@ -1915,7 +1866,7 @@ MoveData.Moves = {
 		accuracy = "90",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " Damage = 1/2 target's current HP. Hits Ghosts. .",
+		variablepower = true,
 	},
 	{
 		id = "163",
@@ -1926,7 +1877,6 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " High critical hit ratio. .",
 	},
 	{
 		id = "164",
@@ -1936,7 +1886,6 @@ MoveData.Moves = {
 		pp = "10",
 		accuracy = "0",
 		category = MoveData.Categories.STATUS,
-	 summary = " User takes 1/4 its max HP to put in a Substitute. .",
 	},
 	{
 		id = "165",
@@ -1947,1962 +1896,5 @@ MoveData.Moves = {
 		accuracy = "100",
 		category = MoveData.Categories.PHYSICAL,
 		iscontact = true,
-	 summary = " User loses 1/2 the HP lost by the target. .",
 	},
-	{ -- Begin Gen 2 Moves
-		id = "166",
-		name = "Sketch",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "1",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "User learns the target's last move permanently, replacing Sketch in the process. Fails against some moves, or if user already knows the move.",
-	},
-	{
-		id = "167",
-		name = "Triple Kick",
-		type = PokemonData.Types.FIGHTING,
-		power = "10",
-		pp = "10",
-		accuracy = "90",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage three times, each additional hit gains 10 power. Each hit has a separate accuracy check and is able to be critical.",
-	},
-	{
-		id = "168",
-		name = "Thief",
-		type = PokemonData.Types.DARK,
-		power = "40",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Steals the target's held item, if it has one. An item cannot be stolen if the user already has an item, or the target has Sticky Hold.",
-	},
-	{
-		id = "169",
-		name = "Spider Web",
-		type = PokemonData.Types.BUG,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Prevents the target from switching out or fleeing. A " .. Constants.Words.POKEMON .. " can still flee if it has Run Away or holding a Smoke Ball.",
-	},
-	{
-		id = "170",
-		name = "Mind Reader",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Allows the next move used by the user to never miss, even against Bounce, Dig, Dive, and Fly.",
-	},
-	{
-		id = "171",
-		name = "Nightmare",
-		type = PokemonData.Types.GHOST,
-		power = "0",
-		pp = "15",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Causes a sleeping target to lose 1/4 of the their max HP at the end of each turn that they remain asleep.",
-	},
-	{
-		id = "172",
-		name = "Flame Wheel",
-		type = PokemonData.Types.FIRE,
-		power = "60",
-		pp = "25",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and has a 10% chance of burning the target. This move will first thaw out its user if frozen.",
-	},
-	{
-		id = "173",
-		name = "Snore",
-		type = PokemonData.Types.NORMAL,
-		power = "40",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "If the user is asleep, deals damage and has a 30% chance of causing the target to flinch. No effect against Soundproof.",
-	},
-	{
-		id = "174",
-		name = "Curse",
-		type = PokemonData.Types.UNKNOWN,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers Speed but raises Attack and Defense. If user is Ghost, instead loses half max HP to curse target, causing them to lose 1/4 of the their max HP at end of each turn.",
-	},
-	{
-		id = "175",
-		name = "Flail",
-		type = PokemonData.Types.NORMAL,
-		power = "<HP",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals more damage the less HP the user has. Important breakpoints: 80 power at 35% hp or lower, and 150 power at 10% hp or lower.",
-	},
-	{
-		id = "176",
-		name = "Conversion 2",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "30",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Randomly changes the user's type to a new type that resists or is immune to the type of the last damaging move it was hit by.",
-	},
-	{
-		id = "177",
-		name = "Aeroblast",
-		type = PokemonData.Types.FLYING,
-		power = "100",
-		pp = "5",
-		accuracy = "95",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and has an increased critical-hit ratio. (+1 stage = 1/8 or 12.5%)",
-	},
-	{
-		id = "178",
-		name = "Cotton Spore",
-		type = PokemonData.Types.GRASS,
-		power = "0",
-		pp = "40",
-		accuracy = "85",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers the target's Speed stat by two stages.",
-	},
-	{
-		id = "179",
-		name = "Reversal",
-		type = PokemonData.Types.FIGHTING,
-		power = "<HP",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals more damage the less HP the user has. Important breakpoints: 80 power at 35% hp or lower, and 150 power at 10% hp or lower.",
-	},
-	{
-		id = "180",
-		name = "Spite",
-		type = PokemonData.Types.GHOST,
-		power = "0",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Decreases the PP of the target's last used move by 2-5 PP, chosen at random. Spite fails if that move has exactly 1 PP remaining.",
-	},
-	{
-		id = "181",
-		name = "Powder Snow",
-		type = PokemonData.Types.ICE,
-		power = "40",
-		pp = "25",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 10% chance of freezing the target.",
-	},
-	{
-		id = "182",
-		name = "Protect",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		priority = "+ 3",
-		summary = "Protects user from all effects of moves for the turn, including damage. Using this move consecutively halves its success rate each time.",
-	},
-	{
-		id = "183",
-		name = "Mach Punch",
-		type = PokemonData.Types.FIGHTING,
-		power = "40",
-		pp = "30",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		priority = "+ 1",
-		summary = "This is an increased priority move, causing the user to attack before most other moves.",
-	},
-	{
-		id = "184",
-		name = "Scary Face",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "90",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers the target's Speed stat by two stages.",
-	},
-	{
-		id = "185",
-		name = "Faint Attack", -- This is "Feint Attack" in gen 6+
-		type = PokemonData.Types.DARK,
-		power = "60",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and bypasses accuracy checks to always hit, unless the target is in the semi-invulnerable turn of a move such as Dig or Fly.",
-	},
-	{
-		id = "186",
-		name = "Sweet Kiss",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "75",
-		category = MoveData.Categories.STATUS,
-		summary = "Causes the target to become confused for 2-5 turns. 50% chance to damage self as a 40 power Physical move.",
-	},
-	{
-		id = "187",
-		name = "Belly Drum",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "The user loses half of their max HP, and in return raises their Attack stat all the way to +6 stages.",
-	},
-	{
-		id = "188",
-		name = "Sludge Bomb",
-		type = PokemonData.Types.POISON,
-		power = "90",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and has a 30% chance of poisoning the target.",
-	},
-	{
-		id = "189",
-		name = "Mud-Slap",
-		type = PokemonData.Types.GROUND,
-		power = "20",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and lowers the target's accuracy by one stage.",
-	},
-	{
-		id = "190",
-		name = "Octazooka",
-		type = PokemonData.Types.WATER,
-		power = "65",
-		pp = "10",
-		accuracy = "85",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 50% chance to lower the target's accuracy by one stage.",
-	},
-	{
-		id = "191",
-		name = "Spikes",
-		type = PokemonData.Types.GROUND,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Creates a hazard for the enemy team (can stack 3 times). Switching out deals 1/8, 1/6, or 1/4 max HP in damage to an enemy without Flying or Levitate.",
-	},
-	{
-		id = "192",
-		name = "Zap Cannon",
-		type = PokemonData.Types.ELECTRIC,
-		power = "100",
-		pp = "5",
-		accuracy = "50",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and paralyzes the target every time it hits.",
-	},
-	{
-		id = "193",
-		name = "Foresight",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "40",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Neutralizes accuracy checks against the target, and allows Fighting and Normal moves to hit them if they are Ghost.",
-	},
-	{
-		id = "194",
-		name = "Destiny Bond",
-		type = PokemonData.Types.GHOST,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "If the user faints as the result of a direct attack by an enemy, that " .. Constants.Words.POKEMON .. " also faints. Effect ends when user uses another move.",
-	},
-	{
-		id = "195",
-		name = "Perish Song",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "All " .. Constants.Words.POKEMON .. " faint after 3 turns. Switching out or having Soundproof removes this effect.",
-	},
-	{
-		id = "196",
-		name = "Icy Wind",
-		type = PokemonData.Types.ICE,
-		power = "55",
-		pp = "15",
-		accuracy = "95",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage to all adjacent opponents and lowers the Speed of each by one stage.",
-	},
-	{
-		id = "197",
-		name = "Detect",
-		type = PokemonData.Types.FIGHTING,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		priority = "+ 3",
-		summary = "Protects user from all effects of moves for the turn, including damage. Using this move consecutively halves its success rate each time.",
-	},
-	{
-		id = "198",
-		name = "Bone Rush",
-		type = PokemonData.Types.GROUND,
-		power = "25",
-		pp = "10",
-		accuracy = "80",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Hits 2-5 times in one turn. Two: 37.5%, Three: 37.5%, Four: 12.5%, Five: 12.5%. Each hit has a chance to critical or trigger a contact ability.",
-	},
-	{
-		id = "199",
-		name = "Lock-On",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Allows the next move used by the user to never miss, even against Bounce, Dig, Dive, and Fly.",
-	},
-	{
-		id = "200",
-		name = "Outrage",
-		type = PokemonData.Types.DRAGON,
-		power = "90",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage for 2-3 consecutive turns. User becomes confused afterwards.",
-	},
-	{
-		id = "201",
-		name = "Sandstorm",
-		type = PokemonData.Types.ROCK,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Changes weather to Sandstorm for 5 turns. " .. Constants.Words.POKEMON .. " take 1/16 of their max HP in damage, except for Steel, Ground, and Rock types.",
-	},
-	{
-		id = "202",
-		name = "Giga Drain",
-		type = PokemonData.Types.GRASS,
-		power = "60",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "50% of the damage dealt is restored to the user as HP.",
-	},
-	{
-		id = "203",
-		name = "Endure",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		priority = "+ 3",
-		summary = "Allows the user to survive any single attack that would cause it to faint, leaving the user with 1 HP instead.",
-	},
-	{
-		id = "204",
-		name = "Charm",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers the Attack stat of the target by two stages.",
-	},
-	{
-		id = "205",
-		name = "Rollout",
-		type = PokemonData.Types.ROCK,
-		power = "30",
-		pp = "20",
-		accuracy = "90",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage over 5 turns, doubling in power each consecutive hit. Base power is doubled if the user had previously used Defense Curl.",
-	},
-	{
-		id = "206",
-		name = "False Swipe",
-		type = PokemonData.Types.NORMAL,
-		power = "40",
-		pp = "40",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage, but will always leave the target with 1 HP if it would otherwise cause it to faint.",
-	},
-	{
-		id = "207",
-		name = "Swagger",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "15",
-		accuracy = "90",
-		category = MoveData.Categories.STATUS,
-		summary = "Raises the target's Attack stat by two stages and confuses it.",
-	},
-	{
-		id = "208",
-		name = "Milk Drink",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Restores up to 50% of the user's max HP. Can be used outside of battle to transfer 20% of max HP to another Pokemon.",
-	},
-	{
-		id = "209",
-		name = "Spark",
-		type = PokemonData.Types.ELECTRIC,
-		power = "65",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and has a 30% chance of paralyzing the target.",
-	},
-	{
-		id = "210",
-		name = "Fury Cutter",
-		type = PokemonData.Types.BUG,
-		power = "10",
-		pp = "20",
-		accuracy = "95",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Each time this move hits successively, its power will double, up to a maximum of 160. Otherwise, it resets to base power.",
-	},
-	{
-		id = "211",
-		name = "Steel Wing",
-		type = PokemonData.Types.STEEL,
-		power = "70",
-		pp = "25",
-		accuracy = "90",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 10% chance of raising the user's Defense by one stage.",
-	},
-	{
-		id = "212",
-		name = "Mean Look",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Prevents the target from switching out or fleeing. A " .. Constants.Words.POKEMON .. " can still flee if it has Run Away or holding a Smoke Ball.",
-	},
-	{
-		id = "213",
-		name = "Attract",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "If the user and the target are opposite genders, the target will become infatuated, unable to use moves 50% of the time.",
-	},
-	{
-		id = "214",
-		name = "Sleep Talk",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "If the user is asleep, randomly chooses another one of the user's moves to use.",
-	},
-	{
-		id = "215",
-		name = "Heal Bell",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Cures all " .. Constants.Words.POKEMON .. " in the user's party of all major status conditions. Fails against " .. Constants.Words.POKEMON .. " with Soundproof.",
-	},
-	{
-		id = "216",
-		name = "Return",
-		type = PokemonData.Types.NORMAL,
-		power = ">FR",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Power ranges between 1 and 102, strongest at friendship of 255. If the user's friendship is 127 or less, Frustration is stronger.",
-	},
-	{
-		id = "217",
-		name = "Present",
-		type = PokemonData.Types.NORMAL,
-		power = "RNG",
-		pp = "15",
-		accuracy = "90",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "40% chance power is 40, 30% chance it's 80, 10% chance it's 120, and 20% chance to heal target by 1/4 their max HP.",
-	},
-	{
-		id = "218",
-		name = "Frustration",
-		type = PokemonData.Types.NORMAL,
-		power = "<FR",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Power ranges between 1 and 102, strongest at friendship of 0. If the user's friendship is 128 or greater, Return is stronger.",
-	},
-	{
-		id = "219",
-		name = "Safeguard",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "25",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "For 5 turns, protects the user's party from most status effects and confusion.",
-	},
-	{
-		id = "220",
-		name = "Pain Split",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Equalizes HP of user and target by adding both Pokemon's current HP together, then dividing by two, split among them evenly.",
-	},
-	{
-		id = "221",
-		name = "Sacred Fire",
-		type = PokemonData.Types.FIRE,
-		power = "100",
-		pp = "5",
-		accuracy = "95",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 50% chance of burning the target. This move will first thaw out its user if frozen.",
-	},
-	{
-		id = "222",
-		name = "Magnitude",
-		type = PokemonData.Types.GROUND,
-		power = "RNG",
-		pp = "30",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Power varies based on a random value and probability. Starting at value 4 and power 10, each additional value adds 20 power; 150 power at value 10. Can hit " .. Constants.Words.POKEMON .. " using Dig.",
-	},
-	{
-		id = "223",
-		name = "DynamicPunch",
-		type = PokemonData.Types.FIGHTING,
-		power = "100",
-		pp = "5",
-		accuracy = "50",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and always confuses the target, lasting 2-5 turns.",
-	},
-	{
-		id = "224",
-		name = "Megahorn",
-		type = PokemonData.Types.BUG,
-		power = "120",
-		pp = "10",
-		accuracy = "85",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has no secondary effect.",
-	},
-	{
-		id = "225",
-		name = "DragonBreath",
-		type = PokemonData.Types.DRAGON,
-		power = "60",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 30% chance of paralyzing the target.",
-	},
-	{
-		id = "226",
-		name = "Baton Pass",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "40",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Switches out the user, passing all temporary stat stage changes as well as many other effects and conditions, on to the " .. Constants.Words.POKEMON .. " that replaces it in battle.",
-	},
-	{
-		id = "227",
-		name = "Encore",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Prevents the target from using any move except its last used move, lasts for 2-6 turns.",
-	},
-	{
-		id = "228",
-		name = "Pursuit",
-		type = PokemonData.Types.DARK,
-		power = "40",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "If the target " .. Constants.Words.POKEMON .. " attempts to switch out, Pursuit's power will double and hit it first.",
-	},
-	{
-		id = "229",
-		name = "Rapid Spin",
-		type = PokemonData.Types.NORMAL,
-		power = "20",
-		pp = "40",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and removes the effects of any binding moves, Leech Seed, and any entry hazards such as Spikes from the user's field.",
-	},
-	{
-		id = "230",
-		name = "Sweet Scent",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers the evasion of all adjacent opponents by one stage. Can be used outside of battle to attract a wild Pokemon.",
-	},
-	{
-		id = "231",
-		name = "Iron Tail",
-		type = PokemonData.Types.STEEL,
-		power = "100",
-		pp = "15",
-		accuracy = "75",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 30% chance of lowering the target's Defense stat by one stage.",
-	},
-	{
-		id = "232",
-		name = "Metal Claw",
-		type = PokemonData.Types.STEEL,
-		power = "50",
-		pp = "35",
-		accuracy = "95",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 10% chance of raising the user's Attack stat by one stage.",
-	},
-	{
-		id = "233",
-		name = "Vital Throw",
-		type = PokemonData.Types.FIGHTING,
-		power = "70",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		priority = "-- 1",
-		summary = "This is a decreased priority move, causing the user to attack after most other moves.",
-	},
-	{
-		id = "234",
-		name = "Morning Sun",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Restores the user's HP by a percentage based weather: 1/2 in no weather, 2/3 if sunny, and 1/4 during any other weather condition.",
-	},
-	{
-		id = "235",
-		name = "Synthesis",
-		type = PokemonData.Types.GRASS,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Restores the user's HP by a percentage based weather: 1/2 in no weather, 2/3 if sunny, and 1/4 during any other weather condition.",
-	},
-	{
-		id = "236",
-		name = "Moonlight",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Restores the user's HP by a percentage based weather: 1/2 in no weather, 2/3 if sunny, and 1/4 during any other weather condition.",
-	},
-	{
-		id = "237",
-		name = "Hidden Power",
-		type = PokemonData.Types.NORMAL,
-		power = "VAR",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Power and type vary with IVs, power ranges from 30 to 70. Counter will always work against this move, but never Mirror Coat.",
-	},
-	{
-		id = "238",
-		name = "Cross Chop",
-		type = PokemonData.Types.FIGHTING,
-		power = "100",
-		pp = "5",
-		accuracy = "80",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has an increased critical-hit ratio. (+1 stage = 1/8 or 12.5%)",
-	},
-	{
-		id = "239",
-		name = "Twister",
-		type = PokemonData.Types.DRAGON,
-		power = "40",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 20% chance of causing each target to flinch. Hits " .. Constants.Words.POKEMON .. " using Bounce or Fly for double damage.",
-	},
-	{
-		id = "240",
-		name = "Rain Dance",
-		type = PokemonData.Types.WATER,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Changes weather to Rain for 5 turns. Water moves are boosted by 50% and Fire moves are weakened by 50%. Thunder ignores accuracy and evasion.",
-	},
-	{
-		id = "241",
-		name = "Sunny Day",
-		type = PokemonData.Types.FIRE,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Changes weather to Sunny for 5 turns. Fire moves are boosted by 50% and Water moves are weakened by 50%. Thunder accuracy becomes 50%.",
-	},
-	{
-		id = "242",
-		name = "Crunch",
-		type = PokemonData.Types.DARK,
-		power = "80",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and has a 20% chance of lowering the target's Special Defense stat by one stage.",
-	},
-	{
-		id = "243",
-		name = "Mirror Coat",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		priority = "-- 5",
-		summary = "If hit by a Special category move, deals twice the damage received back to the user.",
-	},
-	{
-		id = "244",
-		name = "Psych Up",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Resets the user's stat changes and copies all of the target's stat stages onto the user: ATK DEF SPA SPD SPE ACC EVA.",
-	},
-	{
-		id = "245",
-		name = "ExtremeSpeed",
-		type = PokemonData.Types.NORMAL,
-		power = "80",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		priority = "+ 1",
-		summary = "This is an increased priority move, causing the user to attack before most other moves.",
-	},
-	{
-		id = "246",
-		name = "AncientPower",
-		type = PokemonData.Types.ROCK,
-		power = "60",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 10% chance of raising the user's Attack, Defense, Special Attack, Special Defense, and Speed by one stage each.",
-	},
-	{
-		id = "247",
-		name = "Shadow Ball",
-		type = PokemonData.Types.GHOST,
-		power = "80",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and has a 20% chance of lowering the target's Special Defense by one stage.",
-	},
-	{
-		id = "248",
-		name = "Future Sight",
-		type = PokemonData.Types.PSYCHIC,
-		power = "80",
-		pp = "15",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Locks in damage when used based on SpAtk of user and SpDef of target. After 2 turns, deals damage to the current enemy. Attack is typeless: cannot STAB, hits Wonder Guard.",
-	},
-	{
-		id = "249",
-		name = "Rock Smash",
-		type = PokemonData.Types.FIGHTING,
-		power = "20",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 50% chance of lowering the target's Defense stat by one stage.",
-	},
-	{
-		id = "250",
-		name = "Whirlpool",
-		type = PokemonData.Types.WATER,
-		power = "15",
-		pp = "15",
-		accuracy = "70",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage (doubled if opponent using Dive) and inflicts 1/16 of the target's max HP as damage for 2-5 turns. Prevents the target from switching out or fleeing.",
-	},
-	{
-		id = "251",
-		name = "Beat Up",
-		type = PokemonData.Types.DARK,
-		power = "10",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Each conscious, non-statused " .. Constants.Words.POKEMON .. " in the user's party does an independent attack, each one is typeless with power of 10.",
-	},
-	{ -- Begin Gen 3 Moves
-		id = "252",
-		name = "Fake Out",
-		type = PokemonData.Types.NORMAL,
-		power = "40",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		priority = "+ 1",
-		summary = "This is an increased priority move. It always makes the target flinch, but attack will fail if it's not the first move used.",
-	},
-	{
-		id = "253",
-		name = "Uproar",
-		type = PokemonData.Types.NORMAL,
-		power = "50",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage for 2-5 consecutive turns. Wakes up sleeping " .. Constants.Words.POKEMON .. " and prevents them from falling asleep, except those with Soundproof.",
-	},
-	{
-		id = "254",
-		name = "Stockpile",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Stores up energy, stacks three times. Unleash energy using Spit Up to deal damage or Swallow to heal HP.",
-	},
-	{
-		id = "255",
-		name = "Spit Up",
-		type = PokemonData.Types.NORMAL,
-		power = "100x",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Consumes energy stored up by Stockpile, 100 power for each stack (0 if none). This move cannot cause a critical hit.",
-	},
-	{
-		id = "256",
-		name = "Swallow",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Consumes energy stored up by Stockpile, healing user for 25%, 50%, or 100% HP based on number of stacks consumed (0% if none).",
-	},
-	{
-		id = "257",
-		name = "Heat Wave",
-		type = PokemonData.Types.FIRE,
-		power = "100",
-		pp = "10",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 10% chance of burning the target.",
-	},
-	{
-		id = "258",
-		name = "Hail",
-		type = PokemonData.Types.ICE,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Changes weather to Hail for 5 turns. " .. Constants.Words.POKEMON .. " take 1/16 of their max HP in damage, except for Ice types.",
-	},
-	{
-		id = "259",
-		name = "Torment",
-		type = PokemonData.Types.DARK,
-		power = "0",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Prevents the target from choosing to use the same move twice in a row. Effect ends when the " .. Constants.Words.POKEMON .. " switches out.",
-	},
-	{
-		id = "260",
-		name = "Flatter",
-		type = PokemonData.Types.DARK,
-		power = "0",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Raises the target's Special Attack stat by one stage and confuses it.",
-	},
-	{
-		id = "261",
-		name = "Will-O-Wisp",
-		type = PokemonData.Types.FIRE,
-		power = "0",
-		pp = "15",
-		accuracy = "75",
-		category = MoveData.Categories.STATUS,
-		summary = "Inflicts a burn on the target, ineffective against Fire type Pokemon. Burned " .. Constants.Words.POKEMON .. " deal half damage with Physical moves and lose 1/8 max HP each turn.",
-	},
-	{
-		id = "262",
-		name = "Memento",
-		type = PokemonData.Types.DARK,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "User faints to lower the Attack and Special Attack stat of the target by two stages each.",
-	},
-	{
-		id = "263",
-		name = "Facade",
-		type = PokemonData.Types.NORMAL,
-		power = "70",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Power doubles if the user is poisoned, paralyzed, or burned. The burn's effect of halving the damage done is still applied.",
-	},
-	{
-		id = "264",
-		name = "Focus Punch",
-		type = PokemonData.Types.FIGHTING,
-		power = "150",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		priority = "-- 3",
-		summary = "This is a decreased priority move. This move will fail if the user is dealt direct damage first.",
-	},
-	{
-		id = "265",
-		name = "SmellingSalt",
-		type = PokemonData.Types.NORMAL,
-		power = "60",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Power doubles against a paralyzed target, but it will also cure the target of paralysis.",
-	},
-	{
-		id = "266",
-		name = "Follow Me",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		priority = "+ 3",
-		summary = "This is an increased priority move. The user redirects all targeted moves from enemy " .. Constants.Words.POKEMON .. " to itself.",
-	},
-	{
-		id = "267",
-		name = "Nature Power",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Sand: Earthquake, Building: Swift, Cave: Shadow Ball, Rock: Rock Slide, Tall grass: Stun Spore, Long grass: Razor Leaf, Pond: Bubblebeam, Sea: Surf, Underwater: Hydro Pump.",
-	},
-	{
-		id = "268",
-		name = "Charge",
-		type = PokemonData.Types.ELECTRIC,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "User charges up, empowering the next move it uses. If that next move is Electric, damage dealt will be doubled.",
-	},
-	{
-		id = "269",
-		name = "Taunt",
-		type = PokemonData.Types.DARK,
-		power = "0",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Prevents the target " .. Constants.Words.POKEMON .. " from using Status category moves; moves that aren't Physical or Special. Bypasses Substitute. This effect lasts 2 turns.",
-	},
-	{
-		id = "270",
-		name = "Helping Hand",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		priority = "+ 5",
-		summary = "This is an increased priority move. The user boost its ally's damage done by 50% for this turn only.",
-	},
-	{
-		id = "271",
-		name = "Trick",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Switches held items with the target. Fails if used by a wild " .. Constants.Words.POKEMON .. ", or if both " .. Constants.Words.POKEMON .. " don't have items, or against a Substitute.",
-	},
-	{
-		id = "272",
-		name = "Role Play",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Replaces the user's ability with the target's. Fails if target ability is Trace or Wonder Guard. Some abilities like Intimidate don't trigger.",
-	},
-	{
-		id = "273",
-		name = "Wish",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "No effect on the turn used. At the end of the next turn, the " .. Constants.Words.POKEMON .. " in the user's current position will be healed by half its own max HP.",
-	},
-	{
-		id = "274",
-		name = "Assist",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Randomly selects an eligible move from all other moves known by " .. Constants.Words.POKEMON .. " in the user's party, including fainted Pokemon.",
-	},
-	{
-		id = "275",
-		name = "Ingrain",
-		type = PokemonData.Types.GRASS,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Restore 1/16th of its max HP at the end of every turn. Prevents the user from switching out, even from moves like Roar and Whirlwind.",
-	},
-	{
-		id = "276",
-		name = "Superpower",
-		type = PokemonData.Types.FIGHTING,
-		power = "120",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage, then lowers the user's Attack and Defense stats by one stage each.",
-	},
-	{
-		id = "277",
-		name = "Magic Coat",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "15",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		priority = "+ 4",
-		summary = "Reflects most Status category moves back at the enemy, most offensive moves that aren't Physical or Special.",
-	},
-	{
-		id = "278",
-		name = "Recycle",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Regains a held item, such as a Berry. Fails if item was lost through Thief or Knock Off.",
-	},
-	{
-		id = "279",
-		name = "Revenge",
-		type = PokemonData.Types.FIGHTING,
-		power = "60",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		priority = "-- 4",
-		summary = "This is a decreased priority move. Power is doubled if user is damaged by the target in the same turn.",
-	},
-	{
-		id = "280",
-		name = "Brick Break",
-		type = PokemonData.Types.FIGHTING,
-		power = "75",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Removes Light Screen and Reflect from the opponent's side of the field, then inflicts damage. Removes those effects even against Ghost Pokemon.",
-	},
-	{
-		id = "281",
-		name = "Yawn",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Makes the target drowsy. At the end of the next turn, the drowsy " .. Constants.Words.POKEMON .. " will fall asleep.",
-	},
-	{
-		id = "282",
-		name = "Knock Off",
-		type = PokemonData.Types.DARK,
-		power = "20",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Renders the target's held item unusable for the rest of the battle, even if switches out.",
-	},
-	{
-		id = "283",
-		name = "Endeavor",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Causes the target's HP to become equal the user's current HP.",
-	},
-	{
-		id = "284",
-		name = "Eruption",
-		type = PokemonData.Types.FIRE,
-		power = ">HP",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Has 150 power at max HP, but its power decreases proportionally to the user's remaining HP. Formula: 150 x currHP / maxHP",
-	},
-	{
-		id = "285",
-		name = "Skill Swap",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Exchanges the abilities of the user and the target. This information is not shown to the player. Fails against Wonder Guard.",
-	},
-	{
-		id = "286",
-		name = "Imprison",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "As long as the user remains in battle, opponents cannot use any move which is also known by the user.",
-	},
-	{
-		id = "287",
-		name = "Refresh",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Cures the user of burns, poison, or paralysis. It cannot cure sleep if it is used by Sleep Talk.",
-	},
-	{
-		id = "288",
-		name = "Grudge",
-		type = PokemonData.Types.GHOST,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "If the user faints as the result of a direct attack by an enemy, the last used move loses all PP. Effect ends when user uses another move.",
-	},
-	{
-		id = "289",
-		name = "Snatch",
-		type = PokemonData.Types.DARK,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		priority = "+ 4",
-		summary = "This is an increased priority move. If another " .. Constants.Words.POKEMON .. " tries to use a beneficial Status category move, the user will use that move instead.",
-	},
-	{
-		id = "290",
-		name = "Secret Power",
-		type = PokemonData.Types.NORMAL,
-		power = "70",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "30% chance to Sand: --ACC, Building: paralysis, Cave: flinch, Rock: confusion, Tall grass: poison, Long grass: sleep, Pond: --SPD, Sea: --ATK, Underwater: --DEF",
-	},
-	{
-		id = "291",
-		name = "Dive",
-		type = PokemonData.Types.WATER,
-		power = "60",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Attacks on 2nd turn. Can still be hit by Surf and Whirlpool and will take double damage.",
-	},
-	{
-		id = "292",
-		name = "Arm Thrust",
-		type = PokemonData.Types.FIGHTING,
-		power = "15",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Hits 2-5 times in one turn. Two: 37.5%, Three: 37.5%, Four: 12.5%, Five: 12.5%. Each hit has a chance to critical or trigger a contact ability.",
-	},
-	{
-		id = "293",
-		name = "Camouflage",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Change user's type based on terrain. Building: Normal, Sand: Ground, Cave/rock: Rock, Tall/long grass: Grass, Water: Water",
-	},
-	{
-		id = "294",
-		name = "Tail Glow",
-		type = PokemonData.Types.BUG,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Increases the user's Special Attack by two stages.",
-	},
-	{
-		id = "295",
-		name = "Luster Purge",
-		type = PokemonData.Types.PSYCHIC,
-		power = "70",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 50% chance of lowering the target's Special Defense.",
-	},
-	{
-		id = "296",
-		name = "Mist Ball",
-		type = PokemonData.Types.PSYCHIC,
-		power = "70",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 50% chance of lowering the target's Special Attack.",
-	},
-	{
-		id = "297",
-		name = "FeatherDance",
-		type = PokemonData.Types.FLYING,
-		power = "0",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers the target's Attack stat by two stages.",
-	},
-	{
-		id = "298",
-		name = "Teeter Dance",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Causes all other " .. Constants.Words.POKEMON .. " to become confused for 2-5 turns. 50% chance to damage self as a 40 power Physical move.",
-	},
-	{
-		id = "299",
-		name = "Blaze Kick",
-		type = PokemonData.Types.FIRE,
-		power = "85",
-		pp = "10",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and has a 10% chance of burning the target. It also has an increased critical hit ratio. (+1 stage = 1/8 or 12.5%)",
-	},
-	{
-		id = "300",
-		name = "Mud Sport",
-		type = PokemonData.Types.GROUND,
-		power = "0",
-		pp = "15",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Reduces the power of Electric moves by 50% for all " .. Constants.Words.POKEMON .. " in the battle. This effect last until the user switches out.",
-	},
-	{
-		id = "301",
-		name = "Ice Ball",
-		type = PokemonData.Types.ICE,
-		power = "30",
-		pp = "20",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage over 5 turns, doubling in power each consecutive hit. Base power is doubled if the user had previously used Defense Curl.",
-	},
-	{
-		id = "302",
-		name = "Needle Arm",
-		type = PokemonData.Types.GRASS,
-		power = "60",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and has a 30% chance of causing the target to flinch. Damage is doubled against a target that used Minimize.",
-	},
-	{
-		id = "303",
-		name = "Slack Off",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "10",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Restores up to 50% of the user's max HP.",
-	},
-	{
-		id = "304",
-		name = "Hyper Voice",
-		type = PokemonData.Types.NORMAL,
-		power = "90",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage to all adjacent opponents. " .. Constants.Words.POKEMON .. " with Soundproof are not affected by this move.",
-	},
-	{
-		id = "305",
-		name = "Poison Fang",
-		type = PokemonData.Types.POISON,
-		power = "50",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 30% chance of badly poisoning the target.",
-	},
-	{
-		id = "306",
-		name = "Crush Claw",
-		type = PokemonData.Types.NORMAL,
-		power = "75",
-		pp = "10",
-		accuracy = "95",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 50% chance of lowering the target's Defense stat by one stage.",
-	},
-	{
-		id = "307",
-		name = "Blast Burn",
-		type = PokemonData.Types.FIRE,
-		power = "150",
-		pp = "5",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and then forces the user to recharge during the next turn.",
-	},
-	{
-		id = "308",
-		name = "Hydro Cannon",
-		type = PokemonData.Types.WATER,
-		power = "150",
-		pp = "5",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and then forces the user to recharge during the next turn.",
-	},
-	{
-		id = "309",
-		name = "Meteor Mash",
-		type = PokemonData.Types.STEEL,
-		power = "100",
-		pp = "10",
-		accuracy = "85",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 20% chance of raising the user's Attack stat by one stage.",
-	},
-	{
-		id = "310",
-		name = "Astonish",
-		type = PokemonData.Types.GHOST,
-		power = "30",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 30% chance of causing the target to flinch. Damage is doubled against a target that used Minimize.",
-	},
-	{
-		id = "311",
-		name = "Weather Ball",
-		type = PokemonData.Types.NORMAL,
-		power = "50",
-		pp = "10",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Power doubles in weather and changes type: Fire if sunny, Water if raining, Ice if hailing, Rock if sandstorm.",
-	},
-	{
-		id = "312",
-		name = "Aromatherapy",
-		type = PokemonData.Types.GRASS,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Cures all " .. Constants.Words.POKEMON .. " in the user's party of all major status conditions.",
-	},
-	{
-		id = "313",
-		name = "Fake Tears",
-		type = PokemonData.Types.DARK,
-		power = "0",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers the target's Special Defense stat by two stages.",
-	},
-	{
-		id = "314",
-		name = "Air Cutter",
-		type = PokemonData.Types.FLYING,
-		power = "55",
-		pp = "25",
-		accuracy = "95",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and has an increased critical hit ratio. (+1 stage = 1/8 or 12.5%)",
-	},
-	{
-		id = "315",
-		name = "Overheat",
-		type = PokemonData.Types.FIRE,
-		power = "140",
-		pp = "5",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and lowers the user's Special Attack by two stages.",
-	},
-	{
-		id = "316",
-		name = "Odor Sleuth",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "40",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Neutralizes accuracy checks against the target, and allows Fighting and Normal moves to hit them if they are Ghost.",
-	},
-	{
-		id = "317",
-		name = "Rock Tomb",
-		type = PokemonData.Types.ROCK,
-		power = "50",
-		pp = "10",
-		accuracy = "80",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and lowers the opponent's Speed by one stage.",
-	},
-	{
-		id = "318",
-		name = "Silver Wind",
-		type = PokemonData.Types.BUG,
-		power = "60",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and has a 10% chance of raising the user's Attack, Defense, Special Attack, Special Defense, and Speed by one stage each.",
-	},
-	{
-		id = "319",
-		name = "Metal Sound",
-		type = PokemonData.Types.STEEL,
-		power = "0",
-		pp = "40",
-		accuracy = "85",
-		category = MoveData.Categories.STATUS,
-		summary = "Lowers the target's Special Defense stat by two stages. Fails against " .. Constants.Words.POKEMON .. " with Soundproof.",
-	},
-	{
-		id = "320",
-		name = "GrassWhistle",
-		type = PokemonData.Types.GRASS,
-		power = "0",
-		pp = "15",
-		accuracy = "55",
-		category = MoveData.Categories.STATUS,
-		summary = "Puts the target to sleep, lasts 2-5 turns. Fails against Insomnia, Vital Spirit, or Soundproof.",
-	},
-	{
-		id = "321",
-		name = "Tickle",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.STATUS,
-		summary = "Reduces the target's Attack and Defense stats by one stage each. Works even if enemy has a Substitute.",
-	},
-	{
-		id = "322",
-		name = "Cosmic Power",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Raises the Defense and Special Defense of the user by one stage each.",
-	},
-	{
-		id = "323",
-		name = "Water Spout",
-		type = PokemonData.Types.WATER,
-		power = ">HP",
-		pp = "5",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Has 150 power at max HP, but its power decreases proportionally to the user's remaining HP. Formula: 150 x currHP / maxHP",
-	},
-	{
-		id = "324",
-		name = "Signal Beam",
-		type = PokemonData.Types.BUG,
-		power = "75",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and has a 10% chance of confusing the target.",
-	},
-	{
-		id = "325",
-		name = "Shadow Punch",
-		type = PokemonData.Types.GHOST,
-		power = "60",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and bypasses accuracy checks to always hit, unless the target is in the semi-invulnerable turn of a move such as Dig or Fly.",
-	},
-	{
-		id = "326",
-		name = "Extrasensory",
-		type = PokemonData.Types.PSYCHIC,
-		power = "80",
-		pp = "30",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 10% chance of causing the target to flinch. Damage is doubled against a target that used Minimize.",
-	},
-	{
-		id = "327",
-		name = "Sky Uppercut",
-		type = PokemonData.Types.FIGHTING,
-		power = "85",
-		pp = "15",
-		accuracy = "90",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and can hit " .. Constants.Words.POKEMON .. " during the semi-invulnerable turns of Fly and Bounce.",
-	},
-	{
-		id = "328",
-		name = "Sand Tomb",
-		type = PokemonData.Types.GROUND,
-		power = "15",
-		pp = "15",
-		accuracy = "70",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and inflicts 1/16 of the target's max HP as damage for 2-5 turns. Prevents the target from switching out or fleeing.",
-	},
-	{
-		id = "329",
-		name = "Sheer Cold",
-		type = PokemonData.Types.ICE,
-		power = "0",
-		pp = "5",
-		accuracy = "30",
-		category = MoveData.Categories.SPECIAL,
-		summary = "A one-hit KO move. This move is 1% more accurate for each level above the target. Fails if target is higher level.",
-	},
-	{
-		id = "330",
-		name = "Muddy Water",
-		type = PokemonData.Types.WATER,
-		power = "95",
-		pp = "10",
-		accuracy = "85",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 30% chance of lowering each target's accuracy by one stage.",
-	},
-	{
-		id = "331",
-		name = "Bullet Seed",
-		type = PokemonData.Types.GRASS,
-		power = "10",
-		pp = "30",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Hits 2-5 times in one turn. Two: 37.5%, Three: 37.5%, Four: 12.5%, Five: 12.5%. Each hit has a chance to critical or trigger a contact ability.",
-	},
-	{
-		id = "332",
-		name = "Aerial Ace",
-		type = PokemonData.Types.FLYING,
-		power = "60",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and bypasses accuracy checks to always hit, unless the target is in the semi-invulnerable turn of a move such as Dig or Fly.",
-	},
-	{
-		id = "333",
-		name = "Icicle Spear",
-		type = PokemonData.Types.ICE,
-		power = "10",
-		pp = "30",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Hits 2-5 times in one turn. Two: 37.5%, Three: 37.5%, Four: 12.5%, Five: 12.5%. Each hit has a chance to critical or trigger a contact ability.",
-	},
-	{
-		id = "334",
-		name = "Iron Defense",
-		type = PokemonData.Types.STEEL,
-		power = "0",
-		pp = "15",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Deals raises the user's Defense stat by two stages.",
-	},
-	{
-		id = "335",
-		name = "Block",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "5",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Prevents the target from switching out or fleeing. A " .. Constants.Words.POKEMON .. " can still flee if it has Run Away or holding a Smoke Ball.",
-	},
-	{
-		id = "336",
-		name = "Howl",
-		type = PokemonData.Types.NORMAL,
-		power = "0",
-		pp = "40",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Deals raises the user's Attack stat by one stage.",
-	},
-	{
-		id = "337",
-		name = "Dragon Claw",
-		type = PokemonData.Types.DRAGON,
-		power = "80",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and has no secondary effect.",
-	},
-	{
-		id = "338",
-		name = "Frenzy Plant",
-		type = PokemonData.Types.GRASS,
-		power = "150",
-		pp = "5",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and then forces the user to recharge during the next turn.",
-	},
-	{
-		id = "339",
-		name = "Bulk Up",
-		type = PokemonData.Types.FIGHTING,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Raises the user's Attack stat and Defense stat by one stage each.",
-	},
-	{
-		id = "340",
-		name = "Bounce",
-		type = PokemonData.Types.FLYING,
-		power = "85",
-		pp = "5",
-		accuracy = "85",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Attacks on 2nd turn with a 30% chance of paralyzing target. Can still be hit by Gust, Sky Uppercut, Thunder, and Twister.",
-	},
-	{
-		id = "341",
-		name = "Mud Shot",
-		type = PokemonData.Types.GROUND,
-		power = "55",
-		pp = "15",
-		accuracy = "95",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Deals damage and then lowers the target's Speed stat by one stage.",
-	},
-	{
-		id = "342",
-		name = "Poison Tail",
-		type = PokemonData.Types.POISON,
-		power = "50",
-		pp = "25",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		iscontact = true,
-		summary = "Deals damage and has a 10% chance of poisoning the target. It also has an increased critical hit ratio. (+1 stage = 1/8 or 12.5%)",
-	},
-	{
-		id = "343",
-		name = "Covet",
-		type = PokemonData.Types.NORMAL,
-		power = "40",
-		pp = "40",
-		accuracy = "100",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Steals the target's held item, if it has one. An item cannot be stolen if the target has Sticky Hold.",
-	},
-	{
-		id = "344",
-		name = "Volt Tackle",
-		type = PokemonData.Types.ELECTRIC,
-		power = "120",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "The user receives recoil damage equal to 1/3 of the damage dealt.",
-	},
-	{
-		id = "345",
-		name = "Magical Leaf",
-		type = PokemonData.Types.GRASS,
-		power = "60",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and bypasses accuracy checks to always hit, unless the target is in the semi-invulnerable turn of a move such as Dig or Fly.",
-	},
-	{
-		id = "346",
-		name = "Water Sport",
-		type = PokemonData.Types.WATER,
-		power = "0",
-		pp = "15",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Reduces the power of Fire moves by 50% for all " .. Constants.Words.POKEMON .. " in the battle. This effect last until the user switches out.",
-	},
-	{
-		id = "347",
-		name = "Calm Mind",
-		type = PokemonData.Types.PSYCHIC,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Raises the user's Special Attack and Special Defense stats by one stage each.",
-	},
-	{
-		id = "348",
-		name = "Leaf Blade",
-		type = PokemonData.Types.GRASS,
-		power = "70",
-		pp = "15",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		iscontact = true,
-		summary = "Deals damage and has an increased critical hit ratio. (+1 stage = 1/8 or 12.5%)",
-	},
-	{
-		id = "349",
-		name = "Dragon Dance",
-		type = PokemonData.Types.DRAGON,
-		power = "0",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.STATUS,
-		summary = "Raises the user's Attack stat and Speed stat by one stage each.",
-	},
-	{
-		id = "350",
-		name = "Rock Blast",
-		type = PokemonData.Types.ROCK,
-		power = "25",
-		pp = "10",
-		accuracy = "80",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Hits 2-5 times in one turn. Two: 37.5%, Three: 37.5%, Four: 12.5%, Five: 12.5%. Each hit has a chance to critical or trigger a contact ability.",
-	},
-	{
-		id = "351",
-		name = "Shock Wave",
-		type = PokemonData.Types.ELECTRIC,
-		power = "60",
-		pp = "20",
-		accuracy = "0",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and bypasses accuracy checks to always hit, unless the target is in the semi-invulnerable turn of a move such as Dig or Fly.",
-	},
-	{
-		id = "352",
-		name = "Water Pulse",
-		type = PokemonData.Types.WATER,
-		power = "60",
-		pp = "20",
-		accuracy = "100",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and has a 20% chance of confusing the target.",
-	},
-	{
-		id = "353",
-		name = "Doom Desire",
-		type = PokemonData.Types.STEEL,
-		power = "120",
-		pp = "5",
-		accuracy = "85",
-		category = MoveData.Categories.PHYSICAL,
-		summary = "Locks in damage when used based on Atk of user and Def of target. After 2 turns, deals damage to the current enemy. Attack is typeless: cannot STAB, hits Wonder Guard.",
-	},
-	{
-		id = "354",
-		name = "Psycho Boost",
-		type = PokemonData.Types.PSYCHIC,
-		power = "140",
-		pp = "5",
-		accuracy = "90",
-		category = MoveData.Categories.SPECIAL,
-		summary = "Deals damage and lowers the user's Special Attack stat by two stages.",
-	}
 }

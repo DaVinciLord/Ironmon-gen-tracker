@@ -1,0 +1,3 @@
+[submodule "extensions/PixelFontExtension"]
+	path = extensions/PixelFontExtension
+	url = https://github.com/DaVinciLord/PixelFontExtension.git

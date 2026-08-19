@@ -1,8 +1,5 @@
 -- Displays the player's full team of six Pokémon below the gameplay/Tracker screen, in an expanded drawing space
 TeamViewArea = {
-	Labels = {
-		eggNickname = "EGG",
-	},
 	Colors = {
 		text = "Lower box text",
 		border = "Lower box border",
@@ -22,7 +19,9 @@ TeamViewArea = {
 TeamViewArea.PartyPokemon = {}
 
 function TeamViewArea.initialize()
-	TeamViewArea.refreshDisplayPadding()
+	if TeamViewArea.isDisplayed() then
+		TeamViewArea.refreshDisplayPadding()
+	end
 end
 
 function TeamViewArea.isDisplayed()
@@ -45,12 +44,8 @@ function TeamViewArea.buildOutPartyScreen()
 	local boxWidth = math.floor(TeamViewArea.Canvas.width / 6)
 	local boxHeight = TeamViewArea.Canvas.height - 1
 	for i=1, 6, 1 do
-		-- Alternative "Tracker.getPokemon" to allow for eggs
-		local personality = Tracker.Data.ownTeam[i]
-		local pokemon = Tracker.Data.ownPokemon[personality or -1]
-		local validPokemon = pokemon ~= nil and (personality ~= 0 or (pokemon.trainerID ~= nil and pokemon.trainerID ~= 0))
-
-		if validPokemon and (PokemonData.isValid(pokemon.pokemonID) or pokemon.isEgg == 1) then
+		local pokemon = Tracker.getPokemon(i, true, false) or {}
+		if PokemonData.isValid(pokemon.pokemonID) or pokemon.isEgg == 1 then
 			local partyMember = TeamViewArea.createPartyMemberBox(pokemon, nextBoxX, nextBoxY, boxWidth, boxHeight)
 			if partyMember ~= nil then
 				table.insert(TeamViewArea.PartyPokemon, partyMember)
@@ -89,15 +84,15 @@ function TeamViewArea.createPartyMemberBox(pokemon, x, y, width, height)
 			local yOffset = self.y
 
 			-- Pokemon's Nickname
-			local nicknameText = Utils.inlineIf(isEgg, TeamViewArea.Labels.eggNickname, pokemon.nickname)
+			local nicknameText = Utils.inlineIf(isEgg, Resources.TeamViewArea.EggNickname, pokemon.nickname)
 			Drawing.drawText(self.x + 1, yOffset, nicknameText, self.text, self.shadow)
 			yOffset = yOffset + Constants.SCREEN.LINESPACING - 1
 
 			if isEgg then
-				local iconset = Options.IconSetMap[Options["Pokemon icon set"]]
-				local eggIcon = FileManager.buildImagePath(iconset.folder, "412", iconset.extension) -- #412 = egg
-				if eggIcon ~= nil then
-					gui.drawImage(eggIcon, self.x + 1, yOffset - 7 + (iconset.yOffset or 0), 32, 32)
+				local eggImagePath = Drawing.getImagePath("PokemonIcon", tostring(PokemonData.Values.EggId))
+				if eggImagePath then
+					local iconset = Options.getIconSet()
+					Drawing.drawImage(eggImagePath, self.x + 1 + (iconset.xOffset or 0), yOffset - 7 + (iconset.yOffset or 0), 32, 32)
 				end
 			end
 
@@ -133,7 +128,7 @@ function TeamViewArea.createPartyMemberBox(pokemon, x, y, width, height)
 
 			-- Pokemon LevelPattern
 			local levelValue = Utils.inlineIf(isEgg, Constants.HIDDEN_INFO, pokemon.level or 0)
-			local levelText = string.format("Lv.%s", levelValue)
+			local levelText = string.format("%s.%s", Resources.TrackerScreen.LevelAbbreviation, levelValue)
 			Drawing.drawText(self.x + 1, yOffset, levelText, self.text, self.shadow)
 			yOffset = yOffset + 2
 
@@ -164,10 +159,7 @@ function TeamViewArea.createPartyMemberBox(pokemon, x, y, width, height)
 	local iconBtn = {
 		pokemonID = Utils.inlineIf(isEgg, 412, pokemon.pokemonID), -- #412 = egg
 		type = Constants.ButtonTypes.POKEMON_ICON,
-		getIconPath = function(self)
-			local iconset = Options.IconSetMap[Options["Pokemon icon set"]]
-			return FileManager.buildImagePath(iconset.folder, tostring(self.pokemonID), iconset.extension)
-		end,
+		getIconId = function(self) return self.pokemonID, SpriteData.Types.Idle end,
 		clickableArea = { x + 1, yOffset, 32, 27 },
 		box = { x + 1, yOffset - 7, 32, 32 },
 		onClick = function(self)
@@ -193,50 +185,6 @@ function TeamViewArea.createPartyMemberBox(pokemon, x, y, width, height)
 		}
 		table.insert(partyMember.Buttons, typeDefensesBtn)
 	end
-
-	-- Pokemon Item
-	yOffset = yOffset + Constants.SCREEN.LINESPACING + 25
-	local itemText
-	if isEgg then
-		itemText = Constants.BLANKLINE
-	else
-		itemText = MiscData.Items[pokemon.heldItem or 0] or Constants.BLANKLINE
-	end
-	local itemBtn = {
-		text = itemText,
-		itemId = Utils.inlineIf(isEgg, 0, pokemon.heldItem or 0),
-		type = Constants.ButtonTypes.NO_BORDER,
-		box = { x, yOffset, partyMember.width - 2, Constants.SCREEN.LINESPACING, },
-		onClick = function (self)
-			-- Implement sometime in the future
-			-- if not isEgg and self.itemId ~= nil and self.itemId ~= 0 then
-			-- 	InfoScreen.changeScreenView(InfoScreen.Screens.ITEM_INFO, self.itemId)
-			-- end
-		end,
-	}
-	table.insert(partyMember.Buttons, itemBtn)
-
-	-- Pokemon Ability
-	yOffset = yOffset + Constants.SCREEN.LINESPACING - 1
-	local abilityText
-	local abilityId = PokemonData.getAbilityId(pokemon.pokemonID, pokemon.abilityNum)
-	if not isEgg and abilityId ~= nil and abilityId ~= 0 then
-		abilityText = AbilityData.Abilities[abilityId].name
-	else
-		abilityText = Constants.BLANKLINE
-	end
-	local abilityBtn = {
-		text = abilityText,
-		abilityId = Utils.inlineIf(isEgg, 0, abilityId or 0),
-		type = Constants.ButtonTypes.NO_BORDER,
-		box = { x, yOffset, partyMember.width - 2, Constants.SCREEN.LINESPACING, },
-		onClick = function (self)
-			if not isEgg and self.abilityId ~= nil and self.abilityId ~= 0 then
-				InfoScreen.changeScreenView(InfoScreen.Screens.ABILITY_INFO, self.abilityId)
-			end
-		end,
-	}
-	table.insert(partyMember.Buttons, abilityBtn)
 
 	return partyMember
 end

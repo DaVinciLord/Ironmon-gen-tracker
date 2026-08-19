@@ -1,16 +1,4 @@
 SingleExtensionScreen = {
-	Labels = {
-		authorBy = "By:",
-		version = "Version:",
-		enabled = "Enabled:",
-		enabledOn = "ON",
-		enabledOff = "OFF",
-		viewOnline = "View Online",
-		options = "Options",
-		checkForUpdates = "Check for Updates",
-		updateAvailable = "Update Available",
-		noUpdateFound = "No Update Found",
-	},
 	Colors = {
 		text = "Lower box text",
 		border = "Lower box border",
@@ -21,26 +9,26 @@ SingleExtensionScreen = {
 	extensionKey = nil,
 }
 
--- TODO: Might add a "Reload Extension" and a "Remove" option later, uncertain yet
 SingleExtensionScreen.Buttons = {
 	EnableOnOff = {
 		type = Constants.ButtonTypes.CHECKBOX,
-		text = "", -- Set later in initialize()
+		getText = function(self)
+			if SingleExtensionScreen.extension.isEnabled then
+				return " " .. Resources.SingleExtensionScreen.EnabledOn
+			else
+				return " " .. Resources.SingleExtensionScreen.EnabledOff
+			end
+		end,
 		toggleState = false,
-		toggleColor = "Positive text",
 		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + SingleExtensionScreen.column2offsetX, Constants.SCREEN.MARGIN + 39, 34, 10 },
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + SingleExtensionScreen.column2offsetX, Constants.SCREEN.MARGIN + 39, 8, 8 },
 		updateSelf = function(self)
 			if SingleExtensionScreen.extension == nil then return end
-
-			self.toggleState = (SingleExtensionScreen.extension.isEnabled == true)
-
-			-- Check if the extension itself is enabled, and update the button accordingly
-			if SingleExtensionScreen.extension.isEnabled then
-				self.text = " " .. SingleExtensionScreen.Labels.enabledOn
+			if SingleExtensionScreen.extension.isEnabled == true then
+				self.toggleState = true
 				self.textColor = "Positive text"
 			else
-				self.text = " " .. SingleExtensionScreen.Labels.enabledOff
+				self.toggleState = false
 				self.textColor = "Negative text"
 			end
 		end,
@@ -61,38 +49,44 @@ SingleExtensionScreen.Buttons = {
 	},
 	CheckForUpdates = {
 		type = Constants.ButtonTypes.FULL_BORDER,
-		text = SingleExtensionScreen.Labels.checkForUpdates,
+		getText = function(self)
+			if self.updateStatus == "Available" then
+				return Resources.SingleExtensionScreen.ButtonUpdateAvailable
+			elseif self.updateStatus == "No Update" then
+				return Resources.SingleExtensionScreen.ButtonNoUpdateFound
+			elseif self.updateStatus == "Unchecked" then
+				return Resources.SingleExtensionScreen.ButtonCheckForUpdates
+			else
+				return self.updateStatus
+			end
+		end,
+		updateStatus = "Unchecked", -- checked later when clicked
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 120, 76, 11 },
 		isVisible = function(self)
 			return SingleExtensionScreen.extension ~= nil and SingleExtensionScreen.extension.selfObject.checkForUpdates ~= nil
 		end,
-		resetText = function(self)
-			self.text = SingleExtensionScreen.Labels.checkForUpdates
+		reset = function(self)
+			self.updateStatus = "Unchecked"
 			self.textColor = SingleExtensionScreen.Colors.text
 		end,
 		onClick = function(self)
-			local updateFunc = SingleExtensionScreen.extension.selfObject.checkForUpdates
-			if type(updateFunc) == "function" then
-				local isUpdateAvailable, updateUrl = updateFunc()
-
-				if isUpdateAvailable then
-					self.text = SingleExtensionScreen.Labels.updateAvailable
-					self.textColor = "Positive text"
-
-					if updateUrl ~= nil then
-						Utils.openBrowserWindow(updateUrl)
-					end
-				else
-					self.text = SingleExtensionScreen.Labels.noUpdateFound
-					self.textColor = SingleExtensionScreen.Colors.text
-				end
+			local extUpdateFunc = SingleExtensionScreen.extension.selfObject.checkForUpdates
+			if type(extUpdateFunc) ~= "function" then
+				return
+			end
+			local isUpdateAvailable, updateUrl = extUpdateFunc()
+			if isUpdateAvailable then
+				SingleExtensionScreen.updateConfirmationPrompt(self, updateUrl)
+			else
+				self.updateStatus = "No Update"
+				self.textColor = SingleExtensionScreen.Colors.text
 			end
 			Program.redraw(true)
 		end,
 	},
 	ViewOnline = {
 		type = Constants.ButtonTypes.FULL_BORDER,
-		text = SingleExtensionScreen.Labels.viewOnline,
+		getText = function(self) return Resources.SingleExtensionScreen.ButtonViewOnline end,
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 135, 51, 11 },
 		isVisible = function(self)
 			return SingleExtensionScreen.extension ~= nil and SingleExtensionScreen.extension.selfObject.url ~= nil
@@ -105,7 +99,7 @@ SingleExtensionScreen.Buttons = {
 	},
 	Options = {
 		type = Constants.ButtonTypes.FULL_BORDER,
-		text = SingleExtensionScreen.Labels.options,
+		getText = function(self) return Resources.SingleExtensionScreen.ButtonOptions end,
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 59, Constants.SCREEN.MARGIN + 135, 35, 11 },
 		isVisible = function(self)
 			return SingleExtensionScreen.extension ~= nil and type(SingleExtensionScreen.extension.selfObject.configureOptions) == "function"
@@ -117,16 +111,11 @@ SingleExtensionScreen.Buttons = {
 			end
 		end,
 	},
-	Back = {
-		type = Constants.ButtonTypes.FULL_BORDER,
-		text = "Back",
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 112, Constants.SCREEN.MARGIN + 135, 24, 11 },
-		onClick = function(self)
-			SingleExtensionScreen.Buttons.CheckForUpdates:resetText()
-			CustomExtensionsScreen.refreshButtons()
-			Program.changeScreenView(CustomExtensionsScreen)
-		end,
-	},
+	Back = Drawing.createUIElementBackButton(function()
+		SingleExtensionScreen.Buttons.CheckForUpdates:reset()
+		CustomExtensionsScreen.refreshButtons()
+		Program.changeScreenView(CustomExtensionsScreen)
+	end),
 }
 
 function SingleExtensionScreen.initialize()
@@ -151,7 +140,49 @@ end
 function SingleExtensionScreen.setupScreenWithInfo(extensionKey, extension)
 	SingleExtensionScreen.extensionKey = extensionKey
 	SingleExtensionScreen.extension = extension
-	SingleExtensionScreen.Buttons.EnableOnOff:updateSelf()
+	SingleExtensionScreen.refreshButtons()
+end
+
+function SingleExtensionScreen.updateConfirmationPrompt(button, releaseUrl)
+	button = button or {}
+
+	local form = ExternalUI.BizForms.createForm("Update Extension?", 330, 150)
+	local X = 15
+	local lineY = 10
+	form.Controls.labelDescription = form:createLabel(string.format("An update is available, would you like to update now?"), X, lineY)
+	lineY = lineY + 25
+	local extension = SingleExtensionScreen.extension or SingleExtensionScreen.getEmptyExtension()
+	local extName = extension.selfObject.name or "???"
+	form.Controls.labelProfileName = form:createLabel(string.format("Extension:  %s", extName), X, lineY)
+	lineY = lineY + 35
+
+	-- YES / RELEASE NOTES / CANCEL
+	form.Controls.buttonYes = form:createButton(Resources.AllScreens.Yes, X + 5, lineY, function()
+		form:destroy()
+		button.updateStatus = "Updating..."
+		button.textColor = "Intermediate text"
+		Program.redraw(true)
+		-- Delay the update a few frames to redraw screen to show update in progress
+		Program.addFrameCounter("SingleExtensionScreen:UpdateExtension", 4, function()
+			local success = CustomCode.updateExtension(SingleExtensionScreen.extensionKey)
+			if success then
+				button.updateStatus = "Updated!"
+				button.textColor = "Positive text"
+			else
+				button.updateStatus = "Manual Download"
+				button.textColor = "Intermediate text"
+			end
+			Program.redraw(true)
+		end, 1)
+	end, 60, 25)
+	if releaseUrl ~= nil then
+		form.Controls.buttonViewReleaseNotes = form:createButton("View Release Notes", X + 75, lineY, function()
+			Utils.openBrowserWindow(releaseUrl)
+		end, 125, 25)
+	end
+	form.Controls.buttonCancel = form:createButton(Resources.AllScreens.Cancel, X + 210, lineY, function()
+		form:destroy()
+	end, 60, 25)
 end
 
 function SingleExtensionScreen.getEmptyExtension()
@@ -199,15 +230,15 @@ function SingleExtensionScreen.drawScreen()
 	Drawing.drawText(topBox.x + 2, textLineY, extension.selfObject.name, Theme.COLORS["Intermediate text"], topBox.shadow)
 	textLineY = textLineY + Constants.SCREEN.LINESPACING + 1
 	-- Author
-	Drawing.drawText(topBox.x + 2, textLineY, SingleExtensionScreen.Labels.authorBy, topBox.text, topBox.shadow)
+	Drawing.drawText(topBox.x + 2, textLineY, Resources.SingleExtensionScreen.LabelAuthorBy .. ":", topBox.text, topBox.shadow)
 	Drawing.drawText(topBox.x + SingleExtensionScreen.column2offsetX, textLineY, extension.selfObject.author, topBox.text, topBox.shadow)
 	textLineY = textLineY + Constants.SCREEN.LINESPACING + 1
 	-- Version
-	Drawing.drawText(topBox.x + 2, textLineY, SingleExtensionScreen.Labels.version, topBox.text, topBox.shadow)
+	Drawing.drawText(topBox.x + 2, textLineY, Resources.SingleExtensionScreen.LabelVersion .. ":", topBox.text, topBox.shadow)
 	Drawing.drawText(topBox.x + SingleExtensionScreen.column2offsetX, textLineY, extension.selfObject.version, topBox.text, topBox.shadow)
 	textLineY = textLineY + Constants.SCREEN.LINESPACING + 1
 	-- Enabled
-	Drawing.drawText(topBox.x + 2, textLineY, SingleExtensionScreen.Labels.enabled, topBox.text, topBox.shadow)
+	Drawing.drawText(topBox.x + 2, textLineY, Resources.SingleExtensionScreen.LabelEnabled .. ":", topBox.text, topBox.shadow)
 	textLineY = textLineY + Constants.SCREEN.LINESPACING
 
 	-- Description

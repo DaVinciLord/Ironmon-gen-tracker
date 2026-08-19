@@ -1,14 +1,13 @@
 InfoScreen = {
 	viewScreen = 0,
 	prevScreen = 0,
-	infoLookup = 0, -- Possibilities: 'pokemonID', 'moveId', 'abilityId', or '{mapId, encounterArea}'
+	infoLookup = 0, -- Possibilities: 'pokemonID', 'moveId', or '{mapId, encounterArea}'
 	prevScreenInfo = 0,
 }
 
 InfoScreen.Screens = {
-    POKEMON_INFO = 1,
+	POKEMON_INFO = 1,
 	MOVE_INFO = 2,
-	ABILITY_INFO = 3, -- TODO: Implement this, helpful for newer players
 	ROUTE_INFO = 4,
 }
 
@@ -22,20 +21,11 @@ InfoScreen.Buttons = {
 		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.MOVE_INFO end,
 		onClick = function(self) InfoScreen.openMoveInfoWindow() end
 	},
-	LookupAbility = {
-		type = Constants.ButtonTypes.PIXELIMAGE,
-		image = Constants.PixelImages.MAGNIFYING_GLASS,
-		textColor = "Default text",
-		box = { Constants.SCREEN.WIDTH + 133, 60, 10, 10, },
-		boxColors = { "Upper box border", "Upper box background" },
-		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.ABILITY_INFO end,
-		onClick = function(self) InfoScreen.openAbilityInfoWindow() end
-	},
 	LookupPokemon = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.MAGNIFYING_GLASS,
 		textColor = "Default text",
-		box = { Constants.SCREEN.WIDTH + 92, 9, 10, 10, },
+		box = { Constants.SCREEN.WIDTH + 93, 21, 10, 10, },
 		boxColors = { "Upper box border", "Upper box background" },
 		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.POKEMON_INFO end,
 		onClick = function(self) InfoScreen.openPokemonInfoWindow() end
@@ -44,7 +34,7 @@ InfoScreen.Buttons = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.RIGHT_ARROW,
 		textColor = "Default text",
-		box = { Constants.SCREEN.WIDTH + 99, 23, 10, 10, },
+		box = { Constants.SCREEN.WIDTH + 100, 31, 10, 10, },
 		boxColors = { "Upper box border", "Upper box background" },
 		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.POKEMON_INFO end,
 		onClick = function(self) InfoScreen.showNextPokemon() end
@@ -53,14 +43,51 @@ InfoScreen.Buttons = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.LEFT_ARROW,
 		textColor = "Default text",
-		box = { Constants.SCREEN.WIDTH + 85, 23, 10, 10, },
+		box = { Constants.SCREEN.WIDTH + 87, 31, 10, 10, },
 		boxColors = { "Upper box border", "Upper box background" },
 		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.POKEMON_INFO end,
 		onClick = function(self) InfoScreen.showNextPokemon(-1) end
 	},
+	PokemonInfoIcon = {
+		type = Constants.ButtonTypes.POKEMON_ICON,
+		getIconId = function(self)
+			local pokemonID = InfoScreen.infoLookup
+			-- Safety check to make sure this icon has the requested sprite animation type
+			if SpriteData.canDrawIcon(pokemonID) and not SpriteData.IconData[pokemonID][self.animType] then
+				self.animType = SpriteData.getNextAnimType(pokemonID, self.animType)
+			end
+			-- If the log viewer is open, use its animation type
+			local animType = Program.isScreenOverlayOpen() and SpriteData.Types.Idle or self.animType
+			return pokemonID, self.animType or animType
+		end,
+		animType = SpriteData.Types.Idle,
+		clickableArea = { Constants.SCREEN.WIDTH + 112, 5, 32, 27 },
+		box = { Constants.SCREEN.WIDTH + 112, 0, 32, 32 },
+		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.POKEMON_INFO end,
+		onClick = function(self)
+			if SpriteData.canDrawIcon(InfoScreen.infoLookup) and not Program.isScreenOverlayOpen() then
+				self.animType = SpriteData.getNextAnimType(InfoScreen.infoLookup, self.animType)
+				Program.redraw(true)
+			end
+		end
+	},
+	ViewRandomEvos = {
+		type = Constants.ButtonTypes.FULL_BORDER,
+		getText = function(self) return Resources.InfoScreen.ButtonViewEvos end,
+		textColor = "Intermediate text",
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 46, 31, 10 },
+		boxColors = { "Upper box border", "Upper box background" },
+		shouldShow = false, -- for now, need to update this during the legacy drawScreen method
+		isVisible = function(self) return InfoScreen.viewScreen == InfoScreen.Screens.POKEMON_INFO and self.shouldShow and PokemonData.isGameDataRandomized() end,
+		onClick = function (self)
+			if RandomEvosScreen.buildPagedButtons(InfoScreen.infoLookup) then
+				Program.changeScreenView(RandomEvosScreen)
+			end
+		end,
+	},
 	MoveHistory = {
 		type = Constants.ButtonTypes.NO_BORDER,
-		text = "History",
+		getText = function(self) return Resources.InfoScreen.ButtonHistory end,
 		textColor = "Lower box text",
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 108, Constants.SCREEN.MARGIN + 70, 28, 10, },
 		boxColors = { "Lower box border", "Lower box background" },
@@ -78,7 +105,7 @@ InfoScreen.Buttons = {
 	},
 	TypeDefenses = {
 		type = Constants.ButtonTypes.NO_BORDER,
-		text = "Show resistances",
+		getText = function(self) return Resources.InfoScreen.ButtonResistances end,
 		textColor = "Lower box text",
 		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 68, Constants.SCREEN.MARGIN + 97, 68, 10, },
 		boxColors = { "Lower box border", "Lower box background" },
@@ -102,18 +129,33 @@ InfoScreen.Buttons = {
 		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.ROUTE_INFO end,
 		onClick = function(self) InfoScreen.openRouteInfoWindow() end
 	},
-	ShowOriginalRoute = {
+	ShowRoutePercentages = {
 		type = Constants.ButtonTypes.CHECKBOX,
-		text = "Show original route data",
+		getText = function(self) return Resources.InfoScreen.CheckboxPercentages end,
 		textColor = "Default text",
-		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 14, Constants.SCREEN.MARGIN + 17, 104, 10 },
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 14, Constants.SCREEN.MARGIN + 18, 8, 8 },
+		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 15, Constants.SCREEN.MARGIN + 17, 61, 10 },
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 15, Constants.SCREEN.MARGIN + 18, 8, 8 },
 		boxColors = { "Upper box border", "Upper box background" },
-		toggleState = false, -- When true, the original game data for the route is revealed
-		toggleColor = "Positive text",
+		toggleState = false, -- When true, the original game percentage rates for the route are revealed
 		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.ROUTE_INFO end,
 		onClick = function(self)
 			self.toggleState = not self.toggleState
+			InfoScreen.Buttons.ShowRouteLevels.toggleState = false
+			Program.redraw(true)
+		end
+	},
+	ShowRouteLevels = {
+		type = Constants.ButtonTypes.CHECKBOX,
+		getText = function(self) return Resources.InfoScreen.CheckboxLevels end,
+		textColor = "Default text",
+		clickableArea = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 88, Constants.SCREEN.MARGIN + 17, 36, 10 },
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 88, Constants.SCREEN.MARGIN + 18, 8, 8 },
+		boxColors = { "Upper box border", "Upper box background" },
+		toggleState = false, -- When true, the original game Pokemon levels for the route are revealed
+		isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.ROUTE_INFO end,
+		onClick = function(self)
+			self.toggleState = not self.toggleState
+			InfoScreen.Buttons.ShowRoutePercentages.toggleState = false
 			Program.redraw(true)
 		end
 	},
@@ -143,50 +185,40 @@ InfoScreen.Buttons = {
 			Program.redraw(true)
 		end
 	},
-	Back = {
-		type = Constants.ButtonTypes.FULL_BORDER,
-		text = "Back",
-		textColor = "Lower box text",
-		box = { Constants.SCREEN.WIDTH + 117, 141, 24, 11 },
-		boxColors = { "Lower box border", "Lower box background" },
-		isVisible = function() return true end,
-		onClick = function(self)
-			InfoScreen.viewScreen = 0
-			InfoScreen.infoLookup = 0
-			if InfoScreen.prevScreen > 0 then
-				InfoScreen.changeScreenView(InfoScreen.prevScreen, InfoScreen.prevScreenInfo)
-			else
-				InfoScreen.clearScreenData()
+	Back = Drawing.createUIElementBackButton(function()
+		InfoScreen.viewScreen = 0
+		InfoScreen.infoLookup = 0
+		if InfoScreen.prevScreen > 0 then
+			InfoScreen.changeScreenView(InfoScreen.prevScreen, InfoScreen.prevScreenInfo)
+		elseif InfoScreen.previousScreenFinal then
+			Program.changeScreenView(InfoScreen.previousScreenFinal)
+			InfoScreen.clearScreenData()
+		else
+			InfoScreen.clearScreenData()
+			if Program.isValidMapLocation() then
 				Program.changeScreenView(TrackerScreen)
+			else
+				Program.changeScreenView(StartupScreen)
 			end
 		end
-	},
-	BackTop = {
-		type = Constants.ButtonTypes.FULL_BORDER,
-		text = "Back",
-		textColor = "Default text",
-		box = { Constants.SCREEN.WIDTH + 117, 141, 24, 11 },
-		boxColors = { "Upper box border", "Upper box background" },
-		isVisible = function() return true end,
-		onClick = function(self) InfoScreen.Buttons.Back:onClick() end,
-	},
+	end, "Lower box text"),
 	HiddenPowerPrev = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.LEFT_ARROW,
 		textColor = "Default text",
-		box = { Constants.SCREEN.WIDTH + 116, Constants.SCREEN.MARGIN + 31, 10, 10 },
+		box = { Constants.SCREEN.WIDTH + 113, Constants.SCREEN.MARGIN + 40, 10, 10 },
 		isVisible = function()
-			if InfoScreen.viewScreen ~= InfoScreen.Screens.MOVE_INFO or InfoScreen.infoLookup ~= 237 then return false end
+			if InfoScreen.viewScreen ~= InfoScreen.Screens.MOVE_INFO or InfoScreen.infoLookup ~= MoveData.Values.HiddenPowerId then return false end
 			-- Only reveal the HP set arrows if the player's active Pokemon has the move
-			local pokemon = Battle.getViewedPokemon(true) or Tracker.getDefaultPokemon()
-			return PokemonData.isValid(pokemon.pokemonID) and Utils.pokemonHasMove(pokemon, 237) -- 237 = Hidden Power
+			local pokemon = Battle.getViewedPokemon(true) or {}
+			return PokemonData.isValid(pokemon.pokemonID) and Utils.pokemonHasMove(pokemon, MoveData.Values.HiddenPowerId)
 		end,
 		onClick = function(self)
 			-- If the player's lead pokemon has Hidden Power, lookup that tracked typing
-			local pokemon = Battle.getViewedPokemon(true) or Tracker.getDefaultPokemon()
-			if PokemonData.isValid(pokemon.pokemonID) and Utils.pokemonHasMove(pokemon, 237) then -- 237 = Hidden Power
+			local pokemon = Battle.getViewedPokemon(true) or {}
+			if PokemonData.isValid(pokemon.pokemonID) and Utils.pokemonHasMove(pokemon, MoveData.Values.HiddenPowerId) then
 				-- Locate current Hidden Power type index value (requires looking up each time if player's Pokemon changes)
-				local oldType = Tracker.getHiddenPowerType()
+				local oldType = Tracker.getHiddenPowerType(pokemon)
 				local typeId = 0
 				if oldType ~= nil then
 					for index, hptype in ipairs(MoveData.HiddenPowerTypeList) do
@@ -207,14 +239,14 @@ InfoScreen.Buttons = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.RIGHT_ARROW,
 		textColor = "Default text",
-		box = { Constants.SCREEN.WIDTH + 129, Constants.SCREEN.MARGIN + 31, 10, 10 },
+		box = { Constants.SCREEN.WIDTH + 130, Constants.SCREEN.MARGIN + 40, 10, 10 },
 		isVisible = function() return InfoScreen.Buttons.HiddenPowerPrev:isVisible() end,
 		onClick = function(self)
 			-- If the player's lead pokemon has Hidden Power, lookup that tracked typing
-			local pokemon = Battle.getViewedPokemon(true) or Tracker.getDefaultPokemon()
-			if PokemonData.isValid(pokemon.pokemonID) and Utils.pokemonHasMove(pokemon, 237) then -- 237 = Hidden Power
+			local pokemon = Battle.getViewedPokemon(true) or {}
+			if PokemonData.isValid(pokemon.pokemonID) and Utils.pokemonHasMove(pokemon, MoveData.Values.HiddenPowerId) then
 				-- Locate current Hidden Power type index value (requires looking up each time if player's Pokemon changes)
-				local oldType = Tracker.getHiddenPowerType()
+				local oldType = Tracker.getHiddenPowerType(pokemon)
 				local typeId = 0
 				if oldType ~= nil then
 					for index, hptype in ipairs(MoveData.HiddenPowerTypeList) do
@@ -234,12 +266,12 @@ InfoScreen.Buttons = {
 	NotepadTracking = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.NOTEPAD,
-		getContentList = function(pokemonId)
+		getContentList = function(self, pokemonId)
 			local noteText = Tracker.getNote(pokemonId)
-			if noteText ~= nil and noteText ~= "" then
+			if not Utils.isNilOrEmpty(noteText) then
 				return noteText
 			else
-				return "(Leave a note)"
+				return string.format("(%s)", Resources.TrackerScreen.LeaveANote)
 			end
 		end,
 		textColor = "Lower box text",
@@ -250,13 +282,73 @@ InfoScreen.Buttons = {
 	}
 }
 
+InfoScreen.Pager = {
+	prevPage = function(self)
+		if InfoScreen.viewScreen == InfoScreen.Screens.ROUTE_INFO and InfoScreen.infoLookup then
+			-- Try to go to the next early game / safari route if possible
+			local useSafari = RouteData.Locations.IsInSafariZone[InfoScreen.infoLookup.mapId or 0]
+			local routeIds = RouteData.getPivotOrSafariRouteIds(useSafari)
+			for i, routeId in ipairs(routeIds) do
+				if routeId == InfoScreen.infoLookup.mapId then
+					-- Use next routeId (or wrap around to last)
+					local prevRouteId = routeIds[i - 1] or routeIds[#routeIds]
+					InfoScreen.changeScreenView(InfoScreen.Screens.ROUTE_INFO, {
+						mapId = prevRouteId,
+						encounterArea = RouteData.EncounterArea.LAND,
+					})
+					return
+				end
+			end
+			-- Otherwise, cycling through the encounter types for the route
+			InfoScreen.Buttons.PreviousRoute:onClick()
+		elseif InfoScreen.viewScreen == InfoScreen.Screens.POKEMON_INFO and InfoScreen.infoLookup then
+			InfoScreen.Buttons.PreviousPokemon:onClick()
+		elseif InfoScreen.viewScreen == InfoScreen.Screens.MOVE_INFO and InfoScreen.infoLookup then
+			InfoScreen.Buttons.HiddenPowerPrev:onClick()
+		end
+	end,
+	nextPage = function(self)
+		if InfoScreen.viewScreen == InfoScreen.Screens.ROUTE_INFO and InfoScreen.infoLookup then
+			-- Try to go to the next early game / safari route if possible
+			local useSafari = RouteData.Locations.IsInSafariZone[InfoScreen.infoLookup.mapId or 0]
+			local routeIds = RouteData.getPivotOrSafariRouteIds(useSafari)
+			for i, routeId in ipairs(routeIds) do
+				if routeId == InfoScreen.infoLookup.mapId then
+					-- Use next routeId (or wrap around to first)
+					local nextRouteId = routeIds[i + 1] or routeIds[1]
+					InfoScreen.changeScreenView(InfoScreen.Screens.ROUTE_INFO, {
+						mapId = nextRouteId,
+						encounterArea = RouteData.EncounterArea.LAND,
+					})
+					return
+				end
+			end
+			-- Otherwise, cycling through the encounter types for the route
+			InfoScreen.Buttons.NextRoute:onClick()
+		elseif InfoScreen.viewScreen == InfoScreen.Screens.POKEMON_INFO and InfoScreen.infoLookup then
+			InfoScreen.Buttons.NextPokemon:onClick()
+		elseif InfoScreen.viewScreen == InfoScreen.Screens.MOVE_INFO and InfoScreen.infoLookup then
+			InfoScreen.Buttons.HiddenPowerNext:onClick()
+		end
+	end,
+}
+
 InfoScreen.TemporaryButtons = {}
+
+function InfoScreen.initialize()
+	InfoScreen.clearScreenData()
+
+end
 
 function InfoScreen.changeScreenView(screen, info)
 	InfoScreen.prevScreen = InfoScreen.viewScreen
 	InfoScreen.prevScreenInfo = InfoScreen.infoLookup
 	InfoScreen.viewScreen = screen
 	InfoScreen.infoLookup = info
+	if screen == InfoScreen.Screens.ROUTE_INFO then
+		InfoScreen.Buttons.ShowRoutePercentages.toggleState = false
+		InfoScreen.Buttons.ShowRouteLevels.toggleState = (not PokemonData.isGameDataRandomized() or Options["Open Book Play Mode"] or Program.currentOverlay == LogOverlay)
+	end
 	Program.changeScreenView(InfoScreen)
 end
 
@@ -265,7 +357,10 @@ function InfoScreen.clearScreenData()
 	InfoScreen.prevScreen = 0
 	InfoScreen.infoLookup = 0
 	InfoScreen.prevScreenInfo = 0
-	InfoScreen.Buttons.ShowOriginalRoute.toggleState = false
+	InfoScreen.previousScreenFinal = nil
+	InfoScreen.Buttons.ShowRoutePercentages.toggleState = false
+	InfoScreen.Buttons.ShowRouteLevels.toggleState = false
+	InfoScreen.Buttons.PokemonInfoIcon.spriteType = SpriteData.Types.Idle
 end
 
 -- Display a Pokemon that is 'N' entries ahead of the currently shown Pokemon; N can be negative
@@ -274,10 +369,10 @@ function InfoScreen.showNextPokemon(delta)
 	local nextPokemonId = InfoScreen.infoLookup + delta
 
 	if nextPokemonId < 1 then
-		nextPokemonId = 411
+		nextPokemonId = PokemonData.getTotal()
 	elseif nextPokemonId > 251 and nextPokemonId < 277 then
 		nextPokemonId = Utils.inlineIf(delta > 0, 277, 251)
-	elseif nextPokemonId > 411 then
+	elseif nextPokemonId > PokemonData.getTotal() then
 		nextPokemonId = 1
 	end
 
@@ -286,32 +381,26 @@ function InfoScreen.showNextPokemon(delta)
 end
 
 function InfoScreen.openMoveInfoWindow()
-	Program.destroyActiveForm()
-	local moveLookup = forms.newform(360, 105, "Move Look up", function() client.unpause() end)
-	Program.activeFormId = moveLookup
-	Utils.setFormLocation(moveLookup, 100, 50)
+	local form = ExternalUI.BizForms.createForm(Resources.AllScreens.Lookup, 360, 105)
 
 	local moveName = MoveData.Moves[InfoScreen.infoLookup].name -- infoLookup = moveId
 	local allmovesData = {}
-	for _, data in pairs(MoveData.Moves) do
-		if data.name ~= Constants.BLANKLINE then
-			table.insert(allmovesData, data.name)
+	for id = 1, MoveData.getTotal(), 1 do
+		local move = MoveData.Moves[id] or MoveData.BlankMove
+		if move.name ~= Constants.BLANKLINE then
+			table.insert(allmovesData, move.name)
 		end
 	end
 
-	forms.label(moveLookup, "Choose a Pokemon Move to look up:", 49, 10, 250, 20)
-	local moveDropdown = forms.dropdown(moveLookup, {["Init"]="Loading Move Data"}, 50, 30, 145, 30)
-	forms.setdropdownitems(moveDropdown, allmovesData, true) -- true = alphabetize the list
-	forms.setproperty(moveDropdown, "AutoCompleteSource", "ListItems")
-	forms.setproperty(moveDropdown, "AutoCompleteMode", "Append")
-	forms.settext(moveDropdown, moveName)
-
-	forms.button(moveLookup, "Look up", function()
-		local moveNameFromForm = forms.gettext(moveDropdown)
+	form:createLabel(Resources.InfoScreen.PromptLookupMove .. ":", 49, 10)
+	local moveDropdown = form:createDropdown(allmovesData, 50, 30, 145, 30, moveName)
+	form:createButton(Resources.AllScreens.Lookup, 212, 29, function()
+		local moveNameFromForm = ExternalUI.BizForms.getText(moveDropdown)
 		local moveId
 
-		for id, data in pairs(MoveData.Moves) do
-			if data.name == moveNameFromForm then
+		for id = 1, MoveData.getTotal(), 1 do
+			local move = MoveData.Moves[id] or MoveData.BlankMove
+			if move.name == moveNameFromForm then
 				moveId = id
 				break
 			end
@@ -321,57 +410,12 @@ function InfoScreen.openMoveInfoWindow()
 			InfoScreen.infoLookup = moveId
 			Program.redraw(true)
 		end
-		client.unpause()
-		forms.destroy(moveLookup)
-	end, 212, 29)
-end
-
-function InfoScreen.openAbilityInfoWindow()
-	Program.destroyActiveForm()
-	local abilityLookup = forms.newform(360, 105, "Ability Look up", function() client.unpause() end)
-	Program.activeFormId = abilityLookup
-	Utils.setFormLocation(abilityLookup, 100, 50)
-	local abilityName
-	if not AbilityData.isValid(InfoScreen.infoLookup) then -- infoLookup = abilityId
-		abilityName = AbilityData.DefaultAbility.name
-	else
-		abilityName = AbilityData.Abilities[InfoScreen.infoLookup].name
-	end
-	local allAbilitiesData = {}
-	allAbilitiesData = AbilityData.populateAbilityDropdown(allAbilitiesData)
-
-	forms.label(abilityLookup, "Choose a Pokemon Ability to look up:", 49, 10, 250, 20)
-	local abilityDropdown = forms.dropdown(abilityLookup, {["Init"]="Loading Ability Data"}, 50, 30, 145, 30)
-	forms.setdropdownitems(abilityDropdown, allAbilitiesData, true) -- true = alphabetize the list
-	forms.setproperty(abilityDropdown, "AutoCompleteSource", "ListItems")
-	forms.setproperty(abilityDropdown, "AutoCompleteMode", "Append")
-	forms.settext(abilityDropdown, abilityName)
-
-	forms.button(abilityLookup, "Look up", function()
-		local abilityNameFromForm = forms.gettext(abilityDropdown)
-		local abilityId
-
-		for id, data in pairs(AbilityData.Abilities) do
-			if data.name == abilityNameFromForm then
-				abilityId = id
-				break
-			end
-		end
-
-		if abilityId ~= nil and abilityId ~= 0 then
-			InfoScreen.infoLookup = abilityId
-			Program.redraw(true)
-		end
-		client.unpause()
-		forms.destroy(abilityLookup)
-	end, 212, 29)
+		form:destroy()
+	end)
 end
 
 function InfoScreen.openPokemonInfoWindow()
-	Program.destroyActiveForm()
-	local pokedexLookup = forms.newform(360, 105, "Pokedex Look up", function() client.unpause() end)
-	Program.activeFormId = pokedexLookup
-	Utils.setFormLocation(pokedexLookup, 100, 50)
+	local form = ExternalUI.BizForms.createForm(Resources.AllScreens.Lookup, 360, 105)
 
 	local pokemonName
 	if PokemonData.isValid(InfoScreen.infoLookup) then -- infoLookup = pokemonID
@@ -381,47 +425,35 @@ function InfoScreen.openPokemonInfoWindow()
 	end
 	local pokedexData = PokemonData.namesToList()
 
-	forms.label(pokedexLookup, "Choose a Pokemon to look up:", 49, 10, 250, 20)
-	local pokedexDropdown = forms.dropdown(pokedexLookup, {["Init"]="Loading Pokedex"}, 50, 30, 145, 30)
-	forms.setdropdownitems(pokedexDropdown, pokedexData, true) -- true = alphabetize the list
-	forms.setproperty(pokedexDropdown, "AutoCompleteSource", "ListItems")
-	forms.setproperty(pokedexDropdown, "AutoCompleteMode", "Append")
-	forms.settext(pokedexDropdown, pokemonName)
-
-	forms.button(pokedexLookup, "Look up", function()
-		local pokemonNameFromForm = forms.gettext(pokedexDropdown)
+	form:createLabel(Resources.InfoScreen.PromptLookupPokemon .. ":", 49, 10)
+	local pokedexDropdown = form:createDropdown(pokedexData, 50, 30, 145, 30, pokemonName)
+	form:createButton(Resources.AllScreens.Lookup, 212, 29, function()
+		local pokemonNameFromForm = ExternalUI.BizForms.getText(pokedexDropdown)
 		local pokemonId = PokemonData.getIdFromName(pokemonNameFromForm)
 
 		if pokemonId ~= nil and pokemonId ~= 0 then
 			InfoScreen.infoLookup = pokemonId
 			Program.redraw(true)
 		end
-		client.unpause()
-		forms.destroy(pokedexLookup)
-	end, 212, 29)
+		form:destroy()
+	end)
 end
 
 function InfoScreen.openRouteInfoWindow()
-	Program.destroyActiveForm()
-	local routeLookup = forms.newform(360, 105, "Route Look up", function() client.unpause() end)
-	Program.activeFormId = routeLookup
-	Utils.setFormLocation(routeLookup, 100, 50)
+	local form = ExternalUI.BizForms.createForm(Resources.AllScreens.Lookup, 360, 105)
 
 	local routeName = RouteData.Info[InfoScreen.infoLookup.mapId].name -- infoLookup = {mapId, encounterArea}
+	routeName = Utils.formatSpecialCharacters(routeName)
 
-	forms.label(routeLookup, "Choose a Route to look up:", 49, 10, 250, 20)
-	local routeDropdown = forms.dropdown(routeLookup, {["Init"]="Loading Route Data"}, 50, 30, 145, 30)
-	forms.setdropdownitems(routeDropdown, RouteData.AvailableRoutes, false) -- true = alphabetize the list
-	forms.setproperty(routeDropdown, "AutoCompleteSource", "ListItems")
-	forms.setproperty(routeDropdown, "AutoCompleteMode", "Append")
-	forms.settext(routeDropdown, routeName)
-
-	forms.button(routeLookup, "Look up", function()
-		local routeNameFromForm = forms.gettext(routeDropdown)
+	form:createLabel(Resources.InfoScreen.PromptLookupRoute .. ":", 49, 10)
+	local routeDropdown = form:createDropdown(RouteData.AvailableRoutes, 50, 30, 145, 30, routeName, false)
+	form:createButton(Resources.AllScreens.Lookup, 212, 29, function()
+		local dropdownSelection = ExternalUI.BizForms.getText(routeDropdown)
 		local mapId
 
 		for id, data in pairs(RouteData.Info) do
-			if data.name == routeNameFromForm then
+			local nameToMatch = Utils.formatSpecialCharacters(data.name)
+			if nameToMatch == dropdownSelection then
 				mapId = id
 				break
 			end
@@ -435,32 +467,60 @@ function InfoScreen.openRouteInfoWindow()
 
 			InfoScreen.infoLookup.mapId = mapId
 			InfoScreen.infoLookup.encounterArea = encounterArea
-			InfoScreen.Buttons.ShowOriginalRoute.toggleState = false
+			InfoScreen.Buttons.ShowRoutePercentages.toggleState = false
+			InfoScreen.Buttons.ShowRouteLevels.toggleState = (not PokemonData.isGameDataRandomized() or Options["Open Book Play Mode"] or Program.currentOverlay == LogOverlay)
 			Program.redraw(true)
 		end
-		client.unpause()
-		forms.destroy(routeLookup)
-	end, 212, 29)
+		form:destroy()
+	end)
 end
 
 function InfoScreen.getPokemonButtonsForEncounterArea(mapId, encounterArea)
 	if not RouteData.hasRouteEncounterArea(mapId, encounterArea) then return {} end
 
 	local areaInfo
-	local totalPossible
-	if InfoScreen.Buttons.ShowOriginalRoute.toggleState then
-		areaInfo = RouteData.getEncounterAreaPokemon(mapId, encounterArea)
-		totalPossible = #areaInfo
-	else
-		local trackedPokemonIDs = Tracker.getRouteEncounters(mapId, encounterArea)
+	local totalPossible = 0
+	if Options["Open Book Play Mode"] or Program.currentOverlay == LogOverlay then
 		areaInfo = {}
-		for _, id in ipairs(trackedPokemonIDs) do
+		local selectedEncKey
+		for key, val in pairs(RandomizerLog.EncounterTypes) do
+			if val.internalArea == encounterArea then
+				selectedEncKey = key
+				break
+			end
+		end
+		local routeLog = RandomizerLog.Data.Routes[mapId] or {}
+		local routeAreas = routeLog.EncountersAreas or {}
+		local encArea = routeAreas[selectedEncKey or false] or {}
+		for id, pokemon in pairs(encArea.pokemon or {}) do
 			table.insert(areaInfo, {
 				pokemonID = id,
-				rate = nil,
+				minLv = pokemon.levelMin,
+				maxLv = pokemon.levelMax,
+				rate = pokemon.rate,
 			})
 		end
-		totalPossible = RouteData.countPokemonInArea(mapId, encounterArea)
+		table.sort(areaInfo, function(a,b)
+			return (a.rate or 0) > (b.rate or 0) or (a.rate == b.rate and a.pokemonID < b.pokemonID)
+		end)
+		totalPossible = #areaInfo
+	end
+	-- If log info isn't available, revert back to using normal route display
+	if totalPossible == 0 then
+		if InfoScreen.Buttons.ShowRoutePercentages.toggleState or InfoScreen.Buttons.ShowRouteLevels.toggleState then
+			areaInfo = RouteData.getEncounterAreaPokemon(mapId, encounterArea)
+			totalPossible = #areaInfo
+		else
+			local trackedPokemonIDs = Tracker.getRouteEncounters(mapId, encounterArea)
+			areaInfo = {}
+			for _, id in ipairs(trackedPokemonIDs) do
+				table.insert(areaInfo, {
+					pokemonID = id,
+					rate = nil,
+				})
+			end
+			totalPossible = RouteData.countPokemonInArea(mapId, encounterArea)
+		end
 	end
 
 	local startX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 3
@@ -471,31 +531,34 @@ function InfoScreen.getPokemonButtonsForEncounterArea(mapId, encounterArea)
 
 	local iconButtons = {}
 	for index=1, totalPossible, 1 do
-		local pokemonID = 252 -- Question mark icon
+		local pokemonID = PokemonData.Values.QuestionMarkId
 		local rate = nil
+		local minLv, maxLv = nil, nil
 		if areaInfo ~= nil and areaInfo[index] ~= nil then
 			pokemonID = areaInfo[index].pokemonID
 			rate = areaInfo[index].rate
+			minLv = areaInfo[index].minLv
+			maxLv = areaInfo[index].maxLv
 		end
 
-		local x = startX + offsetX
-		local y = startY + offsetY - Options.IconSetMap[Options["Pokemon icon set"]].yOffset
+		local iconset = Options.getIconSet()
+		local x = startX + offsetX - (iconset.xOffset or 0)
+		local y = startY + offsetY - (iconset.yOffset or 0)
 
 		iconButtons[index] = {
 			type = Constants.ButtonTypes.POKEMON_ICON,
-			getIconPath = function(self)
-				local iconset = Options.IconSetMap[Options["Pokemon icon set"]]
-				return FileManager.buildImagePath(iconset.folder, tostring(self.pokemonID), iconset.extension)
-			end,
+			getIconId = function(self) return self.pokemonID, SpriteData.Types.Walk end,
 			pokemonID = pokemonID,
 			rate = rate,
+			minLv = minLv,
+			maxLv = maxLv,
 			box = { x, y, iconWidth, iconWidth },
 			isVisible = function() return InfoScreen.viewScreen == InfoScreen.Screens.ROUTE_INFO end,
 			onClick = function(self)
-				if not self:isVisible() then return end
-				if self.pokemonID ~= 252 then
-					InfoScreen.changeScreenView(InfoScreen.Screens.POKEMON_INFO, self.pokemonID)
+				if not self:isVisible() or self.pokemonID == PokemonData.Values.QuestionMarkId then
+					return
 				end
+				InfoScreen.changeScreenView(InfoScreen.Screens.POKEMON_INFO, self.pokemonID)
 			end
 		}
 
@@ -553,9 +616,6 @@ function InfoScreen.drawScreen()
 			InfoScreen.TemporaryButtons = InfoScreen.getPokemonButtonsForEncounterArea(mapId, encounterArea)
 			InfoScreen.drawRouteInfoScreen(mapId, encounterArea)
 		end
-	elseif (InfoScreen.viewScreen == InfoScreen.Screens.ABILITY_INFO) then
-		local abilityId = InfoScreen.infoLookup
-		InfoScreen.drawAbilityInfoScreen(abilityId)
 	end
 end
 
@@ -567,8 +627,8 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 	local boxInfoTopShadow = Utils.calcShadowColor(Theme.COLORS["Upper box background"])
 	local boxInfoBotShadow = Utils.calcShadowColor(Theme.COLORS["Lower box background"])
 
-	local offsetX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1
-	local offsetColumnX = offsetX + 43
+	local offsetX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 2
+	local offsetColumnX = offsetX + 42
 	local offsetY = 0 + Constants.SCREEN.MARGIN + 3
 	local linespacing = Constants.SCREEN.LINESPACING - 1
 	local botOffsetY = offsetY + (linespacing * 6) - 2 + 9
@@ -579,56 +639,64 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 
 	-- Draw top view box
 	gui.defaultTextBackground(Theme.COLORS["Upper box background"])
-	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, Constants.SCREEN.MARGIN, rightEdge, botOffsetY - linespacing - 8, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box background"])
+	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, Constants.SCREEN.MARGIN, rightEdge, botOffsetY - linespacing - 7, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box background"])
 
 	-- POKEMON NAME
 	offsetY = offsetY - 3
-	local pokemonName = data.p.name:upper()
-	if Theme.DRAW_TEXT_SHADOWS then
-		Drawing.drawText(offsetX + 1 - 1, offsetY + 1, pokemonName, boxInfoTopShadow, nil, 12, Constants.Font.FAMILY, "bold")
-	end
-	Drawing.drawText(offsetX - 1, offsetY, pokemonName, Theme.COLORS["Default text"], nil, 12, Constants.Font.FAMILY, "bold")
+	local pokemonName = Utils.toUpperUTF8(data.p.name)
+	Drawing.drawHeader(offsetX - 2, offsetY - 1, pokemonName, Theme.COLORS["Default text"], boxInfoTopShadow)
 
-	-- POKEMON ICON & TYPES
+	-- POKEMON TYPES
+	local type1, type2 = data.p.types[1], data.p.types[2]
+	if Program.currentOverlay == LogOverlay and RandomizerLog.Data.Pokemon[pokemonID] then
+		if #RandomizerLog.Data.Pokemon[pokemonID].Types > 0 then
+			type1 = RandomizerLog.Data.Pokemon[pokemonID].Types[1] or PokemonData.Types.UNKNOWN
+			type2 = RandomizerLog.Data.Pokemon[pokemonID].Types[2] or PokemonData.Types.EMPTY
+		end
+	end
 	offsetY = offsetY - 7
 	gui.drawRectangle(offsetX + 106, offsetY + 37, 31, 13, boxInfoTopShadow, boxInfoTopShadow)
 	gui.drawRectangle(offsetX + 105, offsetY + 36, 31, 13, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box border"])
-	if data.p.types[2] ~= data.p.types[1] and data.p.types[2] ~= PokemonData.Types.EMPTY then
+	if type2 ~= type1 and type2 ~= PokemonData.Types.EMPTY then
 		gui.drawRectangle(offsetX + 106, offsetY + 50, 31, 12, boxInfoTopShadow, boxInfoTopShadow)
 		gui.drawRectangle(offsetX + 105, offsetY + 49, 31, 12, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box border"])
 	end
-	Drawing.drawPokemonIcon(data.p.id, offsetX + 105, offsetY + 2)
-	Drawing.drawTypeIcon(data.p.types[1], offsetX + 106, offsetY + 37)
-	if data.p.types[2] ~= data.p.types[1] then
-		Drawing.drawTypeIcon(data.p.types[2], offsetX + 106, offsetY + 49)
+	Drawing.drawTypeIcon(type1, offsetX + 106, offsetY + 37)
+	if type2 ~= type1 then
+		Drawing.drawTypeIcon(type2, offsetX + 106, offsetY + 49)
 	end
-	offsetY = offsetY + 11 + linespacing
+	offsetY = offsetY + 12 + linespacing
 
-	-- BST
-	Drawing.drawText(offsetX, offsetY, "BST:", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.p.bst, Theme.COLORS["Default text"], boxInfoTopShadow)
+	-- BST & EXP. YIELD
+	local expTextColor = data.x.viewedPokemonLevel ~= 0 and "Positive text" or "Default text"
+	Drawing.drawText(offsetX, offsetY, string.format("%s: %s", Resources.TrackerScreen.StatBST, data.p.bst), Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetColumnX, offsetY, string.format("%s: %s", Resources.InfoScreen.ExpYield, data.p.expYield), Theme.COLORS[expTextColor], boxInfoTopShadow)
 	offsetY = offsetY + linespacing
 
 	-- WEIGHT
-	local weightInfo = data.p.weight .. " kg"
-	Drawing.drawText(offsetX, offsetY, "Weight:", Theme.COLORS["Default text"], boxInfoTopShadow)
+	local weightInfo = string.format("%s %s", data.p.weight, Resources.InfoScreen.KilogramAbbreviation)
+	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelWeight .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
 	Drawing.drawText(offsetColumnX, offsetY, weightInfo, Theme.COLORS["Default text"], boxInfoTopShadow)
 	offsetY = offsetY + linespacing
 
 	-- EVOLUTION
-	Drawing.drawText(offsetX, offsetY, "Evolution:", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.p.evo[1], Theme.COLORS["Default text"], boxInfoTopShadow)
+	local evoDetails = Utils.getDetailedEvolutionsInfo(data.p.evo)
+	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelEvolution .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetColumnX, offsetY, evoDetails[1], Theme.COLORS["Default text"], boxInfoTopShadow)
 	offsetY = offsetY + linespacing
-	if data.p.evo[2] ~= nil then
-		Drawing.drawText(offsetColumnX, offsetY, data.p.evo[2], Theme.COLORS["Default text"], boxInfoTopShadow)
+	if evoDetails[2] ~= nil then
+		Drawing.drawText(offsetColumnX, offsetY, evoDetails[2], Theme.COLORS["Default text"], boxInfoTopShadow)
 	end
-	if data.p.id == 96 and Options.IconSetMap[Options["Pokemon icon set"]].name == "Explorers" then
-		-- Pokémon Mystery Dungeon Drowzee easter egg
-		Drawing.drawText(offsetX, offsetY, "This was all a trick. I deceived you.", Theme.COLORS["Default text"], boxInfoTopShadow)
-	end
+	InfoScreen.Buttons.ViewRandomEvos.shouldShow = (evoDetails[1] ~= Constants.BLANKLINE)
+	-- Removing this easter egg for now, since Drowzee has an evo
+	-- if data.p.id == 96 and Options.getIconSet().name == "Explorers" then
+	-- 	-- Pokémon Mystery Dungeon Drowzee easter egg
+	-- 	Drawing.drawText(offsetX, offsetY, "This was all a trick. I deceived you.", Theme.COLORS["Default text"], boxInfoTopShadow)
+	-- end
 	offsetY = offsetY + linespacing
 
 	-- Draw bottom view box and header
+	offsetX = offsetX - 1
 	gui.defaultTextBackground(Theme.COLORS["Lower box background"])
 	botOffsetY = offsetY + 3
 	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, botOffsetY, rightEdge, bottomEdge - botOffsetY + 5, Theme.COLORS["Lower box border"], Theme.COLORS["Lower box background"])
@@ -638,20 +706,23 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 	if InfoScreen.Buttons.MoveHistory.box[2] ~= botOffsetY then
 		InfoScreen.Buttons.MoveHistory.box[2] = botOffsetY
 	end
-	Drawing.drawText(offsetX, botOffsetY, "Learns a move at level:", Theme.COLORS["Lower box text"], boxInfoBotShadow)
+	Drawing.drawText(offsetX, botOffsetY, Resources.InfoScreen.LabelLearnMove .. ":", Theme.COLORS["Lower box text"], boxInfoBotShadow)
 	botOffsetY = botOffsetY + linespacing + 1
-	local boxWidth = 16
+	local NUM_MOVES = #data.p.movelvls
+	local MOVES_PER_ROW = NUM_MOVES <= 16 and 8 or 9
+	local boxWidth = NUM_MOVES <= 16 and 16 or 15
 	local boxHeight = 13
-	if #data.p.movelvls == 0 then -- If the Pokemon learns no moves at all
-		Drawing.drawText(offsetX + 6, botOffsetY, "Does not learn any moves", Theme.COLORS["Lower box text"], boxInfoBotShadow)
+	local boxStart = NUM_MOVES <= 16 and 5 or 1
+	if NUM_MOVES == 0 then -- If the Pokemon learns no moves at all
+		Drawing.drawText(offsetX + 6, botOffsetY, Resources.InfoScreen.LabelNoMoves, Theme.COLORS["Lower box text"], boxInfoBotShadow)
 	end
-	for i, moveLvl in ipairs(data.p.movelvls) do -- 14 is the greatest number of moves a gen3 Pokemon can learn
-		local nextBoxX = ((i - 1) % 8) * boxWidth -- 8 possible columns
-		local nextBoxY = Utils.inlineIf(i <= 8, 0, 1) * boxHeight -- 2 possible rows
+	for i, moveLvl in ipairs(data.p.movelvls) do
+		local nextBoxX = ((i - 1) % MOVES_PER_ROW) * boxWidth
+		local nextBoxY = Utils.inlineIf(i <= MOVES_PER_ROW, 0, 1) * boxHeight -- 2 possible rows
 		local lvlSpacing = (2 - string.len(tostring(moveLvl))) * 3
 
-		gui.drawRectangle(offsetX + nextBoxX + 5 + 1, botOffsetY + nextBoxY + 2, boxWidth, boxHeight, boxInfoBotShadow, boxInfoBotShadow)
-		gui.drawRectangle(offsetX + nextBoxX + 5, botOffsetY + nextBoxY + 1, boxWidth, boxHeight, Theme.COLORS["Lower box border"], Theme.COLORS["Lower box background"])
+		gui.drawRectangle(offsetX + nextBoxX + boxStart + 1, botOffsetY + nextBoxY + 2, boxWidth, boxHeight, boxInfoBotShadow, boxInfoBotShadow)
+		gui.drawRectangle(offsetX + nextBoxX + boxStart, botOffsetY + nextBoxY + 1, boxWidth, boxHeight, Theme.COLORS["Lower box border"], Theme.COLORS["Lower box background"])
 
 		-- Indicate which moves have already been learned if the Pokemon being viewed is one of the ones in battle (yours/enemy)
 		local nextBoxTextColor
@@ -663,12 +734,12 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 			nextBoxTextColor = Theme.COLORS["Positive text"]
 		end
 
-		Drawing.drawText(offsetX + nextBoxX + 7 + lvlSpacing, botOffsetY + nextBoxY + 2, moveLvl, nextBoxTextColor, boxInfoBotShadow)
+		Drawing.drawText(offsetX + nextBoxX + boxStart + 2 + lvlSpacing, botOffsetY + nextBoxY + 2, moveLvl, nextBoxTextColor, boxInfoBotShadow)
 	end
 	botOffsetY = botOffsetY + (linespacing * 3) - 2
 
 	-- If the moves-to-learn only takes up one row, move up the weakness data
-	if #data.p.movelvls <= 8 then
+	if NUM_MOVES <= MOVES_PER_ROW then
 		botOffsetY = botOffsetY - linespacing
 	end
 
@@ -676,7 +747,7 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 	if InfoScreen.Buttons.TypeDefenses.box[2] ~= botOffsetY then
 		InfoScreen.Buttons.TypeDefenses.box[2] = botOffsetY
 	end
-	Drawing.drawText(offsetX, botOffsetY, "Weak to:", Theme.COLORS["Lower box text"], boxInfoBotShadow)
+	Drawing.drawText(offsetX, botOffsetY, Resources.InfoScreen.LabelWeakTo .. ":", Theme.COLORS["Lower box text"], boxInfoBotShadow)
 	botOffsetY = botOffsetY + linespacing + 3
 
 	-- Temporarily storing things as a single set of weaknesses, filtered out later, but ideally we display all type-effectiveness
@@ -689,7 +760,7 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 	end
 
 	if #data.e[2] == 0 and #data.e[4] == 0 then -- If the Pokemon has no weakness, like Sableye
-		Drawing.drawText(offsetX + 6, botOffsetY, "Has no weaknesses", Theme.COLORS["Lower box text"], boxInfoBotShadow)
+		Drawing.drawText(offsetX + 6, botOffsetY, Resources.InfoScreen.LabelNoWeaknesses, Theme.COLORS["Lower box text"], boxInfoBotShadow)
 	end
 
 	local typeOffsetX = offsetX + 6
@@ -700,7 +771,7 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 
 		if effectiveness > 2 then
 			-- gui.drawRectangle(typeOffsetX - 1, botOffsetY - 1, 31, 13, Theme.COLORS["Negative text"])
-			local barColor = 0xFFFFFFFF
+			local barColor = Drawing.Colors.WHITE
 			gui.drawLine(typeOffsetX, botOffsetY, typeOffsetX + 29, botOffsetY, barColor)
 			gui.drawLine(typeOffsetX, botOffsetY + 1, typeOffsetX + 29, botOffsetY + 1, barColor)
 			gui.drawLine(typeOffsetX, botOffsetY + 10, typeOffsetX + 29, botOffsetY + 10, barColor)
@@ -721,6 +792,8 @@ function InfoScreen.drawPokemonInfoScreen(pokemonID)
 	Drawing.drawButton(InfoScreen.Buttons.LookupPokemon, boxInfoTopShadow)
 	Drawing.drawButton(InfoScreen.Buttons.NextPokemon, boxInfoTopShadow)
 	Drawing.drawButton(InfoScreen.Buttons.PreviousPokemon, boxInfoTopShadow)
+	Drawing.drawButton(InfoScreen.Buttons.PokemonInfoIcon, boxInfoTopShadow)
+	Drawing.drawButton(InfoScreen.Buttons.ViewRandomEvos, boxInfoTopShadow)
 
 	Drawing.drawButton(InfoScreen.Buttons.MoveHistory, boxInfoBotShadow)
 	Drawing.drawButton(InfoScreen.Buttons.TypeDefenses, boxInfoBotShadow)
@@ -738,11 +811,11 @@ function InfoScreen.drawMoveInfoScreen(moveId)
 	local boxInfoTopShadow = Utils.calcShadowColor(Theme.COLORS["Upper box background"])
 	local boxInfoBotShadow = Utils.calcShadowColor(Theme.COLORS["Lower box background"])
 
-	local offsetX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1
-	local offsetColumnX = offsetX + 45
+	local offsetX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 2
+	local offsetColumnX = offsetX + 44
 	local offsetY = 0 + Constants.SCREEN.MARGIN + 3
 	local linespacing = Constants.SCREEN.LINESPACING - 1
-	local botOffsetY = offsetY + (linespacing * 7) + 7
+	local botOffsetY = offsetY + (linespacing * 5) + 7
 
 	local data = DataHelper.buildMoveInfoDisplay(moveId)
 
@@ -757,67 +830,64 @@ function InfoScreen.drawMoveInfoScreen(moveId)
 	gui.defaultTextBackground(Theme.COLORS["Upper box background"])
 	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, Constants.SCREEN.MARGIN, rightEdge, botOffsetY - linespacing - 8, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box background"])
 
-	-- MOVE NAME
-	data.m.name = data.m.name:upper()
-	if Theme.DRAW_TEXT_SHADOWS then
-		Drawing.drawText(offsetX + 1 - 1, offsetY + 1 - 3, data.m.name, boxInfoTopShadow, nil, 12, Constants.Font.FAMILY, "bold")
+	local moveType = data.m.type
+	local movePP = data.m.pp
+	local movePower = data.m.power
+	local moveAcc = data.m.accuracy
+	if Program.currentOverlay == LogOverlay and RandomizerLog.Data.Moves[moveId] then
+		local moveLog = RandomizerLog.Data.Moves[moveId]
+		moveType = moveLog.type or PokemonData.Types.EMPTY
+		movePP = moveLog.pp ~= 0 and moveLog.pp or Constants.BLANKLINE
+		movePower = moveLog.power ~= 0 and moveLog.power or Constants.BLANKLINE
+		moveAcc = moveLog.acc ~= 0 and moveLog.acc or Constants.BLANKLINE
 	end
-	Drawing.drawText(offsetX - 1, offsetY - 3, data.m.name, Theme.COLORS["Default text"], nil, 12, Constants.Font.FAMILY, "bold")
 
-	if data.x.ownHasHiddenPower then
-		Drawing.drawText(offsetX + 103, offsetY + linespacing * 2 - 4, "Set type", Theme.COLORS["Positive text"], boxInfoTopShadow)
-	end
+	-- MOVE NAME
+	data.m.name = Utils.toUpperUTF8(data.m.name)
+	Drawing.drawHeader(offsetX - 2, offsetY - 4, data.m.name, Theme.COLORS["Default text"], boxInfoTopShadow)
 
 	-- TYPE ICON
-	offsetY = offsetY + 1
+	offsetY = offsetY + linespacing + 4
 	gui.drawRectangle(offsetX + 106, offsetY + 1, 31, 13, boxInfoTopShadow, boxInfoTopShadow)
 	gui.drawRectangle(offsetX + 105, offsetY, 31, 13, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box border"])
-	Drawing.drawTypeIcon(data.m.type, offsetX + 106, offsetY + 1)
-	offsetY = offsetY + linespacing
+	Drawing.drawTypeIcon(moveType, offsetX + 106, offsetY + 1)
+	offsetY = offsetY - 2
 
-	-- CATEGORY
-	if data.m.category == MoveData.Categories.PHYSICAL then
-		Drawing.drawImageAsPixels(Constants.PixelImages.PHYSICAL, offsetColumnX + 36, offsetY + 2, { Theme.COLORS["Default text"] }, boxInfoTopShadow)
-	elseif data.m.category == MoveData.Categories.SPECIAL then
-		Drawing.drawImageAsPixels(Constants.PixelImages.SPECIAL, offsetColumnX + 33, offsetY + 2, { Theme.COLORS["Default text"] }, boxInfoTopShadow)
+	if data.x.ownHasHiddenPower then
+		Drawing.drawText(offsetX + 103, offsetY + linespacing * 2 - 6, Resources.InfoScreen.SetHiddenPowerType, Theme.COLORS["Positive text"], boxInfoTopShadow)
 	end
-	Drawing.drawText(offsetX, offsetY, "Category:", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.m.category, Theme.COLORS["Default text"], boxInfoTopShadow)
-	offsetY = offsetY + linespacing
 
-	-- CONTACT
-	data.m.iscontact = Utils.inlineIf(data.m.iscontact, "Yes", "No")
-	Drawing.drawText(offsetX, offsetY, "Contact:", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.m.iscontact, Theme.COLORS["Default text"], boxInfoTopShadow)
-	offsetY = offsetY + linespacing
+	-- RBY has no physical/special split UI and no contact flag. Category
+	-- still follows type on the tracker (MoveData.TypeToCategory).
 
 	-- PP
-	Drawing.drawText(offsetX, offsetY, "PP:", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.m.pp, Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelPP .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetColumnX, offsetY, movePP, Theme.COLORS["Default text"], boxInfoTopShadow)
 	offsetY = offsetY + linespacing
 
 	-- POWER
-	Drawing.drawText(offsetX, offsetY, "Power:", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.m.power, Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelPower .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetColumnX, offsetY, movePower, Theme.COLORS["Default text"], boxInfoTopShadow)
 	offsetY = offsetY + linespacing
 
 	-- ACCURACY
-	if tonumber(data.m.accuracy) ~= nil then
-		data.m.accuracy = data.m.accuracy .. "%"
+	if tonumber(moveAcc) ~= nil then
+		moveAcc = moveAcc .. "%"
 	end
-	Drawing.drawText(offsetX, offsetY, "Accuracy:", Theme.COLORS["Default text"], boxInfoTopShadow)
-	Drawing.drawText(offsetColumnX, offsetY, data.m.accuracy, Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelAccuracy .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
+	Drawing.drawText(offsetColumnX, offsetY, moveAcc, Theme.COLORS["Default text"], boxInfoTopShadow)
 	offsetY = offsetY + linespacing
 
 	-- PRIORITY: Only take up a line on the screen if priority information is helpful (exists and is non-zero)
 	if data.m.priority ~= "0" then
-		Drawing.drawText(offsetX, offsetY, "Priority:", Theme.COLORS["Default text"], boxInfoTopShadow)
+		Drawing.drawText(offsetX, offsetY, Resources.InfoScreen.LabelPriority .. ":", Theme.COLORS["Default text"], boxInfoTopShadow)
 		Drawing.drawText(offsetColumnX, offsetY, data.m.priority, Theme.COLORS["Default text"], boxInfoTopShadow)
 	end
 
 	-- Draw bottom view box and header
+	offsetX = offsetX - 1
 	gui.defaultTextBackground(Theme.COLORS["Lower box background"])
-	Drawing.drawText(offsetX - 3, botOffsetY - linespacing - 1, "Summary:", Theme.COLORS["Header text"], bgHeaderShadow)
+	Drawing.drawText(offsetX - 1, botOffsetY - linespacing - 1, Resources.InfoScreen.LabelMoveSummary .. ":", Theme.COLORS["Header text"], bgHeaderShadow)
 	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, botOffsetY, rightEdge, bottomEdge - botOffsetY + 5, Theme.COLORS["Lower box border"], Theme.COLORS["Lower box background"])
 	botOffsetY = botOffsetY + 1
 	linespacing = linespacing + 1
@@ -847,70 +917,12 @@ function InfoScreen.drawMoveInfoScreen(moveId)
 	end
 end
 
-function InfoScreen.drawAbilityInfoScreen(abilityId)
-	local rightEdge = Constants.SCREEN.RIGHT_GAP - (2 * Constants.SCREEN.MARGIN)
-	local bottomEdge = Constants.SCREEN.HEIGHT - (2 * Constants.SCREEN.MARGIN)
-
-	-- set the color for text/number shadows for the top boxes
-	local bgHeaderShadow = Utils.calcShadowColor(Theme.COLORS["Main background"])
-	local boxInfoTopShadow = Utils.calcShadowColor(Theme.COLORS["Upper box background"])
-
-	local offsetX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 2
-	local offsetColumnX = offsetX + 45
-	local offsetY = 0 + Constants.SCREEN.MARGIN + 3
-	local linespacing = Constants.SCREEN.LINESPACING - 1
-	local botOffsetY = offsetY + (linespacing * 7) + 7
-
-	local data = DataHelper.buildAbilityInfoDisplay(abilityId)
-
-	Drawing.drawBackgroundAndMargins()
-	-- Draw one big rectangle
-	gui.defaultTextBackground(Theme.COLORS["Upper box background"])
-	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, Constants.SCREEN.MARGIN, rightEdge, bottomEdge, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box background"])
-
-	-- Ability NAME
-	data.a.name = data.a.name:upper():gsub(" ", "  ")
-	if Theme.DRAW_TEXT_SHADOWS then
-		Drawing.drawText(offsetX - 1 + 1, offsetY + 1 - 3, data.a.name, boxInfoTopShadow, nil, 12, Constants.Font.FAMILY, "bold")
-	end
-	Drawing.drawText(offsetX - 1, offsetY - 3, data.a.name, Theme.COLORS["Default text"], nil, 12, Constants.Font.FAMILY, "bold")
-
-	--SEARCH ICON
-	local lookupAbility = InfoScreen.Buttons.LookupAbility
-	lookupAbility.box = {Constants.SCREEN.WIDTH + 133, offsetY, 10, 10,}
-	Drawing.drawButton(lookupAbility, boxInfoTopShadow)
-	offsetY = offsetY + linespacing * 2 - 5
-
-	-- DESCRIPTION
-	if data.a.description ~= nil then
-		local wrappedSummary = Utils.getWordWrapLines(data.a.description, 30)
-
-		for _, line in pairs(wrappedSummary) do
-			Drawing.drawText(offsetX, offsetY, line, Theme.COLORS["Default text"], boxInfoTopShadow)
-			offsetY = offsetY + linespacing
-		end
-	end
-	offsetY = offsetY + 6
-
-	-- EMERALD DESCRIPTION
-	if data.a.descriptionEmerald ~= nil and data.a.descriptionEmerald ~= Constants.BLANKLINE then
-		Drawing.drawText(offsetX, offsetY, "Emerald:", Theme.COLORS["Default text"], boxInfoTopShadow)
-		offsetY = offsetY + linespacing + 1
-		local wrappedSummary = Utils.getWordWrapLines(data.a.descriptionEmerald, 31)
-
-		for _, line in pairs(wrappedSummary) do
-			Drawing.drawText(offsetX, offsetY, line, Theme.COLORS["Default text"], boxInfoTopShadow)
-			offsetY = offsetY + linespacing
-		end
-	end
-
-	Drawing.drawButton(InfoScreen.Buttons.BackTop, boxInfoTopShadow)
-end
-
 function InfoScreen.drawRouteInfoScreen(mapId, encounterArea)
+	local botBoxTextColor = Theme.COLORS["Lower box text"]
+	local botBoxBGColor = Theme.COLORS["Lower box background"]
 	local bgHeaderShadow = Utils.calcShadowColor(Theme.COLORS["Main background"])
 	local boxTopShadow = Utils.calcShadowColor(Theme.COLORS["Upper box background"])
-	local boxBotShadow = Utils.calcShadowColor(Theme.COLORS["Lower box background"])
+	local boxBotShadow = Utils.calcShadowColor(botBoxBGColor)
 	local boxX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN
 	local boxWidth = Constants.SCREEN.RIGHT_GAP - (2 * Constants.SCREEN.MARGIN)
 	local boxTopY = Constants.SCREEN.MARGIN
@@ -926,40 +938,56 @@ function InfoScreen.drawRouteInfoScreen(mapId, encounterArea)
 
 	-- ROUTE NAME
 	local routeName = RouteData.Info[mapId].name or Constants.BLANKLINE
+	routeName = Utils.formatSpecialCharacters(routeName)
 	Drawing.drawImageAsPixels(Constants.PixelImages.MAP_PINDROP, boxX + 3, boxTopY + 3, { Theme.COLORS["Default text"] }, boxTopShadow)
 	Drawing.drawText(boxX + 13, boxTopY + 2, routeName, Theme.COLORS["Default text"], boxTopShadow)
 
-	Drawing.drawButton(InfoScreen.Buttons.ShowOriginalRoute, boxTopShadow)
+	Drawing.drawButton(InfoScreen.Buttons.ShowRoutePercentages, boxTopShadow)
+	Drawing.drawButton(InfoScreen.Buttons.ShowRouteLevels, boxTopShadow)
 
 	-- BOT BOX VIEW
-	gui.defaultTextBackground(Theme.COLORS["Lower box background"])
-	local encounterHeaderText = Constants.Words.POKEMON .. " seen by " .. encounterArea
+	gui.defaultTextBackground(botBoxBGColor)
+	local encounterHeaderText
 	if encounterArea == RouteData.EncounterArea.STATIC then
-		encounterHeaderText = encounterArea .. " " .. Constants.Words.POKEMON .. " encounters"
+		encounterHeaderText = string.format("%s %s", encounterArea, Resources.InfoScreen.LabelSeenEncounters)
+	else
+		encounterHeaderText = string.format("%s %s", Resources.InfoScreen.LabelSeenBy, encounterArea)
 	end
 	Drawing.drawText(boxX + 10, botBoxY - 11, encounterHeaderText, Theme.COLORS["Header text"], bgHeaderShadow)
-	gui.drawRectangle(boxX, botBoxY, boxWidth, botBoxHeight, Theme.COLORS["Lower box border"], Theme.COLORS["Lower box background"])
+	gui.drawRectangle(boxX, botBoxY, boxWidth, botBoxHeight, Theme.COLORS["Lower box border"], botBoxBGColor)
 
-	if not InfoScreen.Buttons.ShowOriginalRoute.toggleState then
-		Drawing.drawText(boxX + 2, botBoxY, "In order of appearance:", Theme.COLORS["Lower box text"], boxBotShadow)
+	local showPercents = InfoScreen.Buttons.ShowRoutePercentages.toggleState
+	local showLevels = InfoScreen.Buttons.ShowRouteLevels.toggleState
+	-- Don't clarify the pokemon are shown "in order of appearence" if the order is known
+	if not (Options["Open Book Play Mode"] or Program.currentOverlay == LogOverlay or showPercents or showLevels) then
+		Drawing.drawText(boxX + 2, botBoxY, Resources.InfoScreen.LabelOrderAppearance .. ":", botBoxTextColor, boxBotShadow)
 	end
 
 	-- POKEMON SEEN
-
+	local iconset = Options.getIconSet()
 	for _, iconButton in pairs(InfoScreen.TemporaryButtons) do
-		if iconButton.pokemonID == 252--[[ Question mark icon]] and Options.IconSetMap[Options["Pokemon icon set"]].adjustQuestionMark then
-			iconButton.box[2] = iconButton.box[2] + Options.IconSetMap[Options["Pokemon icon set"]].yOffset
+		if iconButton.pokemonID == PokemonData.Values.QuestionMarkId and iconset.adjustQuestionMark then
+			iconButton.box[2] = iconButton.box[2] + (iconset.yOffset or 0)
 		end
 
 		local x = iconButton.box[1]
 		local y = iconButton.box[2]
 		Drawing.drawButton(iconButton, boxBotShadow)
 
-		if iconButton.rate ~= nil then
-			local rateText = math.floor(iconButton.rate * 100) .. "%"
-			local rateOffset = Utils.inlineIf(iconButton.rate == 1.00, 5, Utils.inlineIf(iconButton.rate >= 0.1, 7, 9)) -- centering
-			gui.drawRectangle(x + 1, y, 30, 8, Theme.COLORS["Lower box background"], Theme.COLORS["Lower box background"])
-			Drawing.drawText(x + rateOffset, y - 1, rateText, Theme.COLORS["Lower box text"], boxBotShadow)
+		local iconInfoText = nil
+		if showPercents and iconButton.rate ~= nil then
+			iconInfoText = math.floor(iconButton.rate * 100) .. "%"
+		elseif showLevels and iconButton.minLv ~= nil and iconButton.maxLv ~= nil then
+			if iconButton.minLv == 0 and iconButton.maxLv == 0 then
+				iconInfoText = Constants.HIDDEN_INFO
+			else
+				iconInfoText = string.format("%s - %s", math.floor(iconButton.minLv), math.floor(iconButton.maxLv))
+			end
+		end
+		if iconInfoText ~= nil then
+			local infoWidth = Utils.calcWordPixelLength(iconInfoText)
+			local offsetX = math.floor((32 - infoWidth) / 2) - 2 -- center the text
+			Drawing.drawTransparentTextbox(x + offsetX, y - 1, iconInfoText, botBoxTextColor, botBoxBGColor, boxBotShadow)
 		end
 	end
 
@@ -972,7 +1000,7 @@ end
 
 function InfoScreen.drawNotepadArea()
 	local shadowcolor = Utils.calcShadowColor(Theme.COLORS["Lower box background"])
-	local noteText = InfoScreen.Buttons.NotepadTracking.getContentList(InfoScreen.infoLookup)
+	local noteText = InfoScreen.Buttons.NotepadTracking:getContentList(InfoScreen.infoLookup)
 	--23 will fit, but cut to 22 if we need to show the ellipses
 	if #noteText > 23 then
 		local	textTest = Utils.getWordWrapLines(noteText, 22)

@@ -1,101 +1,115 @@
 ExtrasScreen = {
-	Labels = {
-		header = "Tracker Extras",
-		timeMachineBtn = "Time Machine",
-		estimateIvBtn = " Estimate " .. Constants.Words.POKEMON .. " IV Potential",
-		resultIs = "is",
-		resultOutstanding = "Outstanding!!!",
-		resultQuiteImpressive = "Quite impressive!!",
-		resultAboveAverage = "Above average!",
-		resultDecent = "Decent.",
-		resultUnavailable = "Estimate is unavailable.",
-		viewLogFile = "View the log",
-	},
 	Colors = {
 		text = "Lower box text",
+		highlight = "Intermediate text",
 		border = "Lower box border",
 		boxFill = "Lower box background",
 	},
+	Tabs = {
+		Tools = 1,
+		Options = 2,
+	},
+	currentTab = 1,
 }
 
-ExtrasScreen.OptionKeys = {
-	"Show random ball picker",
-	"Display repel usage",
-	"Display pedometer",
-	"Animated Pokemon popout", -- Text referenced in initialize()
-}
-
+-- Holds all the buttons for the screen
+-- Buttons are created in CreateButtons()
 ExtrasScreen.Buttons = {
 	ViewLogFile = {
 		type = Constants.ButtonTypes.ICON_BORDER,
 		image = Constants.PixelImages.MAGNIFYING_GLASS,
-		text = ExtrasScreen.Labels.viewLogFile,
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 30, Constants.SCREEN.MARGIN + 69, 78, 16 },
+		getText = function(self) return Resources.ExtrasScreen.ButtonViewLogs end,
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 25, 132, 16 },
+		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Tools end,
 		onClick = function(self)
 			Program.changeScreenView(ViewLogWarningScreen)
 		end,
 	},
+	CoverageCalculator = {
+		type = Constants.ButtonTypes.ICON_BORDER,
+		getText = function(self) return Resources.ExtrasScreen.ButtonCoverageCalculator end,
+		image = Constants.PixelImages.SWORD_ATTACK,
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 44, 132, 16 },
+		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Tools end,
+		onClick = function(self)
+			CoverageCalcScreen.prepopulateMoveTypes()
+			Program.changeScreenView(CoverageCalcScreen)
+		end
+	},
 	TimeMachine = {
 		type = Constants.ButtonTypes.ICON_BORDER,
-		text = ExtrasScreen.Labels.timeMachineBtn,
+		getText = function(self) return Resources.ExtrasScreen.ButtonTimeMachine end,
 		image = Constants.PixelImages.CLOCK,
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 30, Constants.SCREEN.MARGIN + 89, 78, 16},
-		-- isVisible = function() return true end,
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 82, 132, 16 },
+		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Tools end,
 		onClick = function()
 			TimeMachineScreen.buildOutPagedButtons()
 			Program.changeScreenView(TimeMachineScreen)
 		end
 	},
-	EstimateIVs = {
-		type = Constants.ButtonTypes.FULL_BORDER,
-		text = ExtrasScreen.Labels.estimateIvBtn,
-		ivText = "",
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 5, Constants.SCREEN.MARGIN + 109, 130, 11 },
-		onClick = function() ExtrasScreen.displayJudgeMessage() end
-	},
-	Back = {
-		type = Constants.ButtonTypes.FULL_BORDER,
-		text = "Back",
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 112, Constants.SCREEN.MARGIN + 135, 24, 11 },
+	CrashRecovery = {
+		type = Constants.ButtonTypes.ICON_BORDER,
+		image = Constants.PixelImages.WARNING,
+		getText = function(self) return Resources.ExtrasScreen.ButtonCrashRecovery end,
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 101, 132, 16 },
+		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Tools end,
 		onClick = function(self)
-			ExtrasScreen.Buttons.EstimateIVs.ivText = "" -- keep hidden
-			-- Save all of the Options to the Settings.ini file, and navigate back to the main Tracker screen
-			Main.SaveSettings()
-			Program.changeScreenView(NavigationMenu)
+			Program.changeScreenView(CrashRecoveryScreen)
 		end
 	},
+	EstimateIVs = {
+		type = Constants.ButtonTypes.FULL_BORDER,
+		getCustomText = function(self)
+			if not Utils.isNilOrEmpty(self.ivText) then
+				return self.ivText
+			else
+				return Resources.ExtrasScreen.ButtonEstimatePokemonIVs
+			end
+		end,
+		ivText = "",
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 120, 132, 16 },
+		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Tools end,
+		draw = function(self, shadowcolor)
+			local x, y = self.box[1], self.box[2]
+			Drawing.drawText(x + 1, y + 2, self:getCustomText(), Theme.COLORS[self.textColor or ExtrasScreen.Colors.text], shadowcolor)
+		end,
+		onClick = function(self)
+			self.ivText = ExtrasScreen.getJudgeMessage()
+			Program.redraw(true)
+		end,
+	},
+	TimerEdit = {
+		type = Constants.ButtonTypes.FULL_BORDER,
+		getText = function(self) return Resources.ExtrasScreen.ButtonEditTime end,
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 5, Constants.SCREEN.MARGIN + 134, 24, 11 },
+		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Options and Options["Display play time"] end,
+		draw = function(self, shadowcolor)
+			local x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 3
+			Drawing.drawText(x, self.box[2] - 13, Resources.ExtrasScreen.LabelTimer .. ":", Theme.COLORS[self.textColor], shadowcolor)
+		end,
+		onClick = function(self) ExtrasScreen.openEditTimerPrompt() end,
+	},
+	TimerRelocate = {
+		type = Constants.ButtonTypes.FULL_BORDER,
+		getText = function(self) return Resources.ExtrasScreen.ButtonRelocateTime end,
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 60, Constants.SCREEN.MARGIN + 134, 44, 11 },
+		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Options and Options["Display play time"] end,
+		onClick = function(self)
+			ExtrasScreen.relocateTimer()
+			Program.redraw(true)
+		end,
+	},
+	Back = Drawing.createUIElementBackButton(function()
+		ExtrasScreen.currentTab = ExtrasScreen.Tabs.Tools
+		ExtrasScreen.Buttons.EstimateIVs.ivText = "" -- keep hidden
+		ExtrasScreen.refreshButtons()
+		Program.changeScreenView(NavigationMenu)
+	end),
 }
 
 function ExtrasScreen.initialize()
-	local startX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4
-	local startY = Constants.SCREEN.MARGIN + 14
-	local linespacing = Constants.SCREEN.LINESPACING + 1
-
-	for _, optionKey in ipairs(ExtrasScreen.OptionKeys) do
-		ExtrasScreen.Buttons[optionKey] = {
-			type = Constants.ButtonTypes.CHECKBOX,
-			text = optionKey,
-			clickableArea = { startX, startY, Constants.SCREEN.RIGHT_GAP - 12, 8 },
-			box = {	startX, startY, 8, 8 },
-			toggleState = Options[optionKey],
-			toggleColor = "Positive text",
-			onClick = function(self)
-				-- Toggle the setting and store the change to be saved later in Settings.ini
-				self.toggleState = not self.toggleState
-				Options.updateSetting(self.text, self.toggleState)
-
-				-- If Animated Pokemon popout is turned on, create the popup form, or destroy it.
-				if self.text == "Animated Pokemon popout" then
-					if self.toggleState then
-						Drawing.AnimatedPokemon:create()
-					else
-						Drawing.AnimatedPokemon:destroy()
-					end
-				end
-			end
-		}
-		startY = startY + linespacing
-	end
+	ExtrasScreen.createTabs()
+	ExtrasScreen.createButtons()
 
 	for _, button in pairs(ExtrasScreen.Buttons) do
 		if button.textColor == nil then
@@ -106,6 +120,8 @@ function ExtrasScreen.initialize()
 		end
 	end
 
+	ExtrasScreen.currentTab = ExtrasScreen.Tabs.Tools
+
 	local abraGif = FileManager.buildImagePath(FileManager.Folders.AnimatedPokemon, "abra", FileManager.Extensions.ANIMATED_POKEMON)
 	local animatedBtnOption = ExtrasScreen.Buttons["Animated Pokemon popout"]
 	if not FileManager.fileExists(abraGif) and animatedBtnOption ~= nil then
@@ -113,33 +129,192 @@ function ExtrasScreen.initialize()
 	end
 end
 
-function ExtrasScreen.displayJudgeMessage()
-	local leadPokemon = Battle.getViewedPokemon(true)
-	if leadPokemon ~= nil and PokemonData.isValid(leadPokemon.pokemonID) then
-		-- Source: https://bulbapedia.bulbagarden.net/wiki/Stats_judge
-		local result
-		local ivEstimate = Utils.estimateIVs(leadPokemon) * 186
-		if ivEstimate >= 151 then
-			result = ExtrasScreen.Labels.resultOutstanding
-		elseif ivEstimate >= 121 and ivEstimate <= 150 then
-			result = ExtrasScreen.Labels.resultQuiteImpressive
-		elseif ivEstimate >= 91 and ivEstimate <= 120 then
-			result = ExtrasScreen.Labels.resultAboveAverage
-		else
-			result = ExtrasScreen.Labels.resultDecent
+function ExtrasScreen.refreshButtons()
+	for _, button in pairs(ExtrasScreen.Buttons) do
+		if button.updateSelf ~= nil then
+			button:updateSelf()
 		end
-
-		local pokemonName = PokemonData.Pokemon[leadPokemon.pokemonID].name
-		ExtrasScreen.Buttons.EstimateIVs.ivText = string.format("%s %s: %s", pokemonName, ExtrasScreen.Labels.resultIs, result)
-
-		-- Joey's Rattata meme (saving for later)
-		-- local topPercentile = math.max(100 - 100 * Utils.estimateIVs(leadPokemon), 1)
-		-- local percentText = string.format("%g", string.format("%d", topPercentile)) .. "%" -- %g removes insignificant 0's
-		-- message = "In the top " .. percentText .. " of  " .. PokemonData.Pokemon[leadPokemon.pokemonID].name
-	else
-		ExtrasScreen.Buttons.EstimateIVs.ivText = ExtrasScreen.Labels.resultUnavailable
 	end
-	Program.redraw(true)
+end
+
+function ExtrasScreen.createTabs()
+	-- { TabKey, ResourceKey }
+	local tabs = {
+		{ "Tools", "TabTools", },
+		{ "Options", "TabOptions", },
+	}
+
+	local startX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN
+	local startY = Constants.SCREEN.MARGIN + 10
+	local tabHeight = 12
+	local tabPadding = 6
+
+	for _, tuple in ipairs(tabs) do
+		ExtrasScreen.Buttons["Tab" .. tuple[1]] = {
+			type = Constants.ButtonTypes.NO_BORDER,
+			getCustomText = function(self) return Resources.ExtrasScreen[tuple[2]] end,
+			tab = ExtrasScreen.Tabs[tuple[1]],
+			isSelected = false,
+			box = {
+				startX,
+				startY,
+				(tabPadding * 2) + Utils.calcWordPixelLength(Resources.ExtrasScreen[tuple[2]]),
+				tabHeight
+			},
+			updateSelf = function(self)
+				self.isSelected = (self.tab == ExtrasScreen.currentTab)
+				self.textColor = self.isSelected and ExtrasScreen.Colors.highlight or ExtrasScreen.Colors.text
+			end,
+			draw = function(self, shadowcolor)
+				local x, y = self.box[1], self.box[2]
+				local w, h = self.box[3], self.box[4]
+				local color = Theme.COLORS[self.boxColors[1]]
+				local bgColor = Theme.COLORS[self.boxColors[2]]
+				gui.drawRectangle(x + 1, y + 1, w - 1, h - 2, bgColor, bgColor) -- Box fill
+				if not self.isSelected then
+					gui.drawRectangle(x + 1, y + 1, w - 1, h - 2, Drawing.ColorEffects.DARKEN, Drawing.ColorEffects.DARKEN)
+				end
+				gui.drawLine(x + 1, y, x + w - 1, y, color) -- Top edge
+				gui.drawLine(x, y + 1, x, y + h - 1, color) -- Left edge
+				gui.drawLine(x + w, y + 1, x + w, y + h - 1, color) -- Right edge
+				if self.isSelected then
+					gui.drawLine(x + 1, y + h, x + w - 1, y + h, bgColor) -- Remove bottom edge
+				end
+				local centeredOffsetX = Utils.getCenteredTextX(self:getCustomText(), w) - 2
+				Drawing.drawText(x + centeredOffsetX, y, self:getCustomText(), Theme.COLORS[self.textColor], shadowcolor)
+			end,
+			onClick = function(self)
+				ExtrasScreen.currentTab = self.tab
+				ExtrasScreen.refreshButtons()
+				Program.redraw(true)
+			end,
+		}
+		startX = startX + (tabPadding * 2) + Utils.calcWordPixelLength(Resources.ExtrasScreen[tuple[2]])
+	end
+end
+
+function ExtrasScreen.createButtons()
+	local optionKeyMap = {
+		{ "Display repel usage", "OptionDisplayRepelUsage", },
+		{ "Display pedometer", "OptionDisplayPedometer", },
+		{ "Display play time", "OptionDisplayPlayTime", },
+		{ "Animated Pokemon popout", "OptionAnimatedPokemonPopout", },
+	}
+
+	local startX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 5
+	local startY = Constants.SCREEN.MARGIN + 27
+	local linespacing = Constants.SCREEN.LINESPACING + 1
+
+	for _, optionTuple in ipairs(optionKeyMap) do
+		ExtrasScreen.Buttons[optionTuple[1]] = {
+			type = Constants.ButtonTypes.CHECKBOX,
+			optionKey = optionTuple[1],
+			getText = function(self) return Resources.ExtrasScreen[optionTuple[2]] end,
+			clickableArea = { startX, startY, Constants.SCREEN.RIGHT_GAP - 12, 8 },
+			box = {	startX, startY, 8, 8 },
+			toggleState = Options[optionTuple[1]],
+			updateSelf = function(self) self.toggleState = (Options[self.optionKey] == true) end,
+			isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Options end,
+			onClick = function(self)
+				self.toggleState = Options.toggleSetting(self.optionKey)
+
+				-- If Animated Pokemon popout is turned on, create the popup form, or destroy it.
+				if self.optionKey == "Animated Pokemon popout" then
+					if self.toggleState == true then
+						Drawing.AnimatedPokemon:create()
+					else
+						Drawing.AnimatedPokemon:destroy()
+					end
+				elseif self.optionKey == "Display play time" and self.toggleState then
+					-- Show help tip for pausing (4 seconds)
+					Program.GameTimer.showPauseTipUntil = os.time() + 4
+				end
+				Program.redraw(true)
+			end
+		}
+		startY = startY + linespacing
+	end
+end
+
+function ExtrasScreen.getJudgeMessage()
+	local leadPokemon = Battle.getViewedPokemon(true) or {}
+	if not PokemonData.isValid(leadPokemon.pokemonID) then
+		return Resources.ExtrasScreen.EstimateResultUnavailable or ""
+	end
+	-- Same qualitative bands as the later-gen stats judge, applied to RBY DV quality (0–1).
+	local resultKey
+	local ivEstimate = Utils.estimateIVs(leadPokemon) * 186
+	if ivEstimate >= 151 then
+		resultKey = Resources.ExtrasScreen.EstimateResultOutstanding
+	elseif ivEstimate >= 121 and ivEstimate <= 150 then
+		resultKey = Resources.ExtrasScreen.EstimateResultQuiteImpressive
+	elseif ivEstimate >= 91 and ivEstimate <= 120 then
+		resultKey = Resources.ExtrasScreen.EstimateResultAboveAverage
+	else
+		resultKey = Resources.ExtrasScreen.EstimateResultDecent
+	end
+
+	local pokemonName = PokemonData.Pokemon[leadPokemon.pokemonID].name
+	return string.format("%s: %s", pokemonName, resultKey)
+
+	-- Joey's Rattata meme (saving for later)
+	-- local topPercentile = math.max(100 - 100 * Utils.estimateIVs(leadPokemon), 1)
+	-- local percentText = string.format("%g", string.format("%d", topPercentile)) .. "%" -- %g removes insignificant 0's
+	-- message = "In the top " .. percentText .. " of  " .. PokemonData.Pokemon[leadPokemon.pokemonID].name
+end
+
+function ExtrasScreen.openEditTimerPrompt()
+	-- Pause the timer while editing if it wasn't already paused
+	local wasPaused = Program.GameTimer.isPaused
+	if not wasPaused then
+		Program.GameTimer:pause()
+	end
+	local tryUnpauseTimer = function()
+		if not wasPaused then
+			Program.GameTimer:unpause()
+		end
+	end
+
+	local form = ExternalUI.BizForms.createForm(Resources.ExtrasScreen.LabelTimer, 320, 130, nil, nil, tryUnpauseTimer)
+	local hour = math.floor(Tracker.Data.playtime / 3600) % 10000
+	local min = math.floor(Tracker.Data.playtime / 60) % 60
+	local sec = Tracker.Data.playtime % 60
+	form:createLabel("H", 60, 10)
+	form:createLabel("M", 130, 10)
+	form:createLabel("S", 200, 10)
+	local hourBox = form:createTextBox(tostring(hour), 50, 30, 40, 30, "SIGNED", false, true)
+	local minBox = form:createTextBox(tostring(min), 120, 30, 40, 30, "SIGNED", false, true)
+	local secBox = form:createTextBox(tostring(sec), 190, 30, 40, 30, "SIGNED", false, true)
+	form:createButton(Resources.AllScreens.Save, 72, 60, function()
+		hour = tonumber(ExternalUI.BizForms.getText(hourBox)) or 0
+		min = tonumber(ExternalUI.BizForms.getText(minBox)) or 0
+		sec = tonumber(ExternalUI.BizForms.getText(secBox)) or 0
+		-- Update total play time
+		Tracker.Data.playtime = hour * 3600 + min * 60 + sec
+		Program.GameTimer:update()
+		tryUnpauseTimer()
+		form:destroy()
+		Program.redraw(true)
+	end)
+	form:createButton(Resources.AllScreens.Cancel, 157, 60, function()
+		tryUnpauseTimer()
+		form:destroy()
+	end)
+end
+
+function ExtrasScreen.relocateTimer()
+	local nextLocationMap = {
+		["UpperLeft"] = "UpperCenter",
+		["UpperCenter"] = "UpperRight",
+		["UpperRight"] = "LowerRight",
+		["LowerRight"] = "LowerCenter",
+		["LowerCenter"] = "LowerLeft",
+		["LowerLeft"] = "UpperLeft",
+	}
+	Program.GameTimer.location = nextLocationMap[Program.GameTimer.location or ""] or "LowerRight"
+	Program.GameTimer:updateLocationCoords()
+	Options["Game timer location"] = Program.GameTimer.location
+	Main.SaveSettings(true)
 end
 
 -- USER INPUT FUNCTIONS
@@ -153,24 +328,29 @@ function ExtrasScreen.drawScreen()
 	Drawing.drawBackgroundAndMargins()
 	gui.defaultTextBackground(Theme.COLORS[ExtrasScreen.Colors.boxFill])
 
-	local shadowcolor = Utils.calcShadowColor(Theme.COLORS[ExtrasScreen.Colors.boxFill])
-	local topboxX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN
-	local topboxY = Constants.SCREEN.MARGIN + 10
-	local topboxWidth = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2)
-	local topboxHeight = Constants.SCREEN.HEIGHT - (Constants.SCREEN.MARGIN * 2) - 10
+	local tabHeight = 12
+	local box = {
+		x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN,
+		y = Constants.SCREEN.MARGIN + 10,
+		width = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2),
+		height = Constants.SCREEN.HEIGHT - (Constants.SCREEN.MARGIN * 2) - 10,
+		text = Theme.COLORS[ExtrasScreen.Colors.text],
+		border = Theme.COLORS[ExtrasScreen.Colors.border],
+		fill = Theme.COLORS[ExtrasScreen.Colors.boxFill],
+		shadow = Utils.calcShadowColor(Theme.COLORS[ExtrasScreen.Colors.boxFill]),
+	}
 
 	-- Draw header text
 	local headerShadow = Utils.calcShadowColor(Theme.COLORS["Main background"])
-	Drawing.drawText(topboxX + 33, Constants.SCREEN.MARGIN - 2, ExtrasScreen.Labels.header:upper(), Theme.COLORS["Header text"], headerShadow)
+	Drawing.drawText(box.x, Constants.SCREEN.MARGIN - 2, Utils.toUpperUTF8(Resources.ExtrasScreen.Title), Theme.COLORS["Header text"], headerShadow)
 
 	-- Draw top border box
-	gui.drawRectangle(topboxX, topboxY, topboxWidth, topboxHeight, Theme.COLORS[ExtrasScreen.Colors.border], Theme.COLORS[ExtrasScreen.Colors.boxFill])
+	gui.drawRectangle(box.x, box.y + tabHeight, box.width, box.height - tabHeight, box.border, box.fill)
+	-- Draw bottom edge for the window tab bars
+	gui.drawLine(box.x, box.y + tabHeight, box.x + box.width, box.y + tabHeight, box.border)
 
 	-- Draw all buttons
 	for _, button in pairs(ExtrasScreen.Buttons) do
-		Drawing.drawButton(button, shadowcolor)
+		Drawing.drawButton(button, box.shadow)
 	end
-
-	local ivBtn = ExtrasScreen.Buttons.EstimateIVs
-	Drawing.drawText(topboxX + 4, ivBtn.box[2] + ivBtn.box[4] + 1, ivBtn.ivText, Theme.COLORS[ivBtn.textColor], shadowcolor)
 end
