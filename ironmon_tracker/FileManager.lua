@@ -142,6 +142,7 @@ FileManager.LuaCode = {
 	{ name = "Battle", filepath = "Battle.lua", },
 	{ name = "Pickle", filepath = "Pickle.lua", },
 	{ name = "Tracker", filepath = "Tracker.lua", },
+	{ name = "Gen1BattleRuntime", filepath = "gen1" .. FileManager.slash .. "BattleRuntime.lua", },
 	{ name = "Gen1Runtime", filepath = "gen1" .. FileManager.slash .. "Runtime.lua", },
 	{ name = "MGBA", filepath = "MGBA.lua", },
 	{ name = "AnimationManager", filepath = "AnimationManager.lua", },
