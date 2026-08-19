@@ -56,6 +56,7 @@ function Gen1BattleRuntime.begin(state, enemy)
 	Input.StatHighlighter:resetSelectedStat()
 	Battle.trySwapScreenBackToMain()
 	Gen1BattleRuntime.observeEnemy(enemy)
+	if BattleDetailsScreen then BattleDetailsScreen.clearBuiltData() end
 	CustomCode.afterBattleBegins()
 end
 
@@ -79,6 +80,7 @@ function Gen1BattleRuntime.finish()
 		end
 	end
 	Tracker.resetBattleNotes()
+	if BattleDetailsScreen then BattleDetailsScreen.clearBuiltData() end
 	Battle.trySwapScreenBackToMain()
 	Program.Frames.saveData = 70
 	CustomCode.afterBattleEnds()
@@ -160,6 +162,7 @@ function Gen1BattleRuntime.update()
 	end
 	if Program.Frames.lowAccuracyUpdate == 0 or Program.updateRequired then
 		Gen1BattleRuntime.updateStatStages()
+		if BattleDetailsScreen then BattleDetailsScreen.updateData() end
 		CustomCode.afterBattleDataUpdate()
 	end
 end
