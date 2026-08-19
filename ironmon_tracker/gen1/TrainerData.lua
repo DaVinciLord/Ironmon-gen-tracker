@@ -142,12 +142,16 @@ end
 
 function Gen1TrainerData.initialize()
 	TrainerData.Trainers, TrainerData.OrderedIds = {}, {}
+	Gen1TrainerData.GlobalLogIdToTrainerId = {}
 	TrainerData.GymTMs, TrainerData.CommonTrainers, TrainerData.FinalTrainer = {}, {}, {}
 	for key in pairs(TrainerData.IsRand or {}) do TrainerData.IsRand[key] = false end
 
+	local globalLogId = 0
 	for classId, count in ipairs(classCounts()) do
 		for trainerNumber = 1, count do
+			globalLogId = globalLogId + 1
 			local trainerId = Gen1TrainerData.makeId(classId, trainerNumber)
+			Gen1TrainerData.GlobalLogIdToTrainerId[globalLogId] = trainerId
 			TrainerData.Trainers[trainerId] = {
 				name = Gen1TrainerData.ClassNames[classId], class = classObject(classId),
 				classId = classId, trainerNumber = trainerNumber,
@@ -180,6 +184,7 @@ function Gen1TrainerData.apply()
 		return classId == 29
 	end
 	TrainerData.shouldUseTrainer = function(trainerId) return TrainerData.Trainers[trainerId or false] ~= nil end
+	TrainerData.getExcludedTrainers = function() return {} end
 	TrackerAPI.getOpponentTrainerId = Gen1TrainerData.getCurrentTrainerId
 end
 

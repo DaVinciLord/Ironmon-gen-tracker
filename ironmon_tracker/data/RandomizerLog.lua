@@ -30,8 +30,8 @@ RandomizerLog.Sectors = {
 	},
 	BaseStatsItems = {
 		HeaderPattern = RandomizerLog.Patterns.getSectorHeaderPattern("Pokemon Base Stats & Types"),
-		-- Matches: id, pokemon, types, hp, atk, def, spatk, spdef, spd, ability1, ability2, helditems
-		PokemonBSTPattern = "^%s*(%d*)|(.-)%s*|(.-)%s*|%s*(%d*)|%s*(%d*)|%s*(%d*)|%s*(%d*)|%s*(%d*)|%s*(%d*)|(.-)%s*|(.-)%s*|(.*)",
+		-- RBY columns: id, pokemon, types, HP, Attack, Defense, Speed, Special.
+		PokemonBSTPattern = "^%s*(%d+)|([^|]+)|([^|]+)|%s*(%d+)|%s*(%d+)|%s*(%d+)|%s*(%d+)|%s*(%d+)",
 	},
 	Moves = {
 		HeaderPattern = RandomizerLog.Patterns.getSectorHeaderPattern("Move Data"),
@@ -314,13 +314,13 @@ function RandomizerLog.parseBaseStatsItems(logLines)
 	-- Parse the sector
 	local index = RandomizerLog.Sectors.BaseStatsItems.LineNumber + 1 -- remove the first line to skip the table header
 	while index <= #logLines do
-		local id, pokemon, types, hp, atk, def, spa, spd, spe, ability1, ability2, helditems = string.match(logLines[index] or "", RandomizerLog.Sectors.BaseStatsItems.PokemonBSTPattern)
+		local id, pokemon, types, hp, atk, def, spe, special = string.match(logLines[index] or "", RandomizerLog.Sectors.BaseStatsItems.PokemonBSTPattern)
 		id = tonumber(tostring(id)) or 0
 		pokemon = RandomizerLog.formatInput(pokemon)
 		pokemon = RandomizerLog.alternateNidorans(pokemon)
 
 		-- If nothing matches, end of sector
-		if pokemon == nil or spe == nil then
+		if pokemon == nil or special == nil then
 			return
 		end
 
@@ -343,21 +343,9 @@ function RandomizerLog.parseBaseStatsItems(logLines)
 				hp = tonumber(hp) or 0,
 				atk = tonumber(atk) or 0,
 				def = tonumber(def) or 0,
-				spa = tonumber(spa) or 0,
-				spd = tonumber(spd) or 0,
 				spe = tonumber(spe) or 0,
+				special = tonumber(special) or 0,
 			}
-
-			ability1 = RandomizerLog.formatInput(ability1) or ""
-			ability2 = RandomizerLog.formatInput(ability2) or "" -- Log shows empty abilities as "-------", which results in nil via lookup
-			pokemonData.Abilities = {
-				RandomizerLog.AbilityNameToIdMap[ability1] or AbilityData.DefaultAbility.id,
-				RandomizerLog.AbilityNameToIdMap[ability2],
-			}
-
-			if not Utils.isNilOrEmpty(helditems) then
-				pokemonData.HeldItems = RandomizerLog.formatInput(helditems)
-			end
 		end
 		index = index + 1
 	end
@@ -423,8 +411,9 @@ function RandomizerLog.parseMoveSets(logLines)
 		local pokemonData = RandomizerLog.Data.Pokemon[pokemonId]
 		if pokemonData ~= nil then
 			pokemonData.MoveSet = {}
-			 -- First six lines are redundant Base Sets (also don't trust these will exist), and skip current line
-			index = index + 7
+			-- RBY logs contain five base-stat lines between the species header and
+			-- its first learned move.
+			index = index + 6
 
 			-- Check first if the first move is a special "Learned upon evolution" move
 			local level = "0"
@@ -527,6 +516,8 @@ function RandomizerLog.parseTrainers(logLines)
 		if trainer_num == nil or trainer_fullname == nil or party == nil then
 			return
 		end
+		trainer_num = (Gen1TrainerData.GlobalLogIdToTrainerId or {})[trainer_num]
+		if trainer_num == nil then return end
 
 		local trainerClass, trainerName = RandomizerLog.splitTrainerClassAndName(trainer_fullname)
 		local customClass, customName = RandomizerLog.splitTrainerClassAndName(customname_full)

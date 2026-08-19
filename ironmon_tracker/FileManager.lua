@@ -131,6 +131,7 @@ FileManager.LuaCode = {
 	{ name = "RandomizerLog", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "RandomizerLog.lua", },
 	{ name = "TrainerData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "TrainerData.lua", },
 	{ name = "Gen1TrainerData", filepath = "gen1" .. FileManager.slash .. "TrainerData.lua", },
+	{ name = "Gen1RandomizerLog", filepath = "gen1" .. FileManager.slash .. "RandomizerLog.lua", },
 	{ name = "TrainerMapData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "TrainerMapData.lua", },
 	{ name = "SpriteData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "SpriteData.lua", },
 	{ name = "GachaMonData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "GachaMonData.lua", },
