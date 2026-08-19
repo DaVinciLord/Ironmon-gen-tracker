@@ -194,26 +194,9 @@ function Input.checkJoypadInput()
 	end
 
 	if joypad[nextBtn] and not Input.prevJoypadInput[nextBtn] then
-		-- Prioritize GachaMon animations for "Next Page" joypad button press
-		local APO = AnimationManager.GachaMonAnims.PackOpening
-		local ACD = AnimationManager.GachaMonAnims.CardDisplay
-		if APO and not APO.IsActive and APO:IsVisible() and Options["Animate GachaMon pack opening"] then
-			-- Start pack opening animation
-			AnimationManager.tryAddAnimationToActive(APO)
-			animationSkipOverride = true
-		elseif APO and APO:IsVisible() and APO.CurrentKeyFrameIndex < #APO.KeyFrames then
-			-- Skip pack opening animation
-			APO:OnExpire()
-			animationSkipOverride = true
-		elseif ACD and ACD:IsVisible() then
-			-- Close GachaMon card display view
-			ACD:OnExpire()
-			animationSkipOverride = true
-		else
-			local pager = _getPager(Program.currentOverlay) or _getPager(Program.currentScreen)
-			if pager and type(pager.nextPage) == "function" then
-				pager:nextPage()
-			end
+		local pager = _getPager(Program.currentOverlay) or _getPager(Program.currentScreen)
+		if pager and type(pager.nextPage) == "function" then
+			pager:nextPage()
 		end
 	end
 
@@ -330,30 +313,6 @@ function Input.getSpriteFacingDirection(animationType)
 end
 
 function Input.checkMouseInput(xmouse, ymouse)
-	-- Prioritize mouse button presses for GachaMon animations, if they exist and are visible; if so, ignore any other input checks
-	local APO = AnimationManager.GachaMonAnims.PackOpening
-	local ACD = AnimationManager.GachaMonAnims.CardDisplay
-	if (APO or ACD) and Input.isMouseInArea(xmouse, ymouse, Constants.SCREEN.WIDTH, Constants.SCREEN.UP_GAP, Constants.SCREEN.RIGHT_GAP, Constants.SCREEN.HEIGHT) then
-		if APO and not APO.IsActive and APO:IsVisible() then
-			if Options["Animate GachaMon pack opening"] then
-				-- Start pack opening animation
-				AnimationManager.tryAddAnimationToActive(APO)
-			else
-				-- Skip animation and just show the card
-				APO:OnExpire()
-			end
-			return
-		elseif APO and APO.IsActive and APO:IsVisible() and APO.CurrentKeyFrameIndex < #APO.KeyFrames then
-			-- Skip pack opening animation
-			APO:OnExpire()
-			return
-		elseif ACD and ACD:IsVisible() then
-			-- Close GachaMon card display view
-			ACD:OnExpire()
-			return
-		end
-	end
-
 	if Program.currentScreen ~= nil and type(Program.currentScreen.checkInput) == "function" then
 		Program.currentScreen.checkInput(xmouse, ymouse)
 	end

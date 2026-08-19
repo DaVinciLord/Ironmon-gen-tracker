@@ -601,16 +601,6 @@ EventHandler.DefaultEvents = {
 			Main.SaveSettings(true)
 		end,
 	},
-	CMD_GachaMon = {
-		Type = EventHandler.EventTypes.Command,
-		Command = "!gachamon",
-		Fulfill = function(self, request) return EventData.getGachaMon(request.SanitizedInput) end,
-	},
-	CMD_GachaDex = {
-		Type = EventHandler.EventTypes.Command,
-		Command = "!gachadex",
-		Fulfill = function(self, request) return EventData.getGachaDex(request.SanitizedInput) end,
-	},
 	CMD_About = {
 		Type = EventHandler.EventTypes.Command,
 		Command = "!about",
@@ -1008,26 +998,6 @@ EventHandler.DefaultEvents = {
 				},
 			}
 			EventData.Vars[self.Key] = output
-			return response
-		end,
-	},
-	GE_GachaMonCapture = {
-		Type = EventHandler.EventTypes.Game,
-		Process = function(self, request)
-			-- Don't start fulfilling if in the process of opening the pack
-			local isOpeningPack = AnimationManager.GachaMonAnims.PackOpening ~= nil
-			return not isOpeningPack
-		end,
-		Fulfill = function(self, request)
-			local shareCode = request.Args.Input or ""
-			local response = {
-				Message = "",
-				GlobalVars = {
-					-- Example Global Var output: "Adfu0HzVsCoiObEGAAYFsoRwBYS44ARVyLlEs3qLMg=="
-					[self.Key] = shareCode,
-				},
-			}
-			EventData.Vars[self.Key] = shareCode
 			return response
 		end,
 	},

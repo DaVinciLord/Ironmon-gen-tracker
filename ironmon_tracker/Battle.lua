@@ -790,13 +790,6 @@ function Battle.beginNewBattle()
 	Tracker.resetBattleNotes()
 	Battle.trySwapScreenBackToMain()
 
-	-- Don't clear the mon to show if it's waiting to be viewed
-	local APO = AnimationManager.GachaMonAnims.PackOpening
-	local ACD = AnimationManager.GachaMonAnims.CardDisplay
-	if not APO and not ACD then
-		GachaMonData.clearNewestMonToShow()
-	end
-
 	-- If the lead encountered enemy Pokemon is a shiny, trigger a pulsing sparkle effect
 	if (Tracker.getPokemon(1, false) or {}).isShiny then
 		TrackerScreen.Buttons.ShinyEffect:activatePulsing()
@@ -826,12 +819,6 @@ function Battle.endCurrentBattle()
 	end
 
 	if not Battle.isWildEncounter then
-		if Options["Add GachaMon to collection after defeating a trainer"] then
-			local leadPokemon = TrackerAPI.getPlayerPokemon()
-			if leadPokemon and leadPokemon.curHP > 0 then
-				GachaMonData.tryAutoKeepInCollection(leadPokemon)
-			end
-		end
 		-- Force display the Trainer's Defeated carousel for this timer's duration
 		Program.addFrameCounter("TrainerBattleEnded", 300, function() end, 1, true)
 		if SetupScreen.Buttons.CarouselTrainers.toggleState then

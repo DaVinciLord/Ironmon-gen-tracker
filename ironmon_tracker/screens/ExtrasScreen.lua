@@ -36,16 +36,6 @@ ExtrasScreen.Buttons = {
 			Program.changeScreenView(CoverageCalcScreen)
 		end
 	},
-	GachaMonCollection = {
-		type = Constants.ButtonTypes.ICON_BORDER,
-		image = Constants.PixelImages.GACHAMON_CARD,
-		getText = function(self) return Resources.ExtrasScreen.ButtonGachaMonCollection end,
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 4, Constants.SCREEN.MARGIN + 63, 132, 16 },
-		isVisible = function(self) return ExtrasScreen.currentTab == ExtrasScreen.Tabs.Tools end,
-		onClick = function(self)
-			Program.openOverlayScreen(GachaMonOverlay, true)
-		end
-	},
 	TimeMachine = {
 		type = Constants.ButtonTypes.ICON_BORDER,
 		getText = function(self) return Resources.ExtrasScreen.ButtonTimeMachine end,
@@ -364,4 +354,3 @@ function ExtrasScreen.drawScreen()
 		Drawing.drawButton(button, box.shadow)
 	end
 end
-

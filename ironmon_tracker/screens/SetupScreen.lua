@@ -368,18 +368,6 @@ function SetupScreen.checkForNewCarouselSettings()
 		settingsChanged = true
 	end
 
-	-- Add in the new carousel setting for GachaMon captures
-	if not Options["Has checked carousel GachaMon"] then
-		local carouselKey = "GachaMon"
-		if Utils.isNilOrEmpty(Options["CarouselItems"]) then
-			Options["CarouselItems"] = carouselKey
-		elseif not Utils.containsText(Options["CarouselItems"], carouselKey) then
-			Options["CarouselItems"] = Options["CarouselItems"] .. "," .. carouselKey
-		end
-		Options["Has checked carousel GachaMon"] = true
-		settingsChanged = true
-	end
-
 	if settingsChanged then
 		Main.SaveSettings(true)
 	end
@@ -481,10 +469,6 @@ function SetupScreen.createButtons()
 	local optionBtnTrackHeals = SCREEN.Buttons["Track PC Heals"]
 	optionBtnTrackHeals.onClick = function(self)
 		self.toggleState = Options.toggleSetting(self.optionKey)
-		-- If GachaMon stars option is also enabled, turn that off as it conflicts by using the same screen space
-		if self.toggleState and Options["Show GachaMon stars on main Tracker Screen"] then
-			Options.toggleSetting("Show GachaMon stars on main Tracker Screen")
-		end
 		Program.redraw(true)
 	end
 
@@ -572,7 +556,6 @@ function SetupScreen.createButtons()
 		{ "LastAttack", "CarouselLastAttack", },
 		{ "BattleDetails", "CarouselBattleDetails", },
 		{ "Pedometer", "CarouselPedometer", },
-		{ "GachaMon", "CarouselGachaMon", },
 	}
 
 	local function saveCarouselSettings()

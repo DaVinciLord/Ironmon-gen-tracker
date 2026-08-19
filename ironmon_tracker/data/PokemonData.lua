@@ -473,7 +473,7 @@ function PokemonData.getNatDexCompatible(pokemonID)
 		return pokemon
 	end
 	local baseGameTotal = 411
-	local hasNatDexAccess = GachaMonData.requiresNatDex or CustomCode.RomHacks.isPlayingNatDex()
+	local hasNatDexAccess = CustomCode.RomHacks.isPlayingNatDex()
 	if pokemonID > baseGameTotal and hasNatDexAccess then
 		local natdexExt = TrackerAPI.getExtensionSelf(CustomCode.RomHacks.ExtensionKeys.NatDex)
 		if natdexExt and natdexExt.Data and natdexExt.Data.natDexMons then

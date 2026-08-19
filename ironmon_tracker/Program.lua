@@ -411,8 +411,6 @@ function Program.redraw(forced)
 		if Program.currentScreen and type(Program.currentScreen.drawAnimations) == "function" then
 			Program.currentScreen.drawAnimations()
 		end
-		-- Always draw GachaMon animations, regardless of what screen is being viewed
-		AnimationManager.drawGachaMonAnims()
 	end
 
 	if Program.overridePackAnimationDraw then
@@ -575,17 +573,6 @@ function Program.update()
 				Program.Pedometer.totalSteps = Utils.getGameStat(Constants.GAME_STATS.STEPS)
 			end
 
-			if GachaMonData.isCompatibleWithEmulator() then
-				GachaMonData.updateMainScreenViewedGachaMon()
-				-- Check if a new GachaMon has been captured and create an animation for the pack opening
-				local APO = AnimationManager.GachaMonAnims.PackOpening
-				local ACD = AnimationManager.GachaMonAnims.CardDisplay
-				if not APO and not ACD and Options["Show card pack on screen after capturing a GachaMon"] and GachaMonData.hasNewestMonToShow() then
-					local x, y = Constants.SCREEN.WIDTH + 43, 32
-					AnimationManager.GachaMonAnims.PackOpening = AnimationManager.createGachaMonPackOpening(x, y, GachaMonData.newestRecentMon)
-				end
-			end
-
 			Program.AutoSaver:checkForNextSave()
 			TimeMachineScreen.checkCreatingRestorePoint()
 		end
@@ -600,10 +587,7 @@ function Program.update()
 	if Program.Frames.three_sec_update == 0 or Program.updateRequired then
 		Program.updateBagItems()
 		Program.updatePCHeals()
-		local newBadgeObtained = Program.updateBadgesObtained()
-		if newBadgeObtained and RouteData.Locations.CanObtainBadge[TrackerAPI.getMapId() or 0] then
-			GachaMonData.markTeamForGymBadgeObtained(newBadgeObtained)
-		end
+		Program.updateBadgesObtained()
 		CrashRecoveryScreen.trySaveBackup()
 
 		if not Input.joypadUsedRecently then
@@ -651,7 +635,6 @@ function Program.stepFrames()
 	end
 
 	SpriteData.updateActiveIcons()
-	AnimationManager.stepFrames()
 end
 
 --- Creates a frame counter that counts down N frames (or emulation steps), and repeats indefinitely.
@@ -878,11 +861,6 @@ function Program.updatePokemonTeams()
 		addressOffset = addressOffset + Program.Addresses.sizeofPokemonStruct
 	end
 
-	-- If the lead Pokémon changed (new mon viewed), then try to turn it into a GachaMon; only for catches, exclude battles
-	local currentLeadMon = Program.GameData.PlayerTeam[1]
-	if currentLeadMon and not Battle.inActiveBattle() then
-		GachaMonData.tryAddToRecentMons(currentLeadMon)
-	end
 end
 
 function Program.readNewPokemon(startAddress, personality)

@@ -75,6 +75,12 @@ function Gen1RandomizerLog.parseRoutes(logLines)
 		["CERULEAN CAVE"]={0xE2,0xE3,0xE4},["UNKNOWN DUNGEON"]={0xE2,0xE3,0xE4},
 		["GROTTE INCONNUE"]={0xE2,0xE3,0xE4},
 	}
+	local floorOrder = {
+		"GROTTE INCONNUE", "UNKNOWN DUNGEON", "CERULEAN CAVE",
+		"MONT SELENITE", "MT MOON", "ROUTE VICTOIRE", "VICTORY ROAD",
+		"TOUR POKEMON", "POKEMON TOWER", "ILES ECUME", "SEAFOAM ISLANDS",
+		"PARC SAFARI", "SAFARI ZONE", "POKEMON MANSION", "MANOIR", "ROCK TUNNEL", "GROTTE",
+	}
 	local function cleanName(value)
 		value = (value or ""):upper():gsub("%[.-%]", "POKE"):gsub("[ÉÈÊ]", "E")
 		return value:gsub("[^%w%s'%(%)%-]", ""):gsub("%s+", " "):match("^%s*(.-)%s*$")
@@ -90,7 +96,8 @@ function Gen1RandomizerLog.parseRoutes(logLines)
 			if clean:find(label, 1, true) then return mapId end
 		end
 		local floor = tonumber(clean:match("%((%d+)%)")) or tonumber(clean:match("(%d+)[Ff]"))
-		for label, maps in pairs(floorMaps) do
+		for _, label in ipairs(floorOrder) do
+			local maps = floorMaps[label]
 			if clean:find(label, 1, true) then return maps[floor or 1] end
 		end
 	end

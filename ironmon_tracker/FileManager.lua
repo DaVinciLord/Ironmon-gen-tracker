@@ -25,8 +25,6 @@ FileManager.Folders = {
 	Badges = "badges",
 	Icons = "icons",
 	AnimatedPokemon = "pokemonAnimated",
-	GachaMon = "gachamon",
-	GachaMonImages = "gachamon",
 }
 
 FileManager.Files = {
@@ -44,10 +42,6 @@ FileManager.Files = {
 	KNOWN_WORKING_DIR = FileManager.Folders.TrackerCode .. FileManager.slash .. "knownworkingdir.txt",
 	NEWRUN_PROFILES = FileManager.Folders.TrackerCode .. FileManager.slash .. "NewRunProfiles.json",
 	ADDRESS_OVERRIDES = FileManager.Folders.TrackerCode .. FileManager.slash .. FileManager.Folders.GameAddresses .. FileManager.slash .. "TrackerOverrides.json",
-	GACHAMON_COLLECTION = FileManager.Folders.GachaMon .. FileManager.slash .. "FullCollection.gccg",
-	GACHAMON_RECENT_DEFAULT = FileManager.Folders.GachaMon .. FileManager.slash .. "RecentGachaMons.gccg", -- Default filepath if no New Run Profile is in use
-	GACHAMON_RATING_SYSTEM = FileManager.Folders.TrackerCode .. FileManager.slash .. FileManager.Folders.DataCode .. FileManager.slash .. "GachaMonRatingSystem.json",
-	GACHAMON_DEX = FileManager.Folders.TrackerCode .. FileManager.slash .. FileManager.Folders.DataCode .. FileManager.slash .. "GachaDexInfo.json",
 	LanguageCode = {
 		SpainData = "SpainData.lua",
 		ItalyData = "ItalyData.lua",
@@ -61,9 +55,7 @@ FileManager.Files = {
 	}
 }
 
-FileManager.PreFixes = {
-	CARDPACK = "cardpack",
-}
+FileManager.PreFixes = {}
 
 FileManager.PostFixes = {
 	ATTEMPTS_FILE = "Attempts",
@@ -71,7 +63,6 @@ FileManager.PostFixes = {
 	PREVIOUSATTEMPT = "PreviousAttempt",
 	AUTOSAVE = "AutoSave",
 	BACKUPSAVE = "BackupSave",
-	GACHAMON_RECENT = "RecentGachaMons",
 }
 
 FileManager.Extensions = {
@@ -80,7 +71,6 @@ FileManager.Extensions = {
 	DEFAULT_ROM = ".gbc",
 	RANDOMIZER_LOGFILE = ".log",
 	TRACKED_DATA = ".tdat",
-	GACHAMON = ".gccg",
 	ATTEMPTS = ".txt",
 	ANIMATED_POKEMON = ".gif",
 	TRAINER = ".png",
@@ -115,7 +105,6 @@ FileManager.Urls = {
 	NEW_RUNS = "https://github.com/besteon/Ironmon-Tracker/wiki/New-Runs-Setup",
 	EXTENSIONS = "https://github.com/besteon/Ironmon-Tracker/wiki/Tracker-Add-ons#custom-code-extensions",
 	STREAM_CONNECT = "https://github.com/besteon/Ironmon-Tracker/wiki/Stream-Connect-Guide",
-	GACHAMON = "https://github.com/besteon/Ironmon-Tracker/wiki/GachaMon-Collectable-Card-Game",
 }
 
 -- All Lua code files used by the Tracker, loaded and initialized in the order listed
@@ -131,7 +120,6 @@ FileManager.LuaCode = {
 	{ name = "Gen1PokemonReader", filepath = "gen1" .. FileManager.slash .. "PokemonReader.lua", },
 	{ name = "GameSettings", filepath = "GameSettings.lua", },
 	{ name = "StructEncoder", filepath = "StructEncoder.lua", },
-	{ name = "GachaMonFileManager", filepath = "GachaMonFileManager.lua", },
 	-- Data files
 	{ name = "PokemonData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "PokemonData.lua", },
 	{ name = "Gen1SpeciesMap", filepath = "gen1" .. FileManager.slash .. "SpeciesMap.lua", },
@@ -150,7 +138,6 @@ FileManager.LuaCode = {
 	{ name = "Gen1RandomizerLog", filepath = "gen1" .. FileManager.slash .. "RandomizerLog.lua", },
 	{ name = "TrainerMapData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "TrainerMapData.lua", },
 	{ name = "SpriteData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "SpriteData.lua", },
-	{ name = "GachaMonData", filepath = FileManager.Folders.DataCode .. FileManager.slash .. "GachaMonData.lua", },
 	-- Second set of core files
 	{ name = "Options", filepath = "Options.lua", },
 	{ name = "Drawing", filepath = "Drawing.lua", },
@@ -165,7 +152,6 @@ FileManager.LuaCode = {
 	{ name = "Gen1BattleRuntime", filepath = "gen1" .. FileManager.slash .. "BattleRuntime.lua", },
 	{ name = "Gen1Runtime", filepath = "gen1" .. FileManager.slash .. "Runtime.lua", },
 	{ name = "MGBA", filepath = "MGBA.lua", },
-	{ name = "AnimationManager", filepath = "AnimationManager.lua", },
 	-- Network files
 	{ name = "Network", filepath = FileManager.Folders.Network .. FileManager.slash .. "Network.lua", },
 	{ name = "EventHandler", filepath = FileManager.Folders.Network .. FileManager.slash .. "EventHandler.lua", },
@@ -214,7 +200,6 @@ FileManager.LuaCode = {
 	{ name = "LogTabRouteDetails", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "LogTabRouteDetails.lua", },
 	{ name = "LogTabTMs", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "LogTabTMs.lua", },
 	{ name = "LogTabMisc", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "LogTabMisc.lua", },
-	{ name = "GachaMonOverlay", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "GachaMonOverlay.lua", },
 	{ name = "TeamViewArea", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "TeamViewArea.lua", },
 	{ name = "LogSearchScreen", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "LogSearchScreen.lua"},
 	{ name = "StreamConnectOverlay", filepath = FileManager.Folders.ScreensCode .. FileManager.slash .. "StreamConnectOverlay.lua", },
@@ -257,7 +242,6 @@ FileManager.ExcludeFromInitialize = {
 function FileManager.setupFolders()
 	local foldersToCheck = {
 		FileManager.getTdatFolderPath(),
-		FileManager.getGachaMonFolderPath(),
 	}
 	for _, folder in ipairs(foldersToCheck) do
 		if not FileManager.folderExists(folder) then
@@ -644,10 +628,6 @@ function FileManager.getTdatFolderPath()
 end
 
 ---@return string folderpath
-function FileManager.getGachaMonFolderPath()
-	return FileManager.getPathOverride("GachaMon Collection") or FileManager.prependDir(FileManager.Folders.GachaMon, true)
-end
-
 ---@return string filepath
 function FileManager.buildImagePath(imageFolder, imageName, imageExtension)
 	local listOfPaths = {

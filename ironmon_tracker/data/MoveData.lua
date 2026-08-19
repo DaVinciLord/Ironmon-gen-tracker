@@ -457,7 +457,7 @@ function MoveData.getNatDexCompatible(moveId)
 		return move
 	end
 	local baseGameTotal = 354
-	local hasNatDexAccess = GachaMonData.requiresNatDex or CustomCode.RomHacks.isPlayingNatDex()
+	local hasNatDexAccess = CustomCode.RomHacks.isPlayingNatDex()
 	if moveId > baseGameTotal and hasNatDexAccess then
 		local natdexExt = TrackerAPI.getExtensionSelf(CustomCode.RomHacks.ExtensionKeys.NatDex)
 		if natdexExt and natdexExt.Data and natdexExt.Data.natDexMoves then

@@ -805,7 +805,6 @@ function Tracker.AutoSave.loadFromFile()
 
 	local _finalizeLoadTrackerData = function(forceImportAndUse)
 		Tracker.AutoSave.HasSaveConflict = false
-		GachaMonData.tryImportMatchingRomRecentMons(forceImportAndUse)
 
 		-- Output to console the Tracker data load status to help with troubleshooting
 		local loadStatusMessage = Resources.StartupScreen[Tracker.LoadStatus or false]
