@@ -21,6 +21,33 @@ function Gen1DataAdapter.expForLevel(growthRate, level)
 	return math.max(0, math.floor(formulas[growthRate or 0] or cube))
 end
 
+---Exact RBY capture probability, including the game's inclusive comparisons.
+---@return number wholePercent
+function Gen1DataAdapter.calcCatchRate(pokemonId, maxHP, currentHP, _, status, ball)
+	if not PokemonData.isValid(pokemonId) or (maxHP or 0) <= 0 or (currentHP or 0) <= 0 then return 0 end
+	ball = ball or 4
+	if ball == 1 then return 100 end -- Master Ball
+	local randomLimit = ({ [2] = 150, [3] = 200, [4] = 255, [8] = 150 })[ball] or 255
+	local ballFactor = ball == 3 and 8 or 12
+	local statusValue = 0
+	if status == MiscData.StatusType.Sleep or status == MiscData.StatusType.Freeze then
+		statusValue = 25
+	elseif status and status ~= MiscData.StatusType.None then
+		statusValue = 12
+	end
+	local catchRate = (PokemonData.Pokemon[pokemonId] or {}).catchRate or 0
+	local domainSize = randomLimit + 1
+	local immediate = math.min(statusValue, domainSize)
+	local lastPassing = math.min(randomLimit, statusValue + catchRate)
+	local firstPassing = statusValue
+	local passing = math.max(0, lastPassing - firstPassing + 1)
+	local hpQuarter = math.max(math.floor(currentHP / 4), 1)
+	local w = math.floor(math.floor(maxHP * 255 / ballFactor) / hpQuarter)
+	local secondChance = w > 255 and 1 or (math.min(w, 255) + 1) / 256
+	local probability = (immediate + passing * secondChance) / domainSize
+	return math.max(0, math.min(100, math.floor(probability * 100)))
+end
+
 Gen1DataAdapter.TypeIndexMap = {
 	[0x00] = PokemonData.Types.NORMAL,
 	[0x01] = PokemonData.Types.FIGHTING,
@@ -245,6 +272,7 @@ function Gen1DataAdapter.apply()
 	PokemonData.Evolutions.LEAF.evoItemIds = { 0x2F }
 	PokemonData.Evolutions.EEVEE_STONES.evoItemIds = { 0x20, 0x21, 0x22 }
 	PokemonData.initialize = Gen1DataAdapter.initializePokemonData
+	PokemonData.calcCatchRate = Gen1DataAdapter.calcCatchRate
 	PokemonData.readLevelUpMoves = function(pokemonId)
 		local _, moves = Gen1DataAdapter.readEvolutionsAndMoves(pokemonId)
 		return moves
