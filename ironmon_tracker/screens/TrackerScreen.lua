@@ -995,12 +995,7 @@ function TrackerScreen.drawPokemonInfoArea(data)
 		else
 			extraInfoText = Resources.TrackerScreen.BattleNewEncounter
 		end
-		-- Only highlight new encounter / last level seen if the real game abilities aren't being revealed
-		if PokemonData.canShowUnknownAbilities() then
-			extraInfoColor = Theme.COLORS["Default text"]
-		else
-			extraInfoColor = Theme.COLORS["Intermediate text"]
-		end
+		extraInfoColor = Theme.COLORS["Intermediate text"]
 	end
 
 	local levelEvoText = string.format("%s.%s", Resources.TrackerScreen.LevelAbbreviation, data.p.level)

@@ -116,50 +116,6 @@ function LogTabPokemonDetails.buildZoomButtons(pokemonID)
 		end
 	end
 
-	local abilityButtonArea ={
-		x = LogOverlay.TabBox.x + 1,
-		y = LogOverlay.TabBox.y + 13,
-		w = 60,
-		h = Constants.SCREEN.LINESPACING * 2
-	}
-
-	-- ABILITIES
-	local offsetY = 0
-	for i, abilityId in ipairs(data.p.abilities) do
-		local abilityBtn = {
-			type = Constants.ButtonTypes.NO_BORDER,
-			getText = function(self)
-				if AbilityData.isValid(abilityId) then
-					return string.format("%s: %s", i, AbilityData.Abilities[abilityId].name)
-				else
-					return Constants.BLANKLINE
-				end
-			end,
-			textColor = LogTabPokemonDetails.Colors.text,
-			abilityId = abilityId,
-			box = { abilityButtonArea.x, abilityButtonArea.y + offsetY, 60, Constants.SCREEN.LINESPACING },
-			updateSelf = function(self)
-				self.textColor = LogTabPokemonDetails.Colors.text
-				if Utils.isNilOrEmpty(LogSearchScreen.searchText) or not AbilityData.isValid(abilityId) then
-					return
-				end
-				local abilityName = AbilityData.Abilities[abilityId].name
-				if LogSearchScreen.currentFilter == LogSearchScreen.FilterBy.PokemonAbility then
-					if Utils.containsText(abilityName, LogSearchScreen.searchText, true) then
-						self.textColor = LogTabPokemonDetails.Colors.highlight
-					end
-				end
-			end,
-			onClick = function(self)
-				if AbilityData.isValid(abilityId) then
-					InfoScreen.changeScreenView(InfoScreen.Screens.ABILITY_INFO, self.abilityId) -- implied redraw
-				end
-			end,
-		}
-		table.insert(LogTabPokemonDetails.TemporaryButtons, abilityBtn)
-		offsetY = offsetY + abilityBtn.box[4]
-	end
-
 	local pokemonInternal = PokemonData.Pokemon[data.p.id] or PokemonData.BlankPokemon
 	local evoMethods = Utils.getShortenedEvolutionsInfo(pokemonInternal.evolution) or {}
 

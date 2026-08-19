@@ -58,14 +58,6 @@ function TrackerAPI.getActiveBattlePokemon()
 	return battlers
 end
 
----For a given Pokemon object, returns its abilityId (alternatively, use `PokemonData.getAbilityId(p, n)`)
----@param pokemon table A data object templated like `Program.DefaultPokemon`
----@return number abilityId 0 if pokemon or ability is not valid
-function TrackerAPI.getAbilityIdOfPokemon(pokemon)
-	pokemon = pokemon or {}
-	return PokemonData.getAbilityId(pokemon.pokemonID, pokemon.abilityNum)
-end
-
 ---Returns a list of the two types of a specific Pokémon in battle, dynamically checked to cover Color Change, Transform, etc
 ---@param isPlayersMon? boolean Optional, true if checking the player's Pokémon, false to check enemy's; default=true
 ---@param isOnLeft? boolean Optional, true if checking the "left" Pokémon in doubles (perspective reversed for enemy), false to check right; default=true
@@ -220,14 +212,6 @@ end
 function TrackerAPI.getMoveInfo(moveId)
 	if not MoveData.isValid(moveId) then return nil end
 	return FileManager.copyTable(MoveData.Moves[moveId] or {})
-end
-
----Returns a copy of an information object from the table `AbilityData.Abilities`
----@param abilityId number
----@return table|nil abilityInfo
-function TrackerAPI.getAbilityInfo(abilityId)
-	if not AbilityData.isValid(abilityId) then return nil end
-	return FileManager.copyTable(AbilityData.Abilities[abilityId] or {})
 end
 
 ---Returns a copy of an information object from the table `RouteData.Info`

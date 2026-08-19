@@ -489,11 +489,6 @@ EventHandler.DefaultEvents = {
 		Command = "!move",
 		Fulfill = function(self, request) return EventData.getMove(request.SanitizedInput) end,
 	},
-	CMD_Ability = {
-		Type = EventHandler.EventTypes.Command,
-		Command = "!ability",
-		Fulfill = function(self, request) return EventData.getAbility(request.SanitizedInput) end,
-	},
 	CMD_Route = {
 		Type = EventHandler.EventTypes.Command,
 		Command = "!route",

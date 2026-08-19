@@ -572,11 +572,6 @@ function DataHelper.buildPokemonLogDisplay(pokemonID)
 		pokemonLog.Types[1] or pokemonInternal.types[1],
 		pokemonLog.Types[2] or pokemonInternal.types[2],
 	}
-	data.p.abilities = {
-		pokemonLog.Abilities[1] or PokemonData.getAbilityId(pokemonID, 0),
-		pokemonLog.Abilities[2] or PokemonData.getAbilityId(pokemonID, 1),
-	}
-
 	-- The following are all Randomizer Log information
 	data.p.helditems = pokemonLog.HeldItems or Constants.BLANKLINE -- unsure how this is formatted
 
