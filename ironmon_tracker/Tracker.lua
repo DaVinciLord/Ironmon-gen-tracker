@@ -462,7 +462,6 @@ function Tracker.getDefaultPokemon()
 		name = PokemonData.BlankPokemon.name,
 		nickname = PokemonData.BlankPokemon.name,
 		types = { PokemonData.BlankPokemon.types[1], PokemonData.BlankPokemon.types[2] },
-		abilities = { PokemonData.BlankPokemon.abilities[1], PokemonData.BlankPokemon.abilities[2] },
 		evolution = PokemonData.BlankPokemon.evolution,
 		bst = PokemonData.BlankPokemon.bst,
 		movelvls = { {}, {} },
