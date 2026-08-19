@@ -12,8 +12,6 @@ gachamon/*.gccg
 extensions/*
 !extensions/How to use.txt
 !extensions/CodeExtensionTemplate.lua.txt
-!extensions/PixelFontExtension
-!extensions/PixelFont.lua
 ironmon_tracker/*.txt
 ironmon_tracker/data/GachaDexInfo.json
 ironmon_tracker/NewRunProfiles.json
