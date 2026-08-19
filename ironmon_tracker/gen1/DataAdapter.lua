@@ -5,6 +5,24 @@ Gen1DataAdapter = {}
 Gen1DataAdapter.PokemonCount = 151
 Gen1DataAdapter.MoveCount = 165
 
+Gen1DataAdapter.TypeIndexMap = {
+	[0x00] = PokemonData.Types.NORMAL,
+	[0x01] = PokemonData.Types.FIGHTING,
+	[0x02] = PokemonData.Types.FLYING,
+	[0x03] = PokemonData.Types.POISON,
+	[0x04] = PokemonData.Types.GROUND,
+	[0x05] = PokemonData.Types.ROCK,
+	[0x07] = PokemonData.Types.BUG,
+	[0x08] = PokemonData.Types.GHOST,
+	[0x14] = PokemonData.Types.FIRE,
+	[0x15] = PokemonData.Types.WATER,
+	[0x16] = PokemonData.Types.GRASS,
+	[0x17] = PokemonData.Types.ELECTRIC,
+	[0x18] = PokemonData.Types.PSYCHIC,
+	[0x19] = PokemonData.Types.ICE,
+	[0x1A] = PokemonData.Types.DRAGON,
+}
+
 local function truncate(array, lastIndex)
 	for index = #array, lastIndex + 1, -1 do
 		array[index] = nil
@@ -20,6 +38,87 @@ local function applyMoveOverride(moveId, fields)
 	if move.power ~= "0" and move.power ~= Constants.BLANKLINE then
 		move.category = MoveData.TypeToCategory[move.type]
 	end
+end
+
+local function baseStatsAddress(pokemonId)
+	if pokemonId == 151 and GameSettings.currentProfile.version ~= "Yellow" then
+		return GameSettings.mewBaseStats
+	end
+	return GameSettings.baseStats + (pokemonId - 1) * 0x1C
+end
+
+function Gen1DataAdapter.readPokemonInfo(pokemonId)
+	local address = baseStatsAddress(pokemonId)
+	local stats = {
+		hp = Memory.readbyte(address + 1),
+		atk = Memory.readbyte(address + 2),
+		def = Memory.readbyte(address + 3),
+		spe = Memory.readbyte(address + 4),
+		special = Memory.readbyte(address + 5),
+	}
+	return {
+		stats = stats,
+		types = {
+			Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 6)] or PokemonData.Types.UNKNOWN,
+			Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 7)] or PokemonData.Types.UNKNOWN,
+		},
+	}
+end
+
+function Gen1DataAdapter.initializePokemonData()
+	local bulbasaur = Gen1DataAdapter.readPokemonInfo(1)
+	PokemonData.IsRand.types = bulbasaur.types[1] ~= PokemonData.Types.GRASS or bulbasaur.types[2] ~= PokemonData.Types.POISON
+	PokemonData.IsRand.stats = bulbasaur.stats.hp ~= 45 or bulbasaur.stats.atk ~= 49 or bulbasaur.stats.def ~= 49
+	PokemonData.IsRand.abilities = false
+	PokemonData.IsRand.friendshipBase = false
+	PokemonData.IsRand.expYield = false
+
+	for pokemonId = 1, Gen1DataAdapter.PokemonCount do
+		local pokemon = PokemonData.Pokemon[pokemonId]
+		local info = Gen1DataAdapter.readPokemonInfo(pokemonId)
+		pokemon.pokemonID = pokemonId
+		pokemon.types = info.types
+		pokemon.baseStats = info.stats
+		pokemon.bst = tostring(info.stats.hp + info.stats.atk + info.stats.def + info.stats.spe + info.stats.special)
+	end
+	PokemonData.knownTotal = Gen1DataAdapter.PokemonCount
+end
+
+function Gen1DataAdapter.readMoveInfo(moveId)
+	local address = GameSettings.moveData + (moveId - 1) * 6
+	local power = Memory.readbyte(address + 2)
+	local typeName = Gen1DataAdapter.TypeIndexMap[Memory.readbyte(address + 3)] or PokemonData.Types.UNKNOWN
+	local accuracyByte = Memory.readbyte(address + 4)
+	return {
+		power = tostring(power),
+		type = typeName,
+		accuracy = tostring(math.ceil(accuracyByte * 100 / 255)),
+		pp = tostring(Memory.readbyte(address + 5) % 0x40),
+	}
+end
+
+function Gen1DataAdapter.initializeMoveData()
+	local blizzard = Gen1DataAdapter.readMoveInfo(59)
+	local hydroPump = Gen1DataAdapter.readMoveInfo(56)
+	MoveData.IsRand.moveType = blizzard.type ~= PokemonData.Types.ICE or hydroPump.type ~= PokemonData.Types.WATER
+	MoveData.IsRand.movePower = blizzard.power ~= "120" or hydroPump.power ~= "120"
+	MoveData.IsRand.moveAccuracy = blizzard.accuracy ~= "90" or hydroPump.accuracy ~= "80"
+	MoveData.IsRand.movePP = blizzard.pp ~= "5" or hydroPump.pp ~= "5"
+	MoveData.IsRand.moveCategory = false
+
+	for moveId = 1, Gen1DataAdapter.MoveCount do
+		local move = MoveData.Moves[moveId]
+		local info = Gen1DataAdapter.readMoveInfo(moveId)
+		move.type = info.type
+		move.accuracy = info.accuracy
+		move.pp = info.pp
+		if not move.variablepower and info.power ~= "1" then move.power = info.power end
+		if move.power ~= "0" and move.category ~= MoveData.Categories.STATUS then
+			move.category = MoveData.TypeToCategory[move.type]
+		end
+	end
+	MoveData.knownTotal = Gen1DataAdapter.MoveCount
+	Gen1DataAdapter.applyMoveSummaries()
 end
 
 function Gen1DataAdapter.apply()
@@ -48,6 +147,9 @@ function Gen1DataAdapter.apply()
 		ghost = { normal = 0, psychic = 0, ghost = 2 }, -- RBY Ghost/Psychic bug
 		dragon = { dragon = 2 },
 	}
+	PokemonData.TypeIndexMap = Gen1DataAdapter.TypeIndexMap
+	PokemonData.initialize = Gen1DataAdapter.initializePokemonData
+	MoveData.initialize = Gen1DataAdapter.initializeMoveData
 
 	-- The upstream list stores later-generation values. These are every move
 	-- field changed between RBY and GSC that affects the tracker's display.
