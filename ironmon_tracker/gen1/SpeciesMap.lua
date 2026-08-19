@@ -203,15 +203,23 @@ end
 
 function Gen1SpeciesMap.rebuildDexMap()
 	Gen1SpeciesMap.DexByInternalId = {}
+	Gen1SpeciesMap.InternalIdByDexId = {}
 	local dexByName = {}
 	for dexId, pokemon in ipairs(PokemonData.Pokemon or {}) do
 		dexByName[normalize(pokemon.name)] = dexId
 	end
 	for internalId, name in pairs(Gen1SpeciesMap.NamesByInternalId) do
 		if name ~= "MISSINGNO." then
-			Gen1SpeciesMap.DexByInternalId[internalId] = dexByName[normalize(name)]
+			local dexId = dexByName[normalize(name)]
+			Gen1SpeciesMap.DexByInternalId[internalId] = dexId
+			if dexId then Gen1SpeciesMap.InternalIdByDexId[dexId] = internalId end
 		end
 	end
+end
+
+function Gen1SpeciesMap.getInternalId(dexId)
+	if not Gen1SpeciesMap.InternalIdByDexId then Gen1SpeciesMap.rebuildDexMap() end
+	return Gen1SpeciesMap.InternalIdByDexId[dexId]
 end
 
 function Gen1SpeciesMap.getDexId(internalId)
@@ -228,5 +236,4 @@ function Gen1SpeciesMap.initialize()
 end
 
 return Gen1SpeciesMap
-
 

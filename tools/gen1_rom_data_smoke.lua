@@ -5,12 +5,16 @@ local repoRoot = toolsDir:gsub("tools[/\\]$", "")
 
 Constants = { BLANKLINE = "--", HIDDEN_INFO = "?", Words = { POKEMON = "Pokemon" } }
 local bytes = {}
-Memory = { readbyte = function(address) return bytes[address] or 0 end }
+Memory = {
+	readbyte = function(address) return bytes[address] or 0 end,
+	readword = function(address) return (bytes[address] or 0) + (bytes[address + 1] or 0) * 0x100 end,
+}
 GameSettings = {
 	GEN = 1,
 	baseStats = 0x10000,
 	mewBaseStats = 0x20000,
 	moveData = 0x30000,
+	levelUpMoves = 0x0803B05C,
 	currentProfile = { version = "Red" },
 }
 
@@ -26,6 +30,7 @@ put(GameSettings.moveData + (59 - 1) * 6, 59, 0, 120, 0x19, 229, 5) -- Blizzard
 
 dofile(repoRoot .. "ironmon_tracker/data/PokemonData.lua")
 dofile(repoRoot .. "ironmon_tracker/data/MoveData.lua")
+dofile(repoRoot .. "ironmon_tracker/gen1/SpeciesMap.lua")
 dofile(repoRoot .. "ironmon_tracker/gen1/DataAdapter.lua")
 
 PokemonData.initialize()

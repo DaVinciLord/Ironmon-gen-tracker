@@ -47,6 +47,66 @@ local function baseStatsAddress(pokemonId)
 	return GameSettings.baseStats + (pokemonId - 1) * 0x1C
 end
 
+local function bankPointerToAddress(tableAddress, pointer)
+	local tableOffset = tableAddress % 0x1000000
+	local bank = math.floor(tableOffset / 0x4000)
+	if pointer < 0x4000 then return 0x08000000 + pointer end
+	return 0x08000000 + bank * 0x4000 + pointer - 0x4000
+end
+
+function Gen1DataAdapter.readEvolutionsAndMoves(pokemonId)
+	local internalId = Gen1SpeciesMap.getInternalId(pokemonId)
+	if not internalId then return {}, {} end
+	local pointer = Memory.readword(GameSettings.levelUpMoves + (internalId - 1) * 2)
+	if not pointer or pointer == 0 then return {}, {} end
+	local address = bankPointerToAddress(GameSettings.levelUpMoves, pointer)
+	local evolutions = {}
+	for _ = 1, 5 do
+		local method = Memory.readbyte(address)
+		if method == 0 then address = address + 1 break end
+		if method == 1 then
+			table.insert(evolutions, { method = method, level = Memory.readbyte(address + 1),
+				species = Gen1SpeciesMap.getDexId(Memory.readbyte(address + 2)) })
+			address = address + 3
+		elseif method == 2 then
+			table.insert(evolutions, { method = method, item = Memory.readbyte(address + 1),
+				level = Memory.readbyte(address + 2), species = Gen1SpeciesMap.getDexId(Memory.readbyte(address + 3)) })
+			address = address + 4
+		elseif method == 3 then
+			table.insert(evolutions, { method = method, level = Memory.readbyte(address + 1),
+				species = Gen1SpeciesMap.getDexId(Memory.readbyte(address + 2)) })
+			address = address + 3
+		else
+			return evolutions, {}
+		end
+	end
+
+	local moves = {}
+	for _ = 1, 50 do
+		local level = Memory.readbyte(address)
+		if level == 0 then break end
+		table.insert(moves, { level = level, id = Memory.readbyte(address + 1) })
+		address = address + 2
+	end
+	return evolutions, moves
+end
+
+local function evolutionDisplay(evolutions)
+	if #evolutions == 0 then return PokemonData.Evolutions.NONE end
+	local evolution = evolutions[1]
+	if evolution.method == 1 then return tostring(evolution.level) end
+	if evolution.method == 3 then return PokemonData.Evolutions.TRADE end
+	if #evolutions > 1 then return PokemonData.Evolutions.EEVEE_STONES end
+	local byItem = {
+		[0x0A] = PokemonData.Evolutions.MOON,
+		[0x20] = PokemonData.Evolutions.FIRE,
+		[0x21] = PokemonData.Evolutions.THUNDER,
+		[0x22] = PokemonData.Evolutions.WATER,
+		[0x2F] = PokemonData.Evolutions.LEAF,
+	}
+	return byItem[evolution.item] or PokemonData.Evolutions.NONE
+end
+
 function Gen1DataAdapter.readPokemonInfo(pokemonId)
 	local address = baseStatsAddress(pokemonId)
 	local stats = {
@@ -80,6 +140,11 @@ function Gen1DataAdapter.initializePokemonData()
 		pokemon.types = info.types
 		pokemon.baseStats = info.stats
 		pokemon.bst = tostring(info.stats.hp + info.stats.atk + info.stats.def + info.stats.spe + info.stats.special)
+	end
+	Gen1SpeciesMap.rebuildDexMap()
+	for pokemonId = 1, Gen1DataAdapter.PokemonCount do
+		local evolutions = Gen1DataAdapter.readEvolutionsAndMoves(pokemonId)
+		PokemonData.Pokemon[pokemonId].evolution = evolutionDisplay(evolutions)
 	end
 	PokemonData.knownTotal = Gen1DataAdapter.PokemonCount
 end
@@ -148,7 +213,20 @@ function Gen1DataAdapter.apply()
 		dragon = { dragon = 2 },
 	}
 	PokemonData.TypeIndexMap = Gen1DataAdapter.TypeIndexMap
+	PokemonData.Evolutions.TRADE = PokemonData.Evolutions.TRADE or {
+		abbreviation = "TRADE", short = { "Trade" }, detailed = { "Trade" },
+	}
+	PokemonData.Evolutions.MOON.evoItemIds = { 0x0A }
+	PokemonData.Evolutions.FIRE.evoItemIds = { 0x20 }
+	PokemonData.Evolutions.THUNDER.evoItemIds = { 0x21 }
+	PokemonData.Evolutions.WATER.evoItemIds = { 0x22 }
+	PokemonData.Evolutions.LEAF.evoItemIds = { 0x2F }
+	PokemonData.Evolutions.EEVEE_STONES.evoItemIds = { 0x20, 0x21, 0x22 }
 	PokemonData.initialize = Gen1DataAdapter.initializePokemonData
+	PokemonData.readLevelUpMoves = function(pokemonId)
+		local _, moves = Gen1DataAdapter.readEvolutionsAndMoves(pokemonId)
+		return moves
+	end
 	MoveData.initialize = Gen1DataAdapter.initializeMoveData
 
 	-- The upstream list stores later-generation values. These are every move
