@@ -37,7 +37,7 @@ local extras = read("ironmon_tracker/screens/ExtrasScreen.lua")
 assert(not extras:find('"Display gender"', 1, true), "gender option must not be shown")
 
 local trainerData = read("ironmon_tracker/data/TrainerData.lua")
-assert(trainerData:find('"frlg-" ..', 1, true), "trainer sprites must use the frlg- prefix")
+assert(not trainerData:find('"frlg-"', 1, true), "trainer sprites must not use the frlg- prefix")
 assert(not trainerData:find("Wally", 1, true), "Hoenn-only trainer classes must be removed")
 assert(not trainerData:find("TeamAquaGrunt", 1, true), "Team Aqua must not remain as a trainer class")
 assert(not trainerData:find("hasPostfix", 1, true), "RSE/FRLG sprite postfixes must not remain")

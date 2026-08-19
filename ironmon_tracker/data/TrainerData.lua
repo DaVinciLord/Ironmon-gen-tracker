@@ -25,7 +25,7 @@ TrainerData.TrainerGroups = {
 }
 
 -- A table of information for each different trainer class
--- 'filename' is used with prefixes and postfixes to determine which image to show, depending on the game being played
+-- 'filename' is the image stem under images/trainers and images/trainerPortraits
 TrainerData.Classes = {
 	GymLeader1 = 	{ filename = "gymleader-1", 	group = TrainerData.TrainerGroups.Gym, },
 	GymLeader2 = 	{ filename = "gymleader-2", 	group = TrainerData.TrainerGroups.Gym, },
@@ -77,6 +77,7 @@ TrainerData.Classes = {
 
 TrainerData.BlankTrainer = {
 	class = TrainerData.Classes.Unknown,
+	group = TrainerData.TrainerGroups.Other,
 }
 
 
@@ -132,8 +133,7 @@ end
 
 local function getClassFilename(trainerClass)
 	trainerClass = trainerClass or TrainerData.Classes.Unknown
-	local classFilename = trainerClass.filename or TrainerData.Classes.Unknown.filename
-	return "frlg-" .. classFilename
+	return trainerClass.filename or TrainerData.Classes.Unknown.filename
 end
 
 function TrainerData.getFullImage(trainerClass)
@@ -354,6 +354,16 @@ local function classObject(classId)
 	return TrainerData.Classes[classKeys[classId] or "Unknown"] or TrainerData.Classes.Unknown
 end
 
+local function trainerGroup(classId, trainerNumber)
+	-- Giovanni's class covers Rocket Hideout, Silph, and Viridian Gym.
+	-- Only the gym fight belongs with the Gym filter.
+	if classId == 29 and trainerNumber ~= 3 then
+		return TrainerData.TrainerGroups.Boss
+	end
+	local class = classObject(classId)
+	return class.group or TrainerData.TrainerGroups.Other
+end
+
 local function bankPointerToAddress(pointer)
 	local tableOffset = (GameSettings.trainers or 0) % 0x1000000
 	local bank = math.floor(tableOffset / 0x4000)
@@ -459,6 +469,7 @@ function TrainerData.initialize()
 			TrainerData.GlobalLogIdToTrainerId[globalLogId] = trainerId
 			TrainerData.Trainers[trainerId] = {
 				name = TrainerData.ClassNames[classId], class = classObject(classId),
+				group = trainerGroup(classId, trainerNumber),
 				classId = classId, trainerNumber = trainerNumber,
 			}
 			table.insert(TrainerData.OrderedIds, trainerId)

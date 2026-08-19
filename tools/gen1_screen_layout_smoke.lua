@@ -42,5 +42,38 @@ assert(drawing:find("Drawing.getTrackerHeight", 1, true),
 	"the tracker panel background must use getTrackerHeight so DOWN_GAP is filled")
 assert(drawing:find("height = height or Drawing.getTrackerHeight()", 1, true),
 	"drawBackgroundAndMargins must default to the padded tracker height, not 144")
+assert(not drawing:find("Drawing.drawImage(button.image, x, y, width, height)", 1, true),
+	"BizHawk bilinear resize turns 4-color RBY sprites into gray mush; draw native pixels")
+
+assert(not overlay:find("pagerOffsetX = 155", 1, true),
+	"GBA pagerOffsetX=155 draws Page N/M off the 160px GB overlay")
+assert(overlay:find('string.format("%s/%s"', 1, true),
+	"GB overlay page chrome is N/M, not the GBA 'Page N/M' string that collides with tab icons")
+
+local trainersTab = read(repoRoot .. "ironmon_tracker/screens/LogTabTrainers.lua")
+assert(not trainersTab:find("box = { LogOverlay.TabBox.x + nextNavX", 1, true),
+	"trainer filter buttons must not add TabBox.x twice (pushes Boss off the 156px tab)")
+assert(not trainersTab:find("Drawing.drawText(LogOverlay.TabBox.x + 2, LogOverlay.TabBox.y + 1, filterByText", 1, true),
+	"Filter by: plus All/Rival/Gym/Elite 4/Boss does not fit the GB tab; drop the label")
+assert(trainersTab:find("width = 56", 1, true),
+	"RBY trainer portraits stay 56px native so they stay sharp on the GB overlay")
+
+local trainerDetails = read(repoRoot .. "ironmon_tracker/screens/LogTabTrainerDetails.lua")
+assert(not trainerDetails:find("i % 2 == 1", 1, true),
+	"trainer details cannot use the GBA 2-column party layout on a 156px GB tab")
+assert(trainerDetails:find("monsPerPage = 3", 1, true),
+	"a full party of 6 is shown 3 per page on GB")
+
+local trainerInfo = read(repoRoot .. "ironmon_tracker/screens/TrainerInfoScreen.lua")
+assert(not trainerInfo:find("MARGIN + 79", 1, true),
+	"party icon grid must start high enough for two rows of 6 on GB 144px")
+assert(trainerInfo:find("cols = 3", 1, true),
+	"a party of 6 is a 3x2 grid so the 56px rival portrait cannot sit on slot 4")
+assert(not trainerInfo:find("y + 56", 1, true),
+	"the #class-number label must not be drawn under the 56px portrait (it painted over slot 4)")
+assert(trainerInfo:find("getTrackerHeight()", 1, true),
+	"the trainer info box uses the padded tracker height so the back arrow sits inside the border")
+assert(trainerInfo:find("cutoffY = Drawing.getTrackerHeight()", 1, true),
+	"the 3x2 party grid must use tracker height as cutoff or the second row is dropped")
 
 print("Gen 1 screen layout smoke tests passed")

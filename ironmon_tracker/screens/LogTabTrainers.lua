@@ -53,21 +53,19 @@ function LogTabTrainers.rebuild()
 end
 
 function LogTabTrainers.buildNavigation()
-	local navHeaderX = LogOverlay.TabBox.x + 2
+	local nextNavX = LogOverlay.TabBox.x + 2
 	local navHeaderY = LogOverlay.TabBox.y + 1
-	local navItemSpacer = 6
-	local filterLabelSize = Utils.calcWordPixelLength(Resources.LogOverlay.LabelFilterBy)
-	local nextNavX = navHeaderX + filterLabelSize + navItemSpacer
+	local navItemSpacer = 3
 
 	LogTabTrainers.NavFilterButtons = {}
 	for _, navFilter in ipairs(Utils.getSortedList(LogOverlay.NavFilters.Trainers)) do
-		local navLabelWidth = Utils.calcWordPixelLength(navFilter:getText()) + 4
+		local navLabelWidth = Utils.calcWordPixelLength(navFilter:getText()) + 2
 		local navButton = {
 			type = Constants.ButtonTypes.NO_BORDER,
 			getText = function(self) return navFilter:getText() end,
 			textColor = LogTabTrainers.Colors.text,
 			isSelected = false,
-			box = { LogOverlay.TabBox.x + nextNavX, navHeaderY, navLabelWidth, 11 },
+			box = { nextNavX, navHeaderY, navLabelWidth, 11 },
 			updateSelf = function(self)
 				if navFilter.group == TrainerData.TrainerGroups.All and not Utils.isNilOrEmpty(LogSearchScreen.searchText) then
 					self.isSelected = true
@@ -133,7 +131,7 @@ function LogTabTrainers.buildPagedButtons()
 			customName = Utils.firstToUpperEachWord(trainerLog.customName),
 			customFullname = customFullname,
 			maxlevel = trainerLog.maxlevel or 0,
-			dimensions = { width = 32, height = 32, },
+			dimensions = { width = 56, height = 56, extraY = 12, },
 			group = trainerInternal.group or TrainerData.TrainerGroups.Other,
 			isVisible = function(self) return LogOverlay.Windower.currentPage == self.pageVisible end,
 			includeInGrid = function(self)
@@ -176,7 +174,7 @@ function LogTabTrainers.buildPagedButtons()
 				return false
 			end,
 			onClick = function(self)
-				LogOverlay.Windower:changeTab(LogTabTrainerDetails, 1, 1, self.id)
+				LogOverlay.Windower:changeTab(LogTabTrainerDetails, 1, nil, self.id)
 				if TrainerInfoScreen.buildScreen(id) then
 					TrainerInfoScreen.previousScreen = TrackerScreen
 					Program.changeScreenView(TrainerInfoScreen)
@@ -250,16 +248,20 @@ function LogTabTrainers.drawTrainerPortraitInfo(button, shadowcolor)
 end
 
 function LogTabTrainers.realignGrid(gridFilter, sortFunc, startingPage)
-	gridFilter = gridFilter or TrainerData.TrainerGroups.Gym
-	sortFunc = sortFunc or LogOverlay.NavFilters.Trainers.Gym.sortFunc
+	if gridFilter == nil or gridFilter == "#" then
+		gridFilter = TrainerData.TrainerGroups.All
+		sortFunc = sortFunc or LogOverlay.NavFilters.Trainers.All.sortFunc
+	end
+	gridFilter = gridFilter or TrainerData.TrainerGroups.All
+	sortFunc = sortFunc or LogOverlay.NavFilters.Trainers.All.sortFunc
 	startingPage = startingPage or 1
 
 	table.sort(LogTabTrainers.PagedButtons, sortFunc)
 
-	local x = LogOverlay.TabBox.x + 15
-	local y = LogOverlay.TabBox.y + 30
-	local colSpacer = 24
-	local rowSpacer = 28
+	local x = LogOverlay.TabBox.x + 12
+	local y = LogOverlay.TabBox.y + 18
+	local colSpacer = 12
+	local rowSpacer = 16
 	local maxWidth = LogOverlay.TabBox.width + LogOverlay.TabBox.x
 	local maxHeight = LogOverlay.TabBox.height + LogOverlay.TabBox.y
 
@@ -286,10 +288,6 @@ function LogTabTrainers.drawTab()
 	-- Draw the Tab viewbox
 	gui.defaultTextBackground(fillColor)
 	gui.drawRectangle(LogOverlay.TabBox.x, LogOverlay.TabBox.y, LogOverlay.TabBox.width, LogOverlay.TabBox.height, borderColor, fillColor)
-
-	-- Draw group filters Label
-	local filterByText = Resources.LogOverlay.LabelFilterBy .. ":"
-	Drawing.drawText(LogOverlay.TabBox.x + 2, LogOverlay.TabBox.y + 1, filterByText, textColor, shadowcolor)
 
 	-- Draw the navigation
 	for _, button in pairs(LogTabTrainers.NavFilterButtons) do

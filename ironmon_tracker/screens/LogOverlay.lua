@@ -30,8 +30,8 @@ LogOverlay.Windower = {
 	infoId = -1,
 	filterGrid = "#",
 	getPageText = function(self)
-		if self.totalPages == nil or self.totalPages < 1 then return Resources.AllScreens.Page end
-		return string.format("%s %s/%s", Resources.AllScreens.Page, self.currentPage, self.totalPages)
+		if self.totalPages == nil or self.totalPages < 1 then return "" end
+		return string.format("%s/%s", self.currentPage, self.totalPages)
 	end,
 	prevPage = function(self)
 		if self.totalPages == nil or self.totalPages <= 1 then return end
@@ -123,21 +123,20 @@ LogOverlay.Pager = {
 	end,
 }
 
-local pagerOffsetX = 155
 LogOverlay.HeaderButtons = {
 	CurrentPage = {
 		type = Constants.ButtonTypes.NO_BORDER,
 		getText = function(self) return LogOverlay.Windower:getPageText() end,
 		textColor = LogOverlay.Colors.headerText,
-		box = { LogOverlay.margin + pagerOffsetX, 0, 50, 10, },
-		isVisible = function() return LogOverlay.Windower.totalPages > 1 end, -- Likely won't use, unsure where to place it
+		box = { 0, 0, 50, 10, },
+		isVisible = function() return LogOverlay.Windower.totalPages > 1 end,
 	},
 	PrevPage = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.LEFT_ARROW,
 		textColor = LogOverlay.Colors.headerText,
 		shadowcolor = false,
-		box = { LogOverlay.margin + pagerOffsetX - 13, 1, 10, 10 },
+		box = { 0, 1, 10, 10 },
 		isVisible = function() return LogOverlay.Windower.totalPages > 1 end,
 		onClick = function(self) LogOverlay.Windower:prevPage() end,
 	},
@@ -146,7 +145,7 @@ LogOverlay.HeaderButtons = {
 		image = Constants.PixelImages.RIGHT_ARROW,
 		textColor = LogOverlay.Colors.headerText,
 		shadowcolor = false,
-		box = { LogOverlay.margin + pagerOffsetX + 50, 1, 10, 10 },
+		box = { 0, 1, 10, 10 },
 		isVisible = function() return LogOverlay.Windower.totalPages > 1 end,
 		onClick = function(self) LogOverlay.Windower:nextPage() end,
 	},
@@ -154,7 +153,7 @@ LogOverlay.HeaderButtons = {
 		type = Constants.ButtonTypes.PIXELIMAGE,
 		image = Constants.PixelImages.CLOSE,
 		textColor = LogOverlay.Colors.headerText,
-		box = { LogOverlay.margin + 228, 2, 10, 10 },
+		box = { 0, 2, 10, 10 },
 		updateSelf = function(self)
 			local canGoBackTabs = {
 				[LogTabPokemonDetails] = true,
@@ -330,16 +329,23 @@ function LogOverlay.syncLayout()
 	local xRight = box.x + box.width
 	local buttons = LogOverlay.HeaderButtons
 	if buttons.XIcon then
-		buttons.XIcon.box[1] = xRight - 12
+		buttons.XIcon.box[1] = xRight - 10
 	end
 	if buttons.NextPage then
-		buttons.NextPage.box[1] = xRight - 24
+		buttons.NextPage.box[1] = xRight - 22
+	end
+	local pageText = LogOverlay.Windower:getPageText()
+	local pageW = 18
+	if Utils and Utils.calcWordPixelLength then
+		pageW = math.max(Utils.calcWordPixelLength(pageText), 18)
 	end
 	if buttons.CurrentPage then
-		buttons.CurrentPage.box[1] = xRight - 74
+		buttons.CurrentPage.box[1] = xRight - 24 - pageW
+		buttons.CurrentPage.box[3] = pageW + 2
 	end
 	if buttons.PrevPage then
-		buttons.PrevPage.box[1] = xRight - 87
+		local pageX = buttons.CurrentPage and buttons.CurrentPage.box[1] or (xRight - 50)
+		buttons.PrevPage.box[1] = pageX - 12
 	end
 end
 
@@ -352,7 +358,7 @@ function LogOverlay.addHeaderTabButtons()
 		LogTabMisc,
 	}
 	local offsetX = LogOverlay.TabBox.x + 1
-	local spacer = 3
+	local spacer = 1
 
 	for i, tab in ipairs(orderedTabs) do
 		local icons = tab.getTabIcons()

@@ -324,7 +324,7 @@ function LogTabRouteDetails.createTrainerButton(trainer)
 		end,
 		includeInGrid = function(self) return LogOverlay.Windower.filterGrid == self.tab end,
 		onClick = function(self)
-			LogOverlay.Windower:changeTab(LogTabTrainerDetails, 1, 1, self.id)
+			LogOverlay.Windower:changeTab(LogTabTrainerDetails, 1, nil, self.id)
 			if TrainerInfoScreen.buildScreen(self.id) then
 				TrainerInfoScreen.previousScreen = TrackerScreen
 				Program.changeScreenView(TrainerInfoScreen)

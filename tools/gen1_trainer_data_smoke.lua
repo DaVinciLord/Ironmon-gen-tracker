@@ -61,4 +61,14 @@ assert(#TrainerData.GymTMs == 8, "Kanto gyms each award one TM")
 assert(TrainerData.GymTMs[1].number == 34 and TrainerData.GymTMs[1].leader == "Brock")
 assert(TrainerData.GymTMs[5].number == 6 and TrainerData.GymTMs[8].number == 27)
 
+local function info(classId, trainerNumber)
+	return TrainerData.getTrainerInfo(TrainerData.makeId(classId, trainerNumber))
+end
+assert(info(34, 1).group == TrainerData.TrainerGroups.Gym, "Brock must be in the Gym filter")
+assert(info(25, 1).group == TrainerData.TrainerGroups.Rival, "early rival must be in the Rival filter")
+assert(info(44, 1).group == TrainerData.TrainerGroups.Elite4, "Lorelei must be in the Elite 4 filter")
+assert(info(29, 3).group == TrainerData.TrainerGroups.Gym, "Viridian Giovanni must be in the Gym filter")
+assert(info(29, 1).group == TrainerData.TrainerGroups.Boss, "Rocket Hideout Giovanni must be in the Boss filter")
+assert(info(1, 1).group == TrainerData.TrainerGroups.Other, "Youngster stays in Other, not a named filter")
+
 print("Gen 1 trainer data smoke tests passed")

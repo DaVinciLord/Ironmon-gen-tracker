@@ -31,7 +31,7 @@ SCREEN.Buttons = {
 				return Constants.BLANKLINE
 			end
 		end,
-		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP - Constants.SCREEN.MARGIN - 32, Constants.SCREEN.MARGIN + 2, 32, 32 },
+		box = { Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP - Constants.SCREEN.MARGIN - 56, Constants.SCREEN.MARGIN + 2, 56, 56 },
 		isVisible = function(self) return true end,
 		onClick = function(self)
 			if hasData() then
@@ -50,13 +50,12 @@ SCREEN.Buttons = {
 			local textColor = Theme.COLORS[self.textColor]
 			local highlightColor = Theme.COLORS[SCREEN.Colors.highlight]
 			local borderColor = Theme.COLORS[self.boxColors[1]]
-			-- Draw an extra border around the image and id label
+			-- Draw an extra border around the image
 			gui.drawRectangle(x - 1, y - 2, w + 1, h + 2, borderColor)
 			gui.drawLine(x, y + h + 1, x + w - 1, y + h + 1, shadowcolor)
 
 			local text = self:getText()
-			local centerX = Utils.getCenteredTextX(text, w) - 1
-			Drawing.drawText(x + centerX, y + 32, text, textColor, shadowcolor)
+			Drawing.drawText(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 2, Constants.SCREEN.MARGIN + 41, text, textColor, shadowcolor)
 			if SCREEN.Data.trainerGame.doubleBattle then
 				Drawing.drawText(x, y + 44, Resources.TrainerInfoScreen.LabelDouble, highlightColor, shadowcolor)
 				Drawing.drawText(x, y + 54, Resources.TrainerInfoScreen.LabelBattle, highlightColor, shadowcolor)
@@ -321,16 +320,26 @@ function TrainerInfoScreen.buildScreen(trainerId)
 			button.iconColors = TrackerScreen.PokeBalls.ColorListMasterBall
 		end
 
+		button.isVisible = function(self) return self.pageVisible == 1 end
 		SCREEN.TemporaryButtons[i] = button
 	end
 
-	-- Align the team party balls in a grid
+	-- 3x2 to the left of the native 56px portrait. A full-width row under the
+	-- sprite either covered slot 4 or, with the GBA cutoff, dropped row 2 onto
+	-- an unused page (three balls and a blank panel).
 	table.sort(SCREEN.TemporaryButtons, function(a, b) return a.ordinal < b.ordinal end)
-	local gridStartX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 22
-	local gridStartY = Constants.SCREEN.MARGIN + 79
-	local cutoffX = Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP - Constants.SCREEN.MARGIN - 20
-	local cutoffY = Constants.SCREEN.HEIGHT - Constants.SCREEN.MARGIN - 2
-	Utils.gridAlign(SCREEN.TemporaryButtons, gridStartX, gridStartY, 0, 0, false, cutoffX, cutoffY)
+	local cellW, cellH = 32, 32
+	local cols = 3
+	local colSpacer, rowSpacer = 4, 4
+	local canvasX = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN
+	local portraitX = SCREEN.Buttons.TrainerIcon.box[1]
+	local cutoffX = portraitX - 4
+	local cutoffY = Drawing.getTrackerHeight()
+	local gridWidth = cols * cellW + (cols - 1) * colSpacer
+	local leftWidth = cutoffX - canvasX
+	local gridStartX = canvasX + math.floor((leftWidth - gridWidth) / 2)
+	local gridStartY = Constants.SCREEN.MARGIN + 54
+	Utils.gridAlign(SCREEN.TemporaryButtons, gridStartX, gridStartY, colSpacer, rowSpacer, false, cutoffX, cutoffY)
 
 	return true
 end
@@ -356,7 +365,7 @@ function TrainerInfoScreen.drawScreen()
 		x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN,
 		y = Constants.SCREEN.MARGIN,
 		width = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2),
-		height = Constants.SCREEN.HEIGHT - (Constants.SCREEN.MARGIN * 2),
+		height = Drawing.getTrackerHeight() - (Constants.SCREEN.MARGIN * 2),
 		text = Theme.COLORS[SCREEN.Colors.text],
 		border = Theme.COLORS[SCREEN.Colors.border],
 		fill = Theme.COLORS[SCREEN.Colors.boxFill],

@@ -167,7 +167,7 @@ function LogTabTMs.buildGymTMButtons()
 					Drawing.drawText(self.box[1] + 55, self.box[2], gymLabel, Theme.COLORS[self.textColor], shadowcolor)
 				end,
 				onClick = function(self)
-					LogOverlay.Windower:changeTab(LogTabTrainerDetails, 1, 1, self.trainerId)
+					LogOverlay.Windower:changeTab(LogTabTrainerDetails, 1, nil, self.trainerId)
 					if TrainerInfoScreen.buildScreen(self.trainerId) then
 						TrainerInfoScreen.previousScreen = TrackerScreen
 						Program.changeScreenView(TrainerInfoScreen)

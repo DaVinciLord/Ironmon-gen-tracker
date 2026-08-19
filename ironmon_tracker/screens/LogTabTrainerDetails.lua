@@ -35,16 +35,23 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 
 	LogTabTrainerDetails.TemporaryButtons = {}
 
-	local partyListX, partyListY = LogOverlay.TabBox.x + 1, LogOverlay.TabBox.y + 82
-	local startX, startY = LogOverlay.TabBox.x + 60, LogOverlay.TabBox.y + 2
-	local offsetX, offsetY = 0, 0
-	local colOffset, rowOffset = 86, 49 -- 2nd column, and 2nd/3rd rows
-	local moveLineSpacing = Constants.SCREEN.LINESPACING - 1
+	local monsPerPage = 3
+	local partyCount = #(data.p or {})
+	local totalPages = math.max(1, math.ceil(partyCount / monsPerPage))
+	LogOverlay.Windower.currentPage = 1
+	LogOverlay.Windower.totalPages = totalPages
+
+	local partyListX = LogOverlay.TabBox.x + 1
+	local partyListStartY = LogOverlay.TabBox.y + 78
+	local nameLine = Constants.SCREEN.LINESPACING - 2
+	local startX, startY = LogOverlay.TabBox.x + 58, LogOverlay.TabBox.y + 2
+	local rowOffset = 40
+	local moveLineSpacing = Constants.SCREEN.LINESPACING - 2
 	local itemAdjustY = 0
 
 	-- Check if any mon has a held item, if so make extra room
 	local anyHeldItem = false
-	for i, partyPokemon in ipairs(data.p or {}) do
+	for _, partyPokemon in ipairs(data.p or {}) do
 		if not Utils.isNilOrEmpty(partyPokemon.helditem) then
 			anyHeldItem = true
 			break
@@ -56,6 +63,13 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 	end
 
 	for i, partyPokemon in ipairs(data.p or {}) do
+		local partyPage = math.ceil(i / monsPerPage)
+		local slot = (i - 1) % monsPerPage
+		local offsetY = slot * rowOffset
+		local isOnPage = function()
+			return (LogOverlay.Windower.currentPage or 1) == partyPage
+		end
+
 		-- PARTY POKEMON
 		local pokemonNameButton = {
 			type = Constants.ButtonTypes.NO_BORDER,
@@ -64,7 +78,8 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 			index = 10 + i,
 			pokemonID = partyPokemon.id,
 			isSelected = false,
-			box = { partyListX, partyListY, 60, 11 },
+			box = { partyListX, partyListStartY + slot * nameLine, 56, 11 },
+			isVisible = isOnPage,
 			updateSelf = function(self)
 				self.isSelected = false
 				self.textColor = LogTabTrainerDetails.Colors.text
@@ -93,7 +108,6 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 				Drawing.drawTransparentTextbox(x + 1, y, self:getText(), textColor, bgColor, shadowcolor)
 			end,
 		}
-		partyListY = partyListY + Constants.SCREEN.LINESPACING - 1
 
 		local pokemonIconButton = {
 			type = Constants.ButtonTypes.POKEMON_ICON,
@@ -102,8 +116,9 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 			pokemonID = partyPokemon.id,
 			textColor = LogTabTrainerDetails.Colors.text,
 			isSelected = false,
-			clickableArea = { startX + offsetX, startY + offsetY, 32, 29, },
-			box = { startX + offsetX, startY + offsetY - 4, 32, 32, },
+			isVisible = isOnPage,
+			clickableArea = { startX, startY + offsetY, 32, 29, },
+			box = { startX, startY + offsetY - 4, 32, 32, },
 			updateSelf = function(self)
 				self.isSelected = false
 				if Utils.isNilOrEmpty(LogSearchScreen.searchText) then
@@ -141,7 +156,7 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 		table.insert(LogTabTrainerDetails.TemporaryButtons, pokemonIconButton)
 
 		-- PARTY POKEMON's MOVES
-		local moveOffsetX = startX + offsetX + 30
+		local moveOffsetX = startX + 30
 		local moveOffsetY = startY + offsetY + itemAdjustY
 		for j, moveInfo in ipairs(partyPokemon.moves or {}) do
 			local moveColor = Utils.inlineIf(moveInfo.isstab, "Positive text", LogTabTrainerDetails.Colors.text)
@@ -151,7 +166,8 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 				textColor = moveColor,
 				index = (i * 10) + 10 + j,
 				moveId = moveInfo.moveId,
-				box = { moveOffsetX, moveOffsetY, 60, 11 },
+				isVisible = isOnPage,
+				box = { moveOffsetX, moveOffsetY, 66, 11 },
 				updateSelf = function(self)
 					self.textColor = moveColor
 					-- Highlight moves that are found by the search
@@ -188,7 +204,8 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 				textColor = LogTabTrainerDetails.Colors.highlight,
 				index = (i * 10) + 10 - 1,
 				itemId = partyPokemon.helditem or 0,
-				box = { itemOffsetX, itemOffsetY, 60, 11 },
+				isVisible = isOnPage,
+				box = { itemOffsetX, itemOffsetY, 66, 11 },
 				draw = function(self, shadowcolor)
 					local x, y = self.box[1], self.box[2]
 					local textColor = Theme.COLORS[self.textColor]
@@ -197,13 +214,6 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 				end,
 			}
 			table.insert(LogTabTrainerDetails.TemporaryButtons, itemBtn)
-		end
-
-		if i % 2 == 1 then
-			offsetX = offsetX + colOffset
-		else
-			offsetX = 0
-			offsetY = offsetY + rowOffset
 		end
 	end
 
