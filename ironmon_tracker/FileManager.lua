@@ -111,6 +111,7 @@ FileManager.LuaCode = {
 	{ name = "Utils", filepath = "Utils.lua", },
 	{ name = "Memory", filepath = "Memory.lua", },
 	{ name = "Gen1GameProfiles", filepath = "gen1" .. FileManager.slash .. "GameProfiles.lua", },
+	{ name = "Gen1PokemonReader", filepath = "gen1" .. FileManager.slash .. "PokemonReader.lua", },
 	{ name = "GameSettings", filepath = "GameSettings.lua", },
 	{ name = "StructEncoder", filepath = "StructEncoder.lua", },
 	{ name = "GachaMonFileManager", filepath = "GachaMonFileManager.lua", },

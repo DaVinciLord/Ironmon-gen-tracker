@@ -98,7 +98,7 @@ end
 
 -- Splits the address into [Memory Domain], [Remaining Addr]
 ---@param addr number
----@return string? memoryDomain BIOS, EWRAM, IWRAM, ROM; or nil if no match
+---@return string? memoryDomain BIOS, WRAM, IWRAM, ROM; or nil if no match
 ---@return integer remainingAddress
 function Memory.splitDomainAndAddress(addr)
 	local memdomain = Utils.bit_rshift(addr, 24)
@@ -106,9 +106,11 @@ function Memory.splitDomainAndAddress(addr)
 	if memdomain == 0 then
 		return "BIOS", splitaddr
 	elseif memdomain == 2 then
-		return "EWRAM", splitaddr
+		return "WRAM", splitaddr
 	elseif memdomain == 3 then
 		return "IWRAM", splitaddr
+	elseif memdomain == 4 then
+		return "WRAM", splitaddr
 	elseif memdomain == 8 then
 		return "ROM", splitaddr
 	end
