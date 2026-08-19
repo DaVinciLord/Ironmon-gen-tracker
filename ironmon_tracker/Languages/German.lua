@@ -260,7 +260,7 @@ ScreenResources{
 		OptionDisplayPlayTime = "Spielzeit anzeigen", --OptionDisplayPlayTime english:Display play time
 		OptionDisplayGender = "Zeige Pokémon-Geschlecht", --OptionDisplayGender english:Display Pokémon's gender
 		OptionAnimatedPokemonPopout = "Animiertes Pokémon-Popout", --OptionAnimatedPokemonPopout english:Animated Pokémon popout
-		ButtonEstimatePokemonIVs = "IV-Potenzial einschätzen", --ButtonEstimatePokemonIVs english:Estimate Pokémon IV Potential
+		ButtonEstimatePokemonIVs = "DV-Potenzial einschätzen", --ButtonEstimatePokemonIVs english:Estimate Pokémon DV Potential
 		EstimateResultOutstanding = "Hervorragend!!!", --EstimateResultOutstanding english:Outstanding!!!
 		EstimateResultQuiteImpressive = "Ziemlich beeindruckend!!", --EstimateResultQuiteImpressive english:Quite impressive!!
 		EstimateResultAboveAverage = "Überdurchschnittlich!", --EstimateResultAboveAverage english:Above average!

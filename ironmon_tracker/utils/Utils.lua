@@ -806,31 +806,39 @@ function Utils.calculateWeatherBall(moveType, movePower)
 	return moveType, movePower
 end
 
--- Returns a number between 0 and 1, where 1 is best possible IVs and 0 is no IVs
+-- Returns a number between 0 and 1, where 1 is best possible DVs (15 in each of the five RBY stats) and 0 is none.
+-- Uses the Pokémon's actual DVs when present. Otherwise reverses the five-stat RBY formula (no spa/spd, no natures).
 function Utils.estimateIVs(pokemon)
 	if pokemon == nil or not PokemonData.isValid(pokemon.pokemonID) then
 		return 0
 	end
 
-	local atk = pokemon.stats.atk * Utils.getNatureMultiplier("atk", pokemon.nature)
-	local def = pokemon.stats.def * Utils.getNatureMultiplier("def", pokemon.nature)
-	local spa = pokemon.stats.spa * Utils.getNatureMultiplier("spa", pokemon.nature)
-	local spd = pokemon.stats.spd * Utils.getNatureMultiplier("spd", pokemon.nature)
-	local spe = pokemon.stats.spe * Utils.getNatureMultiplier("spe", pokemon.nature)
-
-	local sumStats = pokemon.stats.hp + atk + def + spa + spd + spe - pokemon.level - 35
-
-	-- Result is between 0 and 96, with 48 being average (effectively identical to its BST), and 96 being best possible result
-	local ivGuess = (sumStats * 50 / pokemon.level) - PokemonData.Pokemon[pokemon.pokemonID].bst
-	local percentageResult = ivGuess / 96
-
-	if percentageResult < 0 then
-		return 0
-	elseif percentageResult > 1 then
-		return 1
-	else
-		return percentageResult
+	local function clampUnit(value)
+		if value < 0 then
+			return 0
+		elseif value > 1 then
+			return 1
+		end
+		return value
 	end
+
+	local dvs = pokemon.dvs
+	if type(dvs) == "table" then
+		local dvSum = (dvs.hp or 0) + (dvs.atk or 0) + (dvs.def or 0) + (dvs.spe or 0) + (dvs.special or 0)
+		return clampUnit(dvSum / 75)
+	end
+
+	local stats = pokemon.stats or {}
+	local level = pokemon.level or 0
+	if level <= 0 then
+		return 0
+	end
+
+	-- HP adds Level+10, the other four stats add +5 each → Level+30. One Special, not spa/spd.
+	local sumStats = (stats.hp or 0) + (stats.atk or 0) + (stats.def or 0) + (stats.special or 0) + (stats.spe or 0) - level - 30
+	local bst = tonumber(PokemonData.Pokemon[pokemon.pokemonID].bst) or 0
+	local dvGuess = (sumStats * 50 / level) - bst
+	return clampUnit(dvGuess / 75)
 end
 
 function Utils.pokemonHasMove(pokemon, moveId)

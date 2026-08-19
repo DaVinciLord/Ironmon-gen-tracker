@@ -1,16 +1,29 @@
 # Handoff — IronMON Tracker Generation 1
 
+Date: 2026-08-20
+Branch: `agent/gen1-gen2-core` (clean working tree, tracks `origin/agent/gen1-gen2-core`)
+
 ## Objective and completion bar
 
 Build a complete Generation 1-only IronMON tracker from the Besteon tracker architecture, informed by the NDS tracker for file layout (one module = one role), not for UI. It must support Red/Blue/Yellow US/EU and French Yellow, use native RBY mechanics and memory layouts, and keep the Besteon screens.
 
-This objective is **not complete**. Native data, battle, trainers, encounter areas, and overworld helpers have automated coverage, but no full interactive BizHawk validation has been done.
+This objective is **not complete**. Native data, battle, trainers, encounter areas, overworld helpers, Gen 1 assets, and GB log/tracker layout have landed in code. **No full interactive BizHawk validation has been done.**
 
 Layout decisions: `docs/superpowers/specs/2026-08-19-maintainability-layout-design.md`.
+Asset cleanup: `docs/superpowers/specs/2026-08-19-gen1-assets-cleanup-design.md`.
+
+## Working rules (do not ignore)
+
+- Respond in **French**.
+- Continue on the **current branch**. Do not create `/tmp` worktrees.
+- Do **not** commit unless explicitly asked.
+- Do **not** launch BizHawk unless explicitly asked.
+- Do **not** add or extend `tools/*smoke.lua`. Existing smokes may stay; the owner does not want more of that workflow.
+- Do not replace Yellow FR addresses with a blanket regional offset.
+- Do not edit migration files unless asked.
 
 ## Authoritative workspace
 
-- Branch: current working branch (do not create `/tmp` worktrees)
 - Real validated French Yellow ROM: `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/roms/seeds/YellowKaizo062.gbc`
 - Matching real log: `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/roms/seeds/YellowKaizo062.gbc.log`
 - UPR ZX jar: `/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/PokeRandoZX-v4_6_1/PokeRandoZX.jar`
@@ -36,6 +49,7 @@ Each domain has one public Lua global. There is no `Gen1*` overlay and no `Runti
 | UPR `.log` | `data/RandomizerLog.lua` |
 | Items | `data/MiscData.lua` |
 | Screens | `screens/` (Besteon contracts unchanged) |
+| Pixel font (accents) | submodule `extensions/PixelFontExtension` + symlink `extensions/PixelFont.lua` |
 
 `DataAdapter` is the shared ROM/language trimmer used by `PokemonData` and `MoveData`. It is not a second species table.
 
@@ -61,6 +75,7 @@ Each domain has one public Lua global. There is no `Gen1*` overlay and no `Runti
 - Exact RBY capture probability for Master/Ultra/Great/Poké/Safari Balls and status bonuses.
 - RBY item IDs, heals, status cures, PP items, stones, Balls, TM01–TM50 and HM01–HM05.
 - TM/HM move IDs from each profile's native 55-byte ROM table, including Yellow FR.
+- Hidden stats (`hasCheckedSummary`): `Program.checkSummaryScreen()` does not wait on a GBA address.
 
 ### Battle and trainers
 
@@ -69,6 +84,9 @@ Each domain has one public Lua global. There is no `Gen1*` overlay and no `Runti
 - Defeated trainers persist in `.TDAT`; gym leaders can be inferred from badges; gym/E4/rival maps plus trainers remembered where they are fought.
 - Game Over / loss / final victory use native battle outcome, not GBA addresses.
 - Battle restart savestate is created on battle entry.
+- `TrainerData.initialize()` copies `class.group` onto each trainer via `trainerGroup()`. Without that, every trainer was `Other` and only the All filter listed anyone.
+- Giovanni class 29: trainer number 3 (Viridian) is **Gym**; other numbers (Hideout / Silph) are **Boss**.
+- `TrainerData.RbyGymTMs` drives gym TM titles (CT Arènes / Autres CT). Ability/held-item `---` rows were removed from Gen 1 UI.
 
 ### Logs, routes and quickload
 
@@ -78,25 +96,59 @@ Each domain has one public Lua global. There is no `Gen1*` overlay and no `Runti
 - `.gb` / `.gbc` quickload is implemented.
 - The real French Yellow log currently parses to 124 populated encounter areas, 396 trainers and 50 TMs.
 
+### GB screen geometry
+
+- `Constants.SCREEN`: `WIDTH=160`, `HEIGHT=144`, `RIGHT_GAP=180`, `DOWN_GAP=15`, `UP_GAP=0`, `MARGIN=5`.
+- `Drawing.getTrackerHeight()` = `HEIGHT + DOWN_GAP` (or `BOTTOM_AREA` if TeamView is on). The right-gap panel must use this so badges are not drawn on black.
+- Log overlay covers the **game screen only** (`0, 0, WIDTH, HEIGHT`). Tracker / InfoScreen stay in the right gap.
+- Overlay pager chrome is `N/M` (not GBA `Page N/M` / `pagerOffsetX=155`, which drew off the 160px tab).
+- Trainer filter tabs: no `Filter by:` label (All / Rival / Gym / Elite 4 / Boss must fit). Do not add `TabBox.x` twice on those buttons.
+
+### Log overlay tabs (current accepted UI)
+
+- **Pokémon tab:** `LogTabPokemon.defaultIconCount = 1` (one header icon on GB).
+- **Pokémon details:** five-stat graph, French labels, one Special.
+- **Trainers tab:** native **56×56** RBY portraits, **2 per page** (one row). Names above, Poké Balls below. `Drawing.drawImage` for `ButtonTypes.IMAGE` is **unscaled** — BizHawk bilinear resize turns 4-color sprites into gray mush.
+- **Trainer details overlay:** one column, `monsPerPage = 3`, overlay pager `1/2`. Call `changeTab(LogTabTrainerDetails, 1, nil, id)` — do not pass `totalPages=1` or it overwrites the real page count.
+- Tried and **rejected** on the trainers tab: 2×2 at 56px (second row clipped or labels overlaid), 32px scaled grid (too blurry / owner asked to revert to 2 per page).
+
+### Tracker panel — `TrainerInfoScreen`
+
+- Portrait stays **56×56 native** at top-right.
+- `#class-number` is drawn on the left (`MARGIN+41`), not under the sprite.
+- Party is a **3×2** of 32px cells **to the left of the portrait**, `cutoffX = portraitX - 4`, `cutoffY = Drawing.getTrackerHeight()`.
+- `gridAlign` with the old GBA `cutoffY = MARGIN + 137 - 2` dropped slots 4–6 onto page 2 (three Poké Balls and a blank panel). Temporary party buttons use `isVisible = pageVisible == 1` so a leftover page cannot paint over row 1.
+
+### Gen 1 visual assets
+
+Spec: `docs/superpowers/specs/2026-08-19-gen1-assets-cleanup-design.md` (implemented).
+
+- Icon packs kept; numbered files outside `{0} ∪ [1,151] ∪ {412,413}` deleted (`412` egg, `413` ghost).
+- `RSE_*` badges deleted; `FRLG_badge*` kept (`GameSettings.badgePrefix` stays `FRLG`).
+- Player heads `boy-e` / `girl-e` / `boy-rs` / `girl-rs` deleted; `boy-frlg` / `girl-frlg` kept.
+- Dark / Steel / Fairy type icons **kept** (still referenced).
+- Trainer PNGs replaced with pret/pokered `gfx/trainers` (56×56, 2-bit). `unknown.png` stays FRLG.
+- **No `frlg-` prefix:** files are `TrainerData.Classes.filename` (`youngster.png`, …). `getClassFilename` returns that name.
+
+### PixelFont
+
+- Submodule `extensions/PixelFontExtension` (`https://github.com/DaVinciLord/PixelFontExtension.git`).
+- Symlink `extensions/PixelFont.lua` → the submodule file. Glyphs include French accents.
+
 ### Removed subsystems
 
-- GachaMon, abilities, natures as active UI, mGBA, GBA battle core, Gen 2/3 table tails, Gen 3 address JSON, GBA asset packs that were not used.
+- GachaMon, abilities, natures as active UI, mGBA, GBA battle core, Gen 2/3 table tails, Gen 3 address JSON, unused GBA asset packs.
 
 ## Automated verification
 
-Run from the repository root:
+Smokes exist under `tools/*smoke.lua` (about 25). **Do not add new ones unless the owner asks.** ROM/log integration scripts still exist if needed:
 
 ```sh
-set -e
-for f in tools/*smoke.lua; do lua "$f"; done
-for f in $(rg --files -g '*.lua'); do luac -p "$f"; done
 lua tools/gen1_rom_file_integration.lua '/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/roms/seeds/YellowKaizo062.gbc'
 lua tools/gen1_log_routes_integration.lua '/run/media/vincent/7b80c546-f1fb-4c26-b197-f5c26f6e1d43/Games/Pokémon/IronMON/roms/seeds/YellowKaizo062.gbc.log'
-git diff --check
-git status --short
 ```
 
-There are 23 smoke tests. ROM integration locates 151 stat records, 165 moves, 151 evolution/learnset pointers and 47 trainer-class pointers. This does **not** prove interactive emulator behavior.
+Passing those does **not** prove interactive emulator behavior.
 
 ## Required work remaining
 
@@ -111,7 +163,8 @@ Main completion gate. For Red US/EU, Blue US/EU, Yellow US/EU and Yellow FR:
 5. Trainer entry/exit, class/number identity, party transitions, final rival victory.
 6. Each Game Over condition and Retry Battle savestate.
 7. Bag/heals/Balls/CT-CS, badges, map/route changes, log overlay, quickload.
-8. Record failures and add a regression smoke for each fix.
+8. Confirm in-game the layouts listed above (log trainers 2/page, trainer details 3/page, TrainerInfoScreen 3×2 beside the portrait, no bilinear mush).
+9. Record failures. Do not default to writing a new smoke; fix the screen and note it here.
 
 Only Yellow FR has a real ROM in the current evidence. Do not claim other profiles are fully validated from static offsets.
 
@@ -132,6 +185,13 @@ Trainer-defeat and encounter-area classification are implemented in code; they s
 
 README, supported ROM revisions, BizHawk/core versions, `.gb/.gbc` + UPR ZX requirements, licenses (Besteon, NDS tracker), updater URLs.
 
+### P2 — leftover visual cleanup (out of the assets spec)
+
+- Recrop RBY trainer portraits if full-body sprites overflow 56×56 cells.
+- `SpriteData.lua` still has animation tables for dex 152+.
+- `images/icons/` (GBA berries), `maps/`, `boxart/`, `buttons/` were not trimmed.
+- FRLG badges were kept; swapping to RBY gym badges is a separate decision.
+
 ## High-risk technical notes
 
 1. **Initialization order matters.** Inspect `FileManager.LuaCode` and `FileManager.executeEachFile("initialize", ...)` before deleting a function that another module calls at load.
@@ -140,14 +200,16 @@ README, supported ROM revisions, BizHawk/core versions, `.gb/.gbc` + UPR ZX requ
 4. **Trainer IDs are synthetic.** `classId * 0x100 + trainerNumber` vs UPR's single global index.
 5. **RBY capture is not the Gen 3 shake formula.** Two random checks with different domains by Ball.
 6. **RBY has one Special stat.** Never recreate `spa/spd` in active display or calculation paths.
-7. **Passing smokes do not prove UI safety.** Most screens require BizHawk globals and are not loaded end-to-end.
-8. **Continue on the current branch.** Do not introduce `/tmp` worktrees unless explicitly requested.
+7. **Never pass width/height to `gui.drawImage` for RBY trainer PNGs.** Interpolation destroys 2-bit sprites. Native 56×56 only.
+8. **`Utils.gridAlign` page math.** If `startY + offsetY + h > cutoffY`, items go to page 2 at the same x/y as page 1. Screens without a pager must either raise `cutoffY` or hide `pageVisible ~= 1`. ExtraY is applied to position but **not** included in the height check.
+9. **Passing smokes do not prove UI safety.** Most screens require BizHawk globals and are not loaded end-to-end.
+10. **Continue on the current branch.** Do not introduce `/tmp` worktrees unless explicitly requested.
 
 ## Suggested next sequence
 
-1. Launch the real Yellow FR ROM in BizHawk and fix the first startup/runtime exception until a full wild and trainer battle works.
-2. Add a regression smoke for each exception.
-3. Validate TM/HM, Game Over, quickload, log overlay, defeated trainers and encounter areas in Yellow FR.
+1. Launch the real Yellow FR ROM in BizHawk (only if the owner asks) and fix the first startup/runtime exception until a full wild and trainer battle works.
+2. Validate the log overlay (filters, 2 trainers/page, trainer details pagination) and `TrainerInfoScreen` (six party slots visible) on that ROM.
+3. Validate TM/HM, Game Over, quickload, defeated trainers and encounter areas in Yellow FR.
 4. Repeat with Yellow US, Red and Blue when lawful ROMs are available.
 5. Trim leftover language/options copy and rewrite README/packaging.
 6. Requirement-by-requirement completion audit; do not mark complete until all four game profiles have runtime evidence.

@@ -260,7 +260,7 @@ ScreenResources{
 		OptionDisplayPlayTime = "Display play time",
 		OptionDisplayGender = "Display Pokémon's gender",
 		OptionAnimatedPokemonPopout = "Animated Pokémon popout",
-		ButtonEstimatePokemonIVs = "Estimate Pokémon IV Potential",
+		ButtonEstimatePokemonIVs = "Estimate Pokémon DV Potential",
 		EstimateResultOutstanding = "Outstanding!!!",
 		EstimateResultQuiteImpressive = "Quite impressive!!",
 		EstimateResultAboveAverage = "Above average!",

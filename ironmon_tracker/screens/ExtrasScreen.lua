@@ -241,7 +241,7 @@ function ExtrasScreen.getJudgeMessage()
 	if not PokemonData.isValid(leadPokemon.pokemonID) then
 		return Resources.ExtrasScreen.EstimateResultUnavailable or ""
 	end
-	-- Source: https://bulbapedia.bulbagarden.net/wiki/Stats_judge
+	-- Same qualitative bands as the later-gen stats judge, applied to RBY DV quality (0–1).
 	local resultKey
 	local ivEstimate = Utils.estimateIVs(leadPokemon) * 186
 	if ivEstimate >= 151 then
