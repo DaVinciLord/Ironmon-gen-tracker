@@ -205,41 +205,10 @@ function DataHelper.buildTrackerScreenDisplay(forceView)
 		data.p.evo = PokemonData.Evolutions.FRIEND_READY
 	end
 
-	-- Update: Held Item and Ability area(s)
+	-- RBY has neither held items nor abilities. Keep two blank rows so the
+	-- inherited compact layout retains its vertical spacing.
 	data.p.line1 = Constants.BLANKLINE
 	data.p.line2 = Constants.BLANKLINE
-	if data.x.viewingOwn then
-		if viewedPokemon.heldItem ~= nil and viewedPokemon.heldItem ~= 0 then
-			data.p.line1 = MiscData.Items[viewedPokemon.heldItem]
-		end
-		local abilityId = PokemonData.getAbilityId(viewedPokemon.pokemonID, viewedPokemon.abilityNum)
-		if AbilityData.isValid(abilityId) then
-			data.p.line2 = AbilityData.Abilities[abilityId].name
-		end
-	elseif PokemonData.canShowUnknownAbilities() then
-		local abilityIds = {
-			PokemonData.getAbilityId(viewedPokemon.pokemonID, 0),
-			PokemonData.getAbilityId(viewedPokemon.pokemonID, 1),
-		}
-		if AbilityData.isValid(abilityIds[1]) then
-			if AbilityData.isValid(abilityIds[2]) and abilityIds[2] ~= abilityIds[1] then
-				data.p.line1 = AbilityData.Abilities[abilityIds[1]].name .. " /"
-				data.p.line2 = AbilityData.Abilities[abilityIds[2]].name
-			else
-				data.p.line1 = AbilityData.Abilities[abilityIds[1]].name
-				data.p.line2 = Constants.BLANKLINE
-			end
-		end
-	else
-		local trackedAbilities = Tracker.getAbilities(viewedPokemon.pokemonID)
-		if AbilityData.isValid(trackedAbilities[1].id) then
-			data.p.line1 = AbilityData.Abilities[trackedAbilities[1].id].name .. " /"
-			data.p.line2 = Constants.HIDDEN_INFO
-		end
-		if AbilityData.isValid(trackedAbilities[2].id) then
-			data.p.line2 = AbilityData.Abilities[trackedAbilities[2].id].name
-		end
-	end
 
 	-- Add: Move Header
 	data.m.nextmoveheader, data.m.nextmovelevel, data.m.nextmovespacing = Utils.getMovesLearnedHeader(viewedPokemon.pokemonID, viewedPokemon.level)

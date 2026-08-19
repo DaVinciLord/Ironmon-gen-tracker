@@ -1712,35 +1712,26 @@ end
 
 ---@class IPokemon
 Program.DefaultPokemon = {
-	personality = 0,
 	nickname = "",
 	trainerID = 0,
 	pokemonID = 0,
-	heldItem = 0,
 	experience = 0,
 	currentExp = 0,
 	totalExp = 100,
-	friendship = 0,
 	level = 0,
-	gender = 0,
-	nature = 0,
-	isEgg = 0,
-	isShiny = false,
-	hasPokerus = false,
-	abilityNum = -1,
 	status = 0,
 	sleep_turns = 0,
 	curHP = 0,
-	stats = { hp = 0, atk = 0, def = 0, spa = 0, spd = 0, spe = 0 },
-	statStages = { hp = 6, atk = 6, def = 6, spa = 6, spd = 6, spe = 6, acc = 6, eva = 6 },
+	stats = { hp = 0, atk = 0, def = 0, special = 0, spe = 0 },
+	statStages = { atk = 6, def = 6, special = 6, spe = 6, acc = 6, eva = 6 },
 	moves = {
 		{ id = 0, level = 1, pp = 0 },
 		{ id = 0, level = 1, pp = 0 },
 		{ id = 0, level = 1, pp = 0 },
 		{ id = 0, level = 1, pp = 0 },
 	},
-	evs = { hp = 0, atk = 0, def = 0, spa = 0, spd = 0, spe = 0 },
-	ivs = { hp = 0, atk = 0, def = 0, spa = 0, spd = 0, spe = 0 },
+	statExp = { hp = 0, atk = 0, def = 0, special = 0, spe = 0 },
+	dvs = { hp = 0, atk = 0, def = 0, special = 0, spe = 0 },
 }
 
 ---Creates and returns a new IPokemon object
