@@ -23,8 +23,8 @@ local function read(path)
 	return content
 end
 local overlay = read(repoRoot .. "ironmon_tracker/screens/LogOverlay.lua")
-assert(overlay:find("drawBackgroundAndMargins(0, 0, Constants.SCREEN.WIDTH, Constants.SCREEN.HEIGHT)", 1, true),
-	"the log overlay must cover the GB game screen, like Besteon")
+assert(overlay:find("TabBox.height = Drawing.getTrackerHeight() - LogOverlay.tabHeight - m - 1", 1, true),
+	"TabBox must include DOWN_GAP or row 2 of the trainer grid is clipped")
 assert(overlay:find("SCREEN.WIDTH - (m * 2)", 1, true)
 	or overlay:find("SCREEN.WIDTH - (LogOverlay.margin * 2)", 1, true),
 	"log TabBox width is the game screen, not the right-gap tracker panel")
@@ -57,6 +57,16 @@ assert(not trainersTab:find("Drawing.drawText(LogOverlay.TabBox.x + 2, LogOverla
 	"Filter by: plus All/Rival/Gym/Elite 4/Boss does not fit the GB tab; drop the label")
 assert(trainersTab:find("width = 56", 1, true),
 	"RBY trainer portraits stay 56px native so they stay sharp on the GB overlay")
+assert(trainersTab:find("extraY = 12", 1, true),
+	"trainer names stay above the portrait, not drawn on top of it")
+assert(trainersTab:find("button.box[2] - Constants.SCREEN.LINESPACING", 1, true),
+	"trainer names stay above the 56px portrait")
+assert(trainersTab:find("button.box[2] + button.box[4] + 2", 1, true),
+	"party pokeballs stay below the 56px portrait")
+assert(trainersTab:find("Drawing.getTrackerHeight()", 1, true),
+	"the trainer grid cutoff must use tracker height or the 2x2 second row is dropped")
+assert(not trainersTab:find("TabBox.y + 18", 1, true),
+	"grid start y + 18 leaves no room for a second 56px row on GB")
 
 local trainerDetails = read(repoRoot .. "ironmon_tracker/screens/LogTabTrainerDetails.lua")
 assert(not trainerDetails:find("i % 2 == 1", 1, true),
