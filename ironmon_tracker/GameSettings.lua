@@ -282,15 +282,40 @@ GameSettings.GameCharMap = {
 }
 
 function GameSettings.initialize()
-	local success = GameSettings.importAddressesFromJson()
-	if success then
-		success = GameSettings.importTrackerOverridesFromJson()
+	local gameCode = Utils.reverseEndian32(Memory.read32(Gen1GameProfiles.HeaderAddress))
+	local profile = Gen1GameProfiles.get(gameCode)
+	if not profile then
+		GameSettings.gamename = "Unsupported Game"
+		Main.DisplayError("This game is unsupported by the Gen 1 Ironmon Tracker.\n\nSupported games: Pokemon Red, Blue, and Yellow (US/EU), plus Pokemon Yellow (France).")
+		return false
 	end
 
-	if not success then
-		GameSettings.gamename = "Unsupported Game"
-		Main.DisplayError("This game is unsupported by the Ironmon Tracker.\n\nCheck the Tracker's README.txt file for currently supported games.")
+	GameSettings.currentProfile = profile
+	GameSettings.gamecode = gameCode
+	GameSettings.game = profile.version == "Yellow" and 2 or 1
+	GameSettings.gamename = profile.name
+	GameSettings.versiongroup = profile.version == "Yellow" and 2 or 1
+	GameSettings.versioncolor = profile.version
+	GameSettings.language = profile.language
+	GameSettings.fullVersionName = profile.name
+	GameSettings.GEN = 1
+	GameSettings.generation = 1
+	GameSettings.isFrenchYellow = profile.id == "yellow_fr"
+	GameSettings.badgePrefix = "RBY"
+	GameSettings.badgeXOffsets = { 0, 0, 0, 0, 0, 0, 0, 0 }
+
+	-- Expose native names only. Runtime readers are migrated to this profile
+	-- instead of receiving misleading GBA aliases such as gBattleMons.
+	GameSettings.wram = profile.wram
+	GameSettings.rom = profile.rom
+	for name, address in pairs(profile.wram) do
+		GameSettings[name] = address
 	end
+	for name, address in pairs(profile.rom) do
+		GameSettings[name] = address
+	end
+
+	return true
 end
 
 -- INTERNAL FUNCTIONS

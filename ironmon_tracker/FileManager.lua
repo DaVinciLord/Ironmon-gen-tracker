@@ -110,6 +110,7 @@ FileManager.LuaCode = {
 	{ name = "TrackerAPI", filepath = "TrackerAPI.lua", },
 	{ name = "Utils", filepath = "Utils.lua", },
 	{ name = "Memory", filepath = "Memory.lua", },
+	{ name = "Gen1GameProfiles", filepath = "gen1" .. FileManager.slash .. "GameProfiles.lua", },
 	{ name = "GameSettings", filepath = "GameSettings.lua", },
 	{ name = "StructEncoder", filepath = "StructEncoder.lua", },
 	{ name = "GachaMonFileManager", filepath = "GachaMonFileManager.lua", },
