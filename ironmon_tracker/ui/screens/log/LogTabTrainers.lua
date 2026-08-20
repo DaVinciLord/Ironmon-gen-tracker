@@ -53,9 +53,7 @@ function LogTabTrainers.rebuild()
 end
 
 function LogTabTrainers.buildNavigation()
-	local nextNavX = LogOverlay.TabBox.x + 2
-	local navHeaderY = LogOverlay.TabBox.y + 1
-	local navItemSpacer = 3
+	local nextNavX, navHeaderY, navItemSpacer = LogOverlayLayout.trainersNavMetrics()
 
 	LogTabTrainers.NavFilterButtons = {}
 	for _, navFilter in ipairs(Utils.getSortedList(LogOverlay.NavFilters.Trainers)) do
@@ -258,12 +256,7 @@ function LogTabTrainers.realignGrid(gridFilter, sortFunc, startingPage)
 
 	table.sort(LogTabTrainers.PagedButtons, sortFunc)
 
-	local x = LogOverlay.TabBox.x + 12
-	local y = LogOverlay.TabBox.y + 18
-	local colSpacer = 12
-	local rowSpacer = 16
-	local maxWidth = LogOverlay.TabBox.width + LogOverlay.TabBox.x
-	local maxHeight = LogOverlay.TabBox.height + LogOverlay.TabBox.y
+	local x, y, colSpacer, rowSpacer, maxWidth, maxHeight = LogOverlayLayout.trainersGridMetrics()
 
 	LogOverlay.Windower.filterGrid = gridFilter
 	LogOverlay.Windower.totalPages = Utils.gridAlign(LogTabTrainers.PagedButtons, x, y, colSpacer, rowSpacer, false, maxWidth, maxHeight)

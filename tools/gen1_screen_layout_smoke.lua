@@ -23,11 +23,16 @@ local function read(path)
 	return content
 end
 local overlay = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogOverlay.lua")
-assert(overlay:find("TabBox.height = Drawing.getTrackerHeight() - LogOverlay.tabHeight - m - 1", 1, true),
+local overlayLayout = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogOverlayLayout.lua")
+assert(overlayLayout:find("TabBox.height = Drawing.getTrackerHeight() - LogOverlay.tabHeight - m - 1", 1, true)
+	or overlay:find("TabBox.height = Drawing.getTrackerHeight() - LogOverlay.tabHeight - m - 1", 1, true),
 	"TabBox must include DOWN_GAP or row 2 of the trainer grid is clipped")
-assert(overlay:find("SCREEN.WIDTH - (m * 2)", 1, true)
+assert(overlayLayout:find("SCREEN.WIDTH - (m * 2)", 1, true)
+	or overlay:find("SCREEN.WIDTH - (m * 2)", 1, true)
 	or overlay:find("SCREEN.WIDTH - (LogOverlay.margin * 2)", 1, true),
 	"log TabBox width is the game screen, not the right-gap tracker panel")
+assert(overlay:find("LogOverlayLayout.rebuild", 1, true),
+	"LogOverlay.syncLayout must rebuild via LogOverlayLayout")
 
 local pokemonTab = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabPokemon.lua")
 assert(pokemonTab:find("defaultIconCount = 1", 1, true),
@@ -63,10 +68,13 @@ assert(trainersTab:find("button.box[2] - Constants.SCREEN.LINESPACING", 1, true)
 	"trainer names stay above the 56px portrait")
 assert(trainersTab:find("button.box[2] + button.box[4] + 2", 1, true),
 	"party pokeballs stay below the 56px portrait")
-assert(trainersTab:find("Drawing.getTrackerHeight()", 1, true),
+assert(overlayLayout:find("getTrackerHeight()", 1, true)
+	or trainersTab:find("Drawing.getTrackerHeight()", 1, true),
 	"the trainer grid cutoff must use tracker height or the 2x2 second row is dropped")
 assert(not trainersTab:find("TabBox.y + 18", 1, true),
 	"grid start y + 18 leaves no room for a second 56px row on GB")
+assert(trainersTab:find("LogOverlayLayout.trainersGridMetrics", 1, true),
+	"trainer grid origin comes from LogOverlayLayout")
 
 local trainerDetails = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTrainerDetails.lua")
 assert(not trainerDetails:find("i % 2 == 1", 1, true),

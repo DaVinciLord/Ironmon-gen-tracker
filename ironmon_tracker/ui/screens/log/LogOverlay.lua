@@ -317,13 +317,10 @@ function LogOverlay.refreshButtons()
 	end
 end
 
--- Cover the GB game screen (160×144). Chrome sits on the overlay, not in the tracker gap.
+-- Cover the GB game screen (160×144 + DOWN_GAP). Chrome sits on the overlay, not in the tracker gap.
 function LogOverlay.syncLayout()
-	local m = LogOverlay.margin
-	LogOverlay.TabBox.x = m
-	LogOverlay.TabBox.y = LogOverlay.tabHeight
-	LogOverlay.TabBox.width = Constants.SCREEN.WIDTH - (m * 2)
-	LogOverlay.TabBox.height = Constants.SCREEN.HEIGHT - LogOverlay.tabHeight - m - 1
+	LogOverlayLayout.rebuild()
+	LogOverlayLayout.applyToOverlay()
 
 	local box = LogOverlay.TabBox
 	local xRight = box.x + box.width
