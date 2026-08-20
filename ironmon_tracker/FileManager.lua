@@ -175,6 +175,7 @@ FileManager.LuaCode = {
 	{ name = "Frame", filepath = FileManager.widgetFile("Frame.lua"), },
 	-- Screen files (ui/screens/<role>/)
 	{ name = "TrackerScreenLayout", filepath = FileManager.screenFile("combat", "TrackerScreenLayout.lua"), },
+	{ name = "TrackerScreenButtons", filepath = FileManager.screenFile("combat", "TrackerScreenButtons.lua"), },
 	{ name = "TrackerScreen", filepath = FileManager.screenFile("combat", "TrackerScreen.lua"), },
 	{ name = "InfoScreen", filepath = FileManager.screenFile("combat", "InfoScreen.lua"), },
 	{ name = "TrainerInfoScreen", filepath = FileManager.screenFile("combat", "TrainerInfoScreen.lua"), },

@@ -48,8 +48,8 @@ Each domain has one public Lua global. There is no `Gen1*` overlay and no `Runti
 | Trainers | `data/TrainerData.lua` |
 | UPR `.log` | `data/RandomizerLog.lua` |
 | Items | `data/MiscData.lua` |
-| Screens | `ui/screens/<role>/` (combat, log, setup, notebook, tools, stream, extensions, overlay) — Besteon global names unchanged |
-| UI widgets | `ui/widgets/` (Layout, Frame, Box, Component — NDS-inspired kit, Theme-bridged) |
+| Screens | `ui/screens/<role>/` — combat HUD split: `TrackerScreenLayout` + `TrackerScreenButtons` + `TrackerScreen` |
+| UI widgets | `ui/widgets/` (`Layout`, `Frame`, `Box`, `Component`) |
 | Pixel font (accents) | submodule `extensions/PixelFontExtension` + symlink `extensions/PixelFont.lua` |
 
 `DataAdapter` is the shared ROM/language trimmer used by `PokemonData` and `MoveData`. It is not a second species table.

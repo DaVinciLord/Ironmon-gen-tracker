@@ -6,7 +6,7 @@ Screens and the layout widget kit live here so you can find things by role.
 
 | Folder | What it is |
 | --- | --- |
-| `screens/combat/` | In-battle HUD and related (`TrackerScreen`, info, trainers on route, …) |
+| `screens/combat/` | HUD combat : `TrackerScreenLayout` (géométrie), `TrackerScreenButtons` (boutons), `TrackerScreen` (dessin / input) |
 | `screens/log/` | Randomizer log overlay and its tabs |
 | `screens/setup/` | Settings, startup, navigation menu, language, quickload |
 | `screens/notebook/` | Notes, seen Pokémon, stats history |
@@ -16,4 +16,9 @@ Screens and the layout widget kit live here so you can find things by role.
 | `screens/overlay/` | Extra overlays (e.g. team view) |
 | `widgets/` | Layout kit (`Layout`, `Frame`, `Box`, `Component`) — NDS-inspired, draws with Besteon `Theme` |
 
-Combat HUD geometry lives in `screens/combat/TrackerScreenLayout.lua` (the boxes you see beside the game). `TrackerScreen.lua` still owns buttons, input, and text; it asks the layout for positions instead of scattering magic numbers.
+Combat HUD is split for navigation:
+- `screens/combat/TrackerScreenLayout.lua` — panel geometry + button hitbox sync
+- `screens/combat/TrackerScreenButtons.lua` — button definitions
+- `screens/combat/TrackerScreen.lua` — draw / input / carousel logic
+
+Lua **global names** stay the same (`TrackerScreen`, …). Loading is wired in `FileManager.lua`.
