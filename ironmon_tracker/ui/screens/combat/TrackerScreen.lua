@@ -925,6 +925,8 @@ function TrackerScreen.drawScreen()
 	TrackerScreen.updateButtonStates()
 
 	Drawing.drawBackgroundAndMargins()
+	TrackerScreenLayout.rebuild()
+	TrackerScreenLayout.drawFrames()
 
 	local mustViewOwn = not Battle.inActiveBattle() or nil
 	local displayData = DataHelper.buildTrackerScreenDisplay(mustViewOwn)
@@ -948,19 +950,20 @@ end
 
 function TrackerScreen.drawPokemonInfoArea(data)
 	local shadowcolor = Utils.calcShadowColor(Theme.COLORS["Upper box background"])
+	local layout = TrackerScreenLayout.get()
+	local info = layout.pokemonInfo
 
 	-- Draw top box view
 	gui.defaultTextBackground(Theme.COLORS["Upper box background"])
-	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, Constants.SCREEN.MARGIN, 96, 52, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box background"])
 
 	-- POKEMON TYPES
 	if not Options["Reveal info if randomized"] and not Battle.isViewingOwn and PokemonData.IsRand.types then
 		-- Don't reveal randomized Pokemon types for enemies
-		Drawing.drawTypeIcon(PokemonData.Types.UNKNOWN, Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1, 33)
+		Drawing.drawTypeIcon(PokemonData.Types.UNKNOWN, info.x + 1, 33)
 	elseif data.p.types[1] ~= PokemonData.Types.UNKNOWN then
-		Drawing.drawTypeIcon(data.p.types[1], Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1, 33)
+		Drawing.drawTypeIcon(data.p.types[1], info.x + 1, 33)
 		if data.p.types[2] ~= data.p.types[1] then
-			Drawing.drawTypeIcon(data.p.types[2], Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1, 45)
+			Drawing.drawTypeIcon(data.p.types[2], info.x + 1, 45)
 		end
 	end
 
@@ -1064,9 +1067,9 @@ function TrackerScreen.drawPokemonInfoArea(data)
 
 	-- Gen 1 has neither held items nor abilities; type icons keep the 52px box.
 
-	-- HEALS INFO / ENCOUNTER INFO
-	local infoBoxHeight = 23
-	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, Constants.SCREEN.MARGIN + 52, 96, infoBoxHeight, Theme.COLORS["Upper box border"], Theme.COLORS["Upper box background"])
+	-- HEALS INFO / ENCOUNTER INFO (frame drawn by TrackerScreenLayout)
+	local heals = layout.healsRoute
+	local infoBoxHeight = heals.h
 
 	if Battle.isViewingOwn and data.p.id ~= 0 then
 		local healsInBagText = string.format("%s:", Resources.TrackerScreen.HealsInBag)
@@ -1168,14 +1171,13 @@ function TrackerScreen.drawStatsArea(data)
 	local borderColor = Theme.COLORS["Upper box border"]
 	local bgColor = Theme.COLORS["Upper box background"]
 	local shadowcolor = Utils.calcShadowColor(bgColor)
-	local mainBoxWidth = 101
-	local statOffsetX = Constants.SCREEN.WIDTH + mainBoxWidth + 1
-	local statOffsetY = 7
+	local layout = TrackerScreenLayout.get()
+	local stats = layout.stats
+	local statOffsetX = layout.statLabelX
+	local statOffsetY = layout.statLabelY
 
-	-- Draw the border box for the Stats area
-	local x, y = Constants.SCREEN.WIDTH + mainBoxWidth, 5
-	local w, h = Constants.SCREEN.RIGHT_GAP - mainBoxWidth - 5, 75
-	gui.drawRectangle(x, y, w, h, borderColor, bgColor)
+	-- Frame drawn by TrackerScreenLayout; PC-heal corner pixels stay here
+	local x, y, w, h = stats.x, stats.y, stats.w, stats.h
 	if RouteData.Locations.CanPCHeal[TrackerAPI.getMapId()] then
 		if data.x.extras.upperleft then gui.drawPixel(x + 1, y + 1, borderColor) end
 		if data.x.extras.upperright then gui.drawPixel(x + w - 1, y + 1, borderColor) end
@@ -1248,9 +1250,10 @@ function TrackerScreen.drawMovesArea(data)
 	local headerColor = Theme.COLORS["Header text"]
 	local shadowcolor = Utils.calcShadowColor(Theme.COLORS["Lower box background"])
 	local bgHeaderShadow = Utils.calcShadowColor(Theme.COLORS["Main background"])
+	local layout = TrackerScreenLayout.get()
 
-	local moveTableHeaderHeightDiff = 13
-	local moveOffsetY = 94
+	local moveTableHeaderHeightDiff = TrackerScreenLayout.Constants.MOVES_HEADER_HEIGHT
+	local moveOffsetY = layout.moves.y + 2
 	local moveCatOffset = 7
 	local moveNameOffset = 6 -- Move names (longest name is 12 characters?)
 	local movePPOffset = 82
@@ -1288,9 +1291,8 @@ function TrackerScreen.drawMovesArea(data)
 		Drawing.drawText(headerLevelHighlightX, headerY, data.m.nextmovelevel, Theme.COLORS[Theme.headerHighlightKey], bgHeaderShadow)
 	end
 
-	-- Draw the Moves view box
+	-- Moves frame drawn by TrackerScreenLayout
 	gui.defaultTextBackground(Theme.COLORS["Lower box background"])
-	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, moveOffsetY - 2, Constants.SCREEN.RIGHT_GAP - (2 * Constants.SCREEN.MARGIN), 44, Theme.COLORS["Lower box border"], Theme.COLORS["Lower box background"])
 
 	if Options["Show physical special icons"] then -- Check if move categories will be drawn
 		moveNameOffset = moveNameOffset + 8
@@ -1357,10 +1359,10 @@ end
 
 function TrackerScreen.drawCarouselArea(data)
 	local shadowcolor = Utils.calcShadowColor(Theme.COLORS["Lower box background"])
+	local layout = TrackerScreenLayout.get()
+	local carouselBox = layout.carousel
 
-	-- Draw the border box for the Stats area
-	gui.drawRectangle(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, 136, Constants.SCREEN.RIGHT_GAP - (2 * Constants.SCREEN.MARGIN), 19, Theme.COLORS["Lower box border"], Theme.COLORS["Lower box background"])
-
+	-- Carousel frame drawn by TrackerScreenLayout
 	local carousel = TrackerScreen.getCurrentCarouselItem()
 	for _, content in pairs(carousel:getContentList(data.p.id)) do
 		if content.type == Constants.ButtonTypes.IMAGE or content.type == Constants.ButtonTypes.PIXELIMAGE or content.type == Constants.ButtonTypes.FULL_BORDER then
@@ -1368,19 +1370,19 @@ function TrackerScreen.drawCarouselArea(data)
 		elseif type(content) == "string" then
 			local wrappedText = Utils.getWordWrapLines(content, 34)
 			if #wrappedText == 1 then
-				Drawing.drawText(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1, 140, wrappedText[1], Theme.COLORS["Lower box text"], shadowcolor)
+				Drawing.drawText(carouselBox.x + 1, carouselBox.y + 4, wrappedText[1], Theme.COLORS["Lower box text"], shadowcolor)
 			elseif #wrappedText >= 2 then
-				Drawing.drawText(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1, 136, wrappedText[1], Theme.COLORS["Lower box text"], shadowcolor)
-				Drawing.drawText(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN + 1, 145, wrappedText[2], Theme.COLORS["Lower box text"], shadowcolor)
-				gui.drawLine(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, 155, Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP - Constants.SCREEN.MARGIN, 155, Theme.COLORS["Lower box border"])
-				gui.drawLine(Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN, 156, Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP - Constants.SCREEN.MARGIN, 156, Theme.COLORS["Main background"])
+				Drawing.drawText(carouselBox.x + 1, carouselBox.y, wrappedText[1], Theme.COLORS["Lower box text"], shadowcolor)
+				Drawing.drawText(carouselBox.x + 1, carouselBox.y + 9, wrappedText[2], Theme.COLORS["Lower box text"], shadowcolor)
+				gui.drawLine(carouselBox.x, carouselBox.y + 19, carouselBox.x + carouselBox.w, carouselBox.y + 19, Theme.COLORS["Lower box border"])
+				gui.drawLine(carouselBox.x, carouselBox.y + 20, carouselBox.x + carouselBox.w, carouselBox.y + 20, Theme.COLORS["Main background"])
 			end
 		end
 	end
 
 	--work around limitation of drawText not having width limit: paint over any spillover
-	local x = Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP - Constants.SCREEN.MARGIN
-	local y = 137
+	local x = carouselBox.x + carouselBox.w
+	local y = carouselBox.y + 1
 	gui.drawLine(x, y, x, y + 14, Theme.COLORS["Lower box border"])
 	gui.drawRectangle(x + 1, y, 12, 14, Theme.COLORS["Main background"], Theme.COLORS["Main background"])
 end

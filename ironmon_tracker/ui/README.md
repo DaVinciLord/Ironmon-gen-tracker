@@ -16,4 +16,4 @@ Screens and the layout widget kit live here so you can find things by role.
 | `screens/overlay/` | Extra overlays (e.g. team view) |
 | `widgets/` | Layout kit (`Layout`, `Frame`, `Box`, `Component`) — NDS-inspired, draws with Besteon `Theme` |
 
-Lua **global names** are unchanged (`TrackerScreen`, `LogOverlay`, …). Only file paths moved. Loading is wired in `FileManager.lua` via `FileManager.screenFile()` / `FileManager.widgetFile()`.
+Combat HUD geometry lives in `screens/combat/TrackerScreenLayout.lua` (the boxes you see beside the game). `TrackerScreen.lua` still owns buttons, input, and text; it asks the layout for positions instead of scattering magic numbers.
