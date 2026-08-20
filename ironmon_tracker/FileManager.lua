@@ -210,6 +210,7 @@ FileManager.LuaCode = {
 	{ name = "CrashRecoveryScreen", filepath = FileManager.screenFile("tools", "CrashRecoveryScreen.lua"), },
 	{ name = "CoverageCalcScreen", filepath = FileManager.screenFile("tools", "CoverageCalcScreen.lua"), },
 	{ name = "LogOverlayLayout", filepath = FileManager.screenFile("log", "LogOverlayLayout.lua"), },
+	{ name = "LogSearchLayout", filepath = FileManager.screenFile("log", "LogSearchLayout.lua"), },
 	{ name = "LogOverlay", filepath = FileManager.screenFile("log", "LogOverlay.lua"), },
 	{ name = "LogTabPokemon", filepath = FileManager.screenFile("log", "LogTabPokemon.lua"), },
 	{ name = "LogTabPokemonDetails", filepath = FileManager.screenFile("log", "LogTabPokemonDetails.lua"), },

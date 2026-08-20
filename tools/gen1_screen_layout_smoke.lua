@@ -92,6 +92,17 @@ assert(not tmsTabWired:find("box = { LogOverlay.TabBox.x + nextNavX", 1, true),
 assert(overlay:find("applyMiscButtonBoxes", 1, true),
 	"syncLayout must refresh Misc tab hitboxes from layout")
 
+local searchLayout = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogSearchLayout.lua")
+assert(searchLayout:find("getTrackerHeight", 1, true),
+	"log search keyboard must anchor to tracker height / DOWN_GAP")
+local searchScreen = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogSearchScreen.lua")
+assert(searchScreen:find("LogSearchLayout.rebuild", 1, true),
+	"LogSearchScreen must rebuild via LogSearchLayout")
+assert(searchScreen:find('["special"]', 1, true),
+	"Gen 1 sort uses Special, not spa/spd")
+assert(not searchScreen:find("SortBy.SPD", 1, true) and not searchScreen:find("\tSPD = {", 1, true),
+	"Sp. Def sort must not appear on Gen 1 search")
+
 local trainerDetails = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTrainerDetails.lua")
 assert(not trainerDetails:find("i % 2 == 1", 1, true),
 	"trainer details cannot use the GBA 2-column party layout on a 156px GB tab")

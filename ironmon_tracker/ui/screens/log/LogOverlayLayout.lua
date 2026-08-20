@@ -6,9 +6,9 @@ LogOverlayLayout = {}
 LogOverlayLayout.Constants = {
 	-- Pokémon icon grid (LogTabPokemon.realignGrid)
 	POKEMON_ICON_SIZE = 32,
-	POKEMON_COL_SPACER = 23,
-	POKEMON_ROW_SPACER = 4,
-	POKEMON_NAME_OFFSET_Y = 2,
+	POKEMON_COL_SPACER = 20, -- slightly tighter columns for clearer centering on GB
+	POKEMON_ROW_SPACER = 6, -- more vertical breathing room (NDS-like)
+	POKEMON_NAME_OFFSET_Y = 3, -- names sit above each icon
 	-- Trainers portrait grid
 	TRAINERS_GRID_OFFSET_X = 12,
 	TRAINERS_GRID_OFFSET_Y = 18,

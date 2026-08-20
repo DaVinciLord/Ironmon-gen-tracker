@@ -86,23 +86,12 @@ LogSearchScreen.SortBy = {
 	SPA = {
 		getText = function() return Resources.LogSearchScreen.SortSPA end,
 		sortFunc = function(a, b)
-			local p1, p2 = RandomizerLog.Data.Pokemon[a.id].BaseStats["spa"],
-				RandomizerLog.Data.Pokemon[b.id].BaseStats["spa"]
+			local p1 = (RandomizerLog.Data.Pokemon[a.id].BaseStats or {})["special"] or 0
+			local p2 = (RandomizerLog.Data.Pokemon[b.id].BaseStats or {})["special"] or 0
 			return p1 > p2 or (p1 == p2 and a.id < b.id)
 		end,
 		contexts = { [LogTabPokemon] = true, },
 		index = 7,
-	},
-	SPD = {
-		getText = function() return Resources.LogSearchScreen.SortSPD end,
-		sortFunc = function(a, b)
-			local p1, p2 = RandomizerLog.Data.Pokemon[a.id].BaseStats["spd"],
-				RandomizerLog.Data.Pokemon[b.id].BaseStats["spd"]
-			return p1 > p2 or (p1 == p2 and a.id < b.id)
-		end,
-		contexts = { [LogTabPokemon] = true, },
-		index = 8,
-
 	},
 	SPE = {
 		getText = function() return Resources.LogSearchScreen.SortSPE end,
@@ -112,7 +101,7 @@ LogSearchScreen.SortBy = {
 			return p1 > p2 or (p1 == p2 and a.id < b.id)
 		end,
 		contexts = { [LogTabPokemon] = true, },
-		index = 9,
+		index = 8,
 	},
 	WildPokemonLevel = {
 		getText = function() return Resources.LogSearchScreen.SortWildPokemonLv end,
@@ -120,7 +109,7 @@ LogSearchScreen.SortBy = {
 			return (a.maxWildLv or 999) < (b.maxWildLv or 999) or (a.maxWildLv == b.maxWildLv and a.id < b.id)
 		end,
 		contexts = { [LogTabRoutes] = true, },
-		index = 10,
+		index = 9,
 	},
 	TrainerLevel = {
 		getText = function() return Resources.LogSearchScreen.SortTrainerLevel end,
@@ -129,7 +118,7 @@ LogSearchScreen.SortBy = {
 			return t1 < t2 or (t1 == t2 and a.id < b.id)
 		end,
 		contexts = { [LogTabTrainers] = true, [LogTabRoutes] = true,},
-		index = 11,
+		index = 10,
 	},
 }
 
@@ -171,12 +160,8 @@ end
 
 function LogSearchScreen.createButtons()
 	local LSS = LogSearchScreen
-	local topBox = {
-		x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN,
-		y = Constants.SCREEN.MARGIN + 10,
-		width = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2),
-		height = Constants.SCREEN.HEIGHT - (Constants.SCREEN.MARGIN * 2) - 10,
-	}
+	LogSearchLayout.rebuild()
+	local topBox = LogSearchLayout.topBox()
 
 	-- =====KEYBOARD BUTTONS=====
 	LSS.createKeyboardButtons()
@@ -312,20 +297,8 @@ end
 
 function LogSearchScreen.createUpdateSortOrderDropdown()
 	local LSS = LogSearchScreen
-
-	local topBox = {
-		x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN,
-		y = Constants.SCREEN.MARGIN + 10,
-		width = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2),
-		height = Constants.SCREEN.HEIGHT - (Constants.SCREEN.MARGIN * 2) - 10,
-	}
-
-	local dropdownBox = {
-		x = topBox.x + 40,
-		y = topBox.y + LSS.padding + 1,
-		width = 90,
-		height = 13,
-	}
+	LogSearchLayout.rebuild()
+	local dropdownBox = LogSearchLayout.sortDropdownBox()
 
 	-- Create the dropdown buttons, first is the label/top level button. This will be the only one visible when the dropdown is closed
 	LSS.Buttons.SortBySelected = {
@@ -400,20 +373,8 @@ end
 --- Updates the filter dropdown buttons
 function LogSearchScreen.createUpdateFilterDropdown()
 	local LSS = LogSearchScreen
-
-	local topBox = {
-		x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN,
-		y = Constants.SCREEN.MARGIN + 10,
-		width = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2),
-		height = Constants.SCREEN.HEIGHT - (Constants.SCREEN.MARGIN * 2) - 10,
-	}
-
-	local dropdownBox = {
-		x = topBox.x + 40,
-		y = LSS.Buttons.SearchTextField.box[2] - Constants.SCREEN.LINESPACING - LSS.padding * 2 - 1,
-		width = 90,
-		height = 13,
-	}
+	LogSearchLayout.rebuild()
+	local dropdownBox = LogSearchLayout.filterDropdownBox(LSS.Buttons.SearchTextField.box[2])
 
 	-- Create the dropdown buttons, first is the label/top level button.
 	LSS.Buttons.FilterBySelected = {
@@ -520,19 +481,11 @@ end
 --- Builds a set of keyboard buttons in qwerty layout, the buttons are stored in LogSearchScreen.KeyboardButtons
 function LogSearchScreen.createKeyboardButtons()
 	local LSS = LogSearchScreen
-
-	local height = 60
-	local botBox = {
-		x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN,
-		y = Constants.SCREEN.HEIGHT - Constants.SCREEN.MARGIN - height,
-		width = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2),
-		height = height,
-		paddingX = 2, -- The padding between keys on the x axis
-		paddingY = 2, -- The padding between keys on the y axis
-		paddingBoard = 4, -- The padding between the keyboard keys and box drawn around it
-	}
+	LogSearchLayout.rebuild()
+	local botBox = LogSearchLayout.keyboardBox()
 
 	-- Calculate key and keyboard dimensions
+	local height = botBox.height
 	local width = botBox.width
 	local autosizeHeight = false
 
@@ -646,6 +599,7 @@ end
 --- @return nil
 function LogSearchScreen.drawScreen()
 	local LSS = LogSearchScreen
+	LogSearchLayout.rebuild()
 
 	-- Define colors which are used for several individual drawing functions
 	LSS.Colors.upperShadowcolor = Utils.calcShadowColor(Theme.COLORS[LSS.Colors.upperBoxFill])
@@ -658,16 +612,11 @@ function LogSearchScreen.drawScreen()
 		LSS.Colors.upperTextShadow = nil
 	end
 
-	local topBox = {
-		x = Constants.SCREEN.WIDTH + Constants.SCREEN.MARGIN,
-		y = Constants.SCREEN.MARGIN + 10,
-		width = Constants.SCREEN.RIGHT_GAP - (Constants.SCREEN.MARGIN * 2),
-		height = Constants.SCREEN.HEIGHT - (Constants.SCREEN.MARGIN * 2) - 10,
-		text = Theme.COLORS[LSS.Colors.upperText],
-		border = Theme.COLORS[LSS.Colors.upperBorder],
-		fill = Theme.COLORS[LSS.Colors.upperBoxFill],
-		shadow = LSS.Colors.upperShadowcolor,
-	}
+	local topBox = LogSearchLayout.topBox()
+	topBox.text = Theme.COLORS[LSS.Colors.upperText]
+	topBox.border = Theme.COLORS[LSS.Colors.upperBorder]
+	topBox.fill = Theme.COLORS[LSS.Colors.upperBoxFill]
+	topBox.shadow = LSS.Colors.upperShadowcolor
 	local botBox = {
 		x = LSS.KeyboardBox.x,
 		y = LSS.KeyboardBox.y,
@@ -690,7 +639,7 @@ function LogSearchScreen.drawScreen()
 	-- Draw header
 	local headerText = Utils.toUpperUTF8(Resources.LogSearchScreen.Title)
 	local headerShadow = Utils.calcShadowColor(Theme.COLORS["Main background"])
-	Drawing.drawText(topBox.x, Constants.SCREEN.MARGIN - 2, headerText, Theme.COLORS["Header text"], headerShadow)
+	Drawing.drawText(topBox.x, LogSearchLayout.get().headerY, headerText, Theme.COLORS["Header text"], headerShadow)
 
 	-- Draw sort and filter labels
 	local sortByText = Resources.LogSearchScreen.LabelSortBy .. ":"
@@ -724,17 +673,18 @@ function LogSearchScreen.drawNoSearchResults(textColor, shadowcolor, x, y)
 	textColor = textColor or Theme.COLORS["Default text"]
 	shadowcolor = shadowcolor or Utils.calcShadowColor(Theme.COLORS["Upper box background"])
 	local textX = x
+	local tab = LogOverlayLayout.get().tabBox
 
 	local image = {
 		filepath = FileManager.buildImagePath(FileManager.Folders.Icons, "missingno", ".png"),
 		w = 24, h = 56,
 	}
-	x = x or LogOverlay.TabBox.x + math.floor((LogOverlay.TabBox.width - image.w) / 2 + 0.5)
-	y = y or LogOverlay.TabBox.y + math.floor((LogOverlay.TabBox.height - image.h) / 2 + 0.5) - 4
+	x = x or tab.x + math.floor((tab.w - image.w) / 2 + 0.5)
+	y = y or tab.y + math.floor((tab.h - image.h) / 2 + 0.5) - 4
 	Drawing.drawImage(image.filepath, x, y)
 
 	local noResultsText = string.format("(%s)", Resources.LogSearchScreen.LabelNoResults)
-	textX = textX or Utils.getCenteredTextX(noResultsText, LogOverlay.TabBox.width)
+	textX = textX or (tab.x + Utils.getCenteredTextX(noResultsText, tab.w))
 	Drawing.drawText(textX, y + image.h + 2, noResultsText, textColor, shadowcolor)
 end
 

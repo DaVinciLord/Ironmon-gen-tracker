@@ -717,8 +717,8 @@ ScreenResources{
 		SortHP = "HP", -- NEEDS TRANSLATION
 		SortATK = "Attack", -- NEEDS TRANSLATION
 		SortDEF = "Defense", -- NEEDS TRANSLATION
-		SortSPA = "Sp. Atk", -- NEEDS TRANSLATION
-		SortSPD = "Sp. Def", -- NEEDS TRANSLATION
+		SortSPA = "Spécial", -- Gen 1 single Special (was Sp. Atk)
+		SortSPD = "Sp. Def", -- NEEDS TRANSLATION (unused on Gen 1)
 		SortSPE = "Speed", -- NEEDS TRANSLATION
 		SortWildPokemonLv = "Wild Pokémon Lv.", -- NEEDS TRANSLATION
 		SortTrainerLevel = "Trainer Level", -- NEEDS TRANSLATION

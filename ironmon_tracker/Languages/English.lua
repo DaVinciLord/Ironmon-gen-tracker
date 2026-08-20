@@ -717,7 +717,7 @@ ScreenResources{
 		SortHP = "HP",
 		SortATK = "Attack",
 		SortDEF = "Defense",
-		SortSPA = "Sp. Atk",
+		SortSPA = "Special",
 		SortSPD = "Sp. Def",
 		SortSPE = "Speed",
 		SortWildPokemonLv = "Wild Pokémon Lv.",

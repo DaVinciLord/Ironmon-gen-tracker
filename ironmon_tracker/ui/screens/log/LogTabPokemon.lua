@@ -182,10 +182,11 @@ function LogTabPokemon.drawTab()
 	local borderColor = Theme.COLORS[LogTabPokemon.Colors.border]
 	local fillColor = Theme.COLORS[LogTabPokemon.Colors.boxFill]
 	local shadowcolor = Utils.calcShadowColor(fillColor)
+	local box = LogOverlayLayout.get().tabBox
 
 	-- Draw the Tab viewbox
 	gui.defaultTextBackground(fillColor)
-	gui.drawRectangle(LogOverlay.TabBox.x, LogOverlay.TabBox.y, LogOverlay.TabBox.width, LogOverlay.TabBox.height, borderColor, fillColor)
+	gui.drawRectangle(box.x, box.y, box.w, box.h, borderColor, fillColor)
 
 	-- Draw the paged items
 	local atLeastOne = false
