@@ -6,15 +6,14 @@ TrackerScreenLayout = {}
 TrackerScreenLayout.Constants = {
 	POKEMON_INFO_WIDTH = 96,
 	POKEMON_INFO_HEIGHT = 52,
-	HEALS_ROUTE_HEIGHT = 23,
-	-- Distance from game-screen right edge (Constants.SCREEN.WIDTH) to the stats column
-	STATS_OFFSET_FROM_GAME = 101,
-	STATS_HEIGHT = 75,
+	HEALS_ROUTE_HEIGHT = 22,
+	COL_GAP = 2, -- space between pokemon column and stats column
+	STATS_HEIGHT = 74, -- pokemon info + heals/route
 	MOVES_HEADER_HEIGHT = 13,
-	MOVES_BOX_HEIGHT = 44,
+	MOVES_BOX_HEIGHT = 44, -- 4 rows @10px + top pad (+2) + room for glyph/icons
 	CAROUSEL_HEIGHT = 19,
-	-- Gap between heals/route block and the moves header (Besteon used 81 - 80 = 1)
-	SECTION_GAP = 1,
+	SECTION_GAP = 1, -- heals/route → moves header (tight; bottom padding is sacred)
+	MOVES_TO_CAROUSEL_GAP = 0, -- shared edge with carousel (classic Besteon)
 }
 
 local boxes = nil
@@ -48,22 +47,16 @@ function TrackerScreenLayout.rebuild()
 	local originX = Constants.SCREEN.WIDTH + m
 	local originY = m
 	local panelW = Constants.SCREEN.RIGHT_GAP - (2 * m)
-	local statsX = Constants.SCREEN.WIDTH + C.STATS_OFFSET_FROM_GAME
-	local statsW = Constants.SCREEN.RIGHT_GAP - C.STATS_OFFSET_FROM_GAME - m
-
-	local healsBottom = originY + C.POKEMON_INFO_HEIGHT + C.HEALS_ROUTE_HEIGHT
-	local movesHeaderY = healsBottom + C.SECTION_GAP
-	local movesBoxY = movesHeaderY + C.MOVES_HEADER_HEIGHT - 2 -- matches old 92 when header is 81
+	local statsX = originX + C.POKEMON_INFO_WIDTH + C.COL_GAP
+	local statsW = (Constants.SCREEN.WIDTH + Constants.SCREEN.RIGHT_GAP - m) - statsX
 
 	local trackerH = (Drawing and Drawing.getTrackerHeight and Drawing.getTrackerHeight())
 		or (Constants.SCREEN.HEIGHT + (Constants.SCREEN.DOWN_GAP or 0))
+
+	-- Carousel stays bottom-anchored (margin below). Upper stack fills toward it; never push carousel down.
 	local carouselY = trackerH - m - C.CAROUSEL_HEIGHT
-	-- Keep legacy 136 when the padded height is the standard GB panel (159 → 135 would shift
-	-- badges by 1px); prefer the bottom of the tracker panel without overlapping moves.
-	local minCarouselY = movesBoxY + C.MOVES_BOX_HEIGHT
-	if carouselY < minCarouselY then
-		carouselY = minCarouselY
-	end
+	local movesBoxY = carouselY - C.MOVES_TO_CAROUSEL_GAP - C.MOVES_BOX_HEIGHT
+	local movesHeaderY = movesBoxY - (C.MOVES_HEADER_HEIGHT - 2)
 
 	frames = {
 		pokemonInfo = makeRegion(originX, originY, C.POKEMON_INFO_WIDTH, C.POKEMON_INFO_HEIGHT, "Upper box border", "Upper box background"),
@@ -141,7 +134,7 @@ function TrackerScreenLayout.applyButtonBoxes()
 	setBox(B.TrainerDetails, heals.x + 78, heals.y + 4, 16, 16)
 	setBox(B.HealsInBag, heals.x, heals.y + 2, 54, 21)
 
-	setBox(B.InvisibleStatsArea, stats.x + 2, stats.y, 44, stats.h)
+	setBox(B.InvisibleStatsArea, stats.x + 2, stats.y, math.min(44, stats.w - 4), stats.h)
 
 	setClickable(B.MovesHistory, ox + 1, headerY, 75, 10)
 	setBox(B.MovesHistory, ox + 1, headerY, 75, 10)
@@ -167,7 +160,6 @@ function TrackerScreenLayout.applyButtonBoxes()
 	setClickable(B.PedometerReset, ox + 108, cy + 4, 28, 11)
 	setBox(B.PedometerReset, ox + 108, cy + 4, 28, 11)
 
-	-- Stat marking squares (created in initialize)
 	local heightOffset = oy + 4
 	for _, statKey in ipairs(Constants.OrderedLists.STATSTAGES or {}) do
 		if B[statKey] then
@@ -176,7 +168,6 @@ function TrackerScreenLayout.applyButtonBoxes()
 		end
 	end
 
-	-- Gym badges
 	local badgeWidth = 16
 	local badgePrefix = (GameSettings and GameSettings.badgePrefix)
 		or ((Constants.Badges and Constants.Badges[GameSettings and GameSettings.game] or {}).Prefix)
