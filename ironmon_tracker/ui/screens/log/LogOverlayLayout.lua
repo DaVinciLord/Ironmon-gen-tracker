@@ -24,6 +24,14 @@ LogOverlayLayout.Constants = {
 	ROUTES_ROW_SPACER = 0,
 	ROUTES_HEADER_OFFSET_X = 3,
 	ROUTES_HEADER_OFFSET_Y = 1,
+	ROUTES_BAR_HEIGHT = 21,
+	-- Column widths for GB TabBox (~156). Location column absorbs the remainder.
+	ROUTES_COL_ICON = 16,
+	ROUTES_COL_WILD_COUNT = 14,
+	ROUTES_COL_WILD_LV = 28,
+	ROUTES_COL_TRAINER_COUNT = 14,
+	ROUTES_COL_TRAINER_LV = 28,
+	ROUTES_COL_LOCATION_MIN = 36,
 	-- TMs
 	TMS_NAV_OFFSET_X = 2,
 	TMS_NAV_OFFSET_Y = 1,
@@ -192,6 +200,25 @@ function LogOverlayLayout.routesGridMetrics()
 	local x = box.x + C.ROUTES_GRID_OFFSET_X
 	local y = box.y + C.ROUTES_GRID_OFFSET_Y
 	return x, y, C.ROUTES_COL_SPACER, C.ROUTES_ROW_SPACER, box.x + box.w, box.y + box.h
+end
+
+---Full-width route row metrics that fit the GB TabBox (GBA used 230px bars).
+---Width accounts for the grid's left inset so startX + width stays within TabBox.
+---@return number width, number height, number locationColW
+function LogOverlayLayout.routesBarMetrics()
+	local C = LogOverlayLayout.Constants
+	local box = tabBox()
+	local width = math.max(80, box.w - C.ROUTES_GRID_OFFSET_X)
+	local fixed = C.ROUTES_COL_ICON
+		+ C.ROUTES_COL_WILD_COUNT
+		+ C.ROUTES_COL_WILD_LV
+		+ C.ROUTES_COL_TRAINER_COUNT
+		+ C.ROUTES_COL_TRAINER_LV
+	local locationW = math.max(C.ROUTES_COL_LOCATION_MIN, width - fixed)
+	if locationW + fixed > width then
+		locationW = math.max(24, width - fixed)
+	end
+	return width, C.ROUTES_BAR_HEIGHT, locationW
 end
 
 ---@param colRelX number column x relative to route bar width (legacy col.x)

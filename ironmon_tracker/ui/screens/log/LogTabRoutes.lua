@@ -50,38 +50,41 @@ function LogTabRoutes.buildPagedButtons()
 	LogTabRoutes.TemporaryButtons = {}
 	LogTabRoutes.PagedButtons = {}
 
-	-- Header label buttons for the route bars
+	local C = LogOverlayLayout.Constants
+	local barWidth, barHeight, locationColW = LogOverlayLayout.routesBarMetrics()
+
+	-- Header label buttons for the route bars (widths sum to TabBox; GBA used 230)
 	local rightOffsetX = 0
 	local routeBar = {
-		width = 230,
-		height = 21,
+		width = barWidth,
+		height = barHeight,
 		cols = {
 			{
-				w = 21,
+				w = C.ROUTES_COL_ICON,
 			},
 			{
 				getText = function() return Utils.toUpperUTF8(Resources.LogOverlay.LabelLocation) end,
-				w = 105
+				w = locationColW,
 			},
 			{
 				icon = LogTabPokemon.TabIcons.NidoranM,
-				w = 18,
+				w = C.ROUTES_COL_WILD_COUNT,
 				textColor = "Lower box text",
 				boxFill = "Lower box background",
 			},
 			{
 				getText = function() return Utils.toUpperUTF8(Resources.TrackerScreen.LevelAbbreviation .. ".") end,
-				w = 34,
+				w = C.ROUTES_COL_WILD_LV,
 				textColor = "Lower box text",
 				boxFill = "Lower box background",
 			},
 			{
 				icon = LogTabTrainers.chosenIcon or LogTabTrainers.TabIcons.BoyFRLG,
-				w = 18,
+				w = C.ROUTES_COL_TRAINER_COUNT,
 			},
 			{
 				getText = function() return Utils.toUpperUTF8(Resources.TrackerScreen.LevelAbbreviation .. ".") end,
-				w = 34,
+				w = C.ROUTES_COL_TRAINER_LV,
 			},
 		},
 	}
@@ -97,21 +100,24 @@ function LogTabRoutes.buildPagedButtons()
 		local button = {
 			type = Constants.ButtonTypes.NO_BORDER,
 			textColor = LogTabRoutes.Colors.highlight,
-			box = { headerX, headerY, 16, 16 },
+			box = { headerX, headerY, math.min(16, col.w), 16 },
 			draw = function(self, shadowcolor)
 				local x, y = self.box[1], self.box[2]
 				local w, h = self.box[3], self.box[4]
-				if col.icon then
+				if col.icon and col.icon.image then
 					local adjustedX = x + (w - (col.icon.w or 0)) / 2 + 1
 					local adjustedY = y + (col.icon.y or 0) + (h - (col.icon.h or 12)) - 1
 					Drawing.drawImage(col.icon.image, adjustedX, adjustedY)
 				end
 				if type(col.getText) == "function" then
+					local label = col:getText()
 					local adjustedX = x + 3
 					if i > 2 then -- for "LVs"
-						adjustedX = x + Utils.getCenteredTextX(col:getText(), col.w) - 1
+						adjustedX = x + Utils.getCenteredTextX(label, col.w) - 1
+					elseif i == 2 then
+						label = Utils.shortenText(label, col.w - 4, true)
 					end
-					Drawing.drawText(adjustedX, y + 4, col:getText(), Theme.COLORS[self.textColor], shadowcolor)
+					Drawing.drawText(adjustedX, y + 4, label, Theme.COLORS[self.textColor], shadowcolor)
 				end
 			end,
 		}
@@ -242,7 +248,8 @@ function LogTabRoutes.buildPagedButtons()
 
 				-- Route Name
 				textColor = Theme.COLORS[routeBar.cols[2].textColor or false] or Theme.COLORS[LogTabRoutes.Colors.text]
-				Drawing.drawText(x + routeBar.cols[2].x + 3, y + centeredY, self:getCustomText(), textColor, shadowcolor)
+				local routeName = Utils.shortenText(self:getCustomText(), routeBar.cols[2].w - 4, true)
+				Drawing.drawText(x + routeBar.cols[2].x + 3, y + centeredY, routeName, textColor, shadowcolor)
 
 				local col, text, centeredX
 				-- # Wilds and levels

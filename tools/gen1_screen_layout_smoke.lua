@@ -79,6 +79,10 @@ assert(trainersTab:find("LogOverlayLayout.trainersGridMetrics", 1, true),
 local routesTab = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabRoutes.lua")
 assert(routesTab:find("LogOverlayLayout.routesGridMetrics", 1, true),
 	"route list grid origin comes from LogOverlayLayout")
+assert(routesTab:find("LogOverlayLayout.routesBarMetrics", 1, true),
+	"route row width must come from layout so bars fit the GB TabBox")
+assert(not routesTab:find("width = 230", 1, true),
+	"GBA routeBar width 230 excludes every row on the 156px GB TabBox")
 
 local tmsTabWired = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTMs.lua")
 assert(tmsTabWired:find("LogOverlayLayout.tmsGridMetrics", 1, true),
