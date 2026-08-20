@@ -87,7 +87,7 @@ Program = { currentScreen = nil, redraw = function() end, changeScreenView = fun
 Input = { checkButtonsClicked = function() end }
 TrackerScreen = { PokeBalls = { ColorList = {}, ColorListFainted = {}, ColorListMasterBall = {} } }
 
-dofile(repoRoot .. "ironmon_tracker/screens/BattleDetailsScreen.lua")
+dofile(repoRoot .. "ironmon_tracker/ui/screens/combat/BattleDetailsScreen.lua")
 BattleDetailsScreen.initialize()
 BattleDetailsScreen.updateData(true)
 assert(BattleDetailsScreen.Data.isReady)

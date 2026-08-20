@@ -10,7 +10,7 @@ While this isn't nearly an exhaustive list of what the Tracker can do, it's a st
 
 Other useful internal Tracker data and functions can be found in:
 - /data/ folder - static game data, such as info about a: Pokémon, Move, Ability, Route, Trainer, etc
-- /screens/ folder - all the various Tracker screens that are displayed on the emulator
+- /ui/screens/ folder - Tracker screens grouped by role (combat, log, setup, …)
 - Tracker.lua - access to all tracked notes/info taken while playing the current game
 - English.lua - most text strings used by the Tracker
 - Utils.lua - helpful functions
@@ -270,7 +270,7 @@ end
 ---  IV. TRACKER CONFIGURATION  ---
 -----------------------------------
 
----Changes the Tracker screen that is currently being viewed to something else; Refer to: /ironmon_tracker/screens/ folder
+---Changes the Tracker screen that is currently being viewed to something else; Refer to: /ironmon_tracker/ui/screens/ folder
 ---@param newScreen table The name of the screen; i.e. CoverageCalcScreen or TypeDefensesScreen
 function TrackerAPI.changeScreen(newScreen)
 	if type(newScreen) == "table" then

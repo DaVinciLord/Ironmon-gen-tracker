@@ -109,7 +109,7 @@ Program.GameData.PlayerTeam = {
 	},
 }
 
-dofile(repoRoot .. "ironmon_tracker/screens/LogTabPokemonDetails.lua")
+dofile(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabPokemonDetails.lua")
 
 assert(LogTabPokemonDetails.statGraphLabel("special") == "SPC", "Special must use the short SPC label, not 'Special'")
 assert(LogTabPokemonDetails.statGraphLabel("spe") == "SPE")

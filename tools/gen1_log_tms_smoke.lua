@@ -13,7 +13,7 @@ local function read(path)
 	return content
 end
 
-local tmsTab = read(repoRoot .. "ironmon_tracker/screens/LogTabTMs.lua")
+local tmsTab = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTMs.lua")
 assert(not tmsTab:find("gymColOffsetX = 80 + 17", 1, true),
 	"GBA name column (TM width 80 + 17) starts leader names at ~x=136; the GB overlay ends at 160")
 assert(not tmsTab:find("self.box[1] + 55", 1, true),
@@ -65,7 +65,7 @@ LogOverlay = {
 	},
 }
 
-dofile(repoRoot .. "ironmon_tracker/screens/LogTabTMs.lua")
+dofile(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTMs.lua")
 
 local gymTMs = {}
 for gymNumber = 1, 8 do

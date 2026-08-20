@@ -31,7 +31,7 @@ assert(special == "SPC", "French Special must be SPC, got " .. tostring(special)
 assert(speed == "SPE", "French Speed must stay SPE, got " .. tostring(speed))
 assert(special ~= speed, "Special and Speed labels must differ")
 
-local trackerScreen = read("ironmon_tracker/screens/TrackerScreen.lua")
+local trackerScreen = read("ironmon_tracker/ui/screens/combat/TrackerScreen.lua")
 assert(not trackerScreen:find("HELD ITEM AND ABILITIES", 1, true),
 	"the main tracker must not draw GBA held-item/ability rows")
 assert(not trackerScreen:find("data.p.line1", 1, true) and not trackerScreen:find("data.p.line2", 1, true),

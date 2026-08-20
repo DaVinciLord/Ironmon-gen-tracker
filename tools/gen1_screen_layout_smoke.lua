@@ -22,14 +22,14 @@ local function read(path)
 	file:close()
 	return content
 end
-local overlay = read(repoRoot .. "ironmon_tracker/screens/LogOverlay.lua")
+local overlay = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogOverlay.lua")
 assert(overlay:find("TabBox.height = Drawing.getTrackerHeight() - LogOverlay.tabHeight - m - 1", 1, true),
 	"TabBox must include DOWN_GAP or row 2 of the trainer grid is clipped")
 assert(overlay:find("SCREEN.WIDTH - (m * 2)", 1, true)
 	or overlay:find("SCREEN.WIDTH - (LogOverlay.margin * 2)", 1, true),
 	"log TabBox width is the game screen, not the right-gap tracker panel")
 
-local pokemonTab = read(repoRoot .. "ironmon_tracker/screens/LogTabPokemon.lua")
+local pokemonTab = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabPokemon.lua")
 assert(pokemonTab:find("defaultIconCount = 1", 1, true),
 	"the Pokémon log tab uses one header icon on GB, not two GBA sprites that look like duplicate tabs")
 
@@ -50,7 +50,7 @@ assert(not overlay:find("pagerOffsetX = 155", 1, true),
 assert(overlay:find('string.format("%s/%s"', 1, true),
 	"GB overlay page chrome is N/M, not the GBA 'Page N/M' string that collides with tab icons")
 
-local trainersTab = read(repoRoot .. "ironmon_tracker/screens/LogTabTrainers.lua")
+local trainersTab = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTrainers.lua")
 assert(not trainersTab:find("box = { LogOverlay.TabBox.x + nextNavX", 1, true),
 	"trainer filter buttons must not add TabBox.x twice (pushes Boss off the 156px tab)")
 assert(not trainersTab:find("Drawing.drawText(LogOverlay.TabBox.x + 2, LogOverlay.TabBox.y + 1, filterByText", 1, true),
@@ -68,13 +68,13 @@ assert(trainersTab:find("Drawing.getTrackerHeight()", 1, true),
 assert(not trainersTab:find("TabBox.y + 18", 1, true),
 	"grid start y + 18 leaves no room for a second 56px row on GB")
 
-local trainerDetails = read(repoRoot .. "ironmon_tracker/screens/LogTabTrainerDetails.lua")
+local trainerDetails = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTrainerDetails.lua")
 assert(not trainerDetails:find("i % 2 == 1", 1, true),
 	"trainer details cannot use the GBA 2-column party layout on a 156px GB tab")
 assert(trainerDetails:find("monsPerPage = 3", 1, true),
 	"a full party of 6 is shown 3 per page on GB")
 
-local trainerInfo = read(repoRoot .. "ironmon_tracker/screens/TrainerInfoScreen.lua")
+local trainerInfo = read(repoRoot .. "ironmon_tracker/ui/screens/combat/TrainerInfoScreen.lua")
 assert(not trainerInfo:find("MARGIN + 79", 1, true),
 	"party icon grid must start high enough for two rows of 6 on GB 144px")
 assert(trainerInfo:find("cols = 3", 1, true),
@@ -86,7 +86,7 @@ assert(trainerInfo:find("getTrackerHeight()", 1, true),
 assert(trainerInfo:find("cutoffY = Drawing.getTrackerHeight()", 1, true),
 	"the 3x2 party grid must use tracker height as cutoff or the second row is dropped")
 
-local tmsTab = read(repoRoot .. "ironmon_tracker/screens/LogTabTMs.lua")
+local tmsTab = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTMs.lua")
 assert(not tmsTab:find("gymColOffsetX = 80 + 17", 1, true),
 	"GBA gym TM name column (offset 97) clips leader names on the 160px GB overlay")
 assert(not tmsTab:find("self.box[1] + 55", 1, true),

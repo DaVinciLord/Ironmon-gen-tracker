@@ -20,6 +20,17 @@ ROMs must be `.gb` or `.gbc`. Pair a Universal Pokémon Randomizer ZX log (`.gbc
 
 Open `Ironmon-Tracker.lua` from BizHawk: **Tools → Lua Console → Script → Open Script**.
 
+## Code layout (where to look)
+
+| Folder | Role |
+| --- | --- |
+| `ironmon_tracker/memory/` | Game profiles, WRAM/ROM reads |
+| `ironmon_tracker/data/` | Species, moves, routes, trainers, log parser |
+| `ironmon_tracker/core/` | Program loop, battle, tracker notes |
+| `ironmon_tracker/ui/screens/` | Screens by role (`combat/`, `log/`, `setup/`, …) — see `ui/README.md` |
+| `ironmon_tracker/ui/widgets/` | Layout kit (`Layout`, `Frame`, `Box`, `Component`) |
+| `ironmon_tracker/drawing/` | Drawing helpers and themes |
+
 ## What this tracker reads
 
 - Party and enemy 44-byte RBY structures (big-endian HP/stats/experience)
