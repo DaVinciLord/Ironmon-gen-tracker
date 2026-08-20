@@ -7,7 +7,7 @@ Screens and the layout widget kit live here so you can find things by role.
 | Folder | What it is |
 | --- | --- |
 | `screens/combat/` | HUD combat : `TrackerScreenLayout` (géométrie), `TrackerScreenButtons` (boutons), `TrackerScreen` (dessin / input) |
-| `screens/log/` | Randomizer log overlay : `LogOverlayLayout` (TabBar/TabBox + grilles Pokémon/Trainers), `LogOverlay`, tabs |
+| `screens/log/` | Randomizer log overlay : `LogOverlayLayout` (chrome + grilles/nav de tous les tabs), `LogOverlay`, tabs |
 | `screens/setup/` | Settings, startup, navigation menu, language, quickload |
 | `screens/notebook/` | Notes, seen Pokémon, stats history |
 | `screens/tools/` | Calculators, heals, time machine, game over, crash recovery |

@@ -76,11 +76,25 @@ assert(not trainersTab:find("TabBox.y + 18", 1, true),
 assert(trainersTab:find("LogOverlayLayout.trainersGridMetrics", 1, true),
 	"trainer grid origin comes from LogOverlayLayout")
 
+local routesTab = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabRoutes.lua")
+assert(routesTab:find("LogOverlayLayout.routesGridMetrics", 1, true),
+	"route list grid origin comes from LogOverlayLayout")
+
+local tmsTabWired = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTMs.lua")
+assert(tmsTabWired:find("LogOverlayLayout.tmsGridMetrics", 1, true),
+	"TM grid origin comes from LogOverlayLayout")
+assert(not tmsTabWired:find("box = { LogOverlay.TabBox.x + nextNavX", 1, true),
+	"TM filter buttons must not add TabBox.x twice")
+assert(overlay:find("applyMiscButtonBoxes", 1, true),
+	"syncLayout must refresh Misc tab hitboxes from layout")
+
 local trainerDetails = read(repoRoot .. "ironmon_tracker/ui/screens/log/LogTabTrainerDetails.lua")
 assert(not trainerDetails:find("i % 2 == 1", 1, true),
 	"trainer details cannot use the GBA 2-column party layout on a 156px GB tab")
 assert(trainerDetails:find("monsPerPage = 3", 1, true),
 	"a full party of 6 is shown 3 per page on GB")
+assert(trainerDetails:find("LogOverlayLayout.trainerDetailsPartyMetrics", 1, true),
+	"trainer details party layout comes from LogOverlayLayout")
 
 local trainerInfo = read(repoRoot .. "ironmon_tracker/ui/screens/combat/TrainerInfoScreen.lua")
 assert(not trainerInfo:find("MARGIN + 79", 1, true),

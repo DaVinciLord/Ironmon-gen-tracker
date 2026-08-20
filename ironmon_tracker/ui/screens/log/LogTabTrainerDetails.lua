@@ -41,10 +41,11 @@ function LogTabTrainerDetails.buildZoomButtons(trainerId)
 	LogOverlay.Windower.currentPage = 1
 	LogOverlay.Windower.totalPages = totalPages
 
-	local partyListX = LogOverlay.TabBox.x + 1
-	local partyListStartY = LogOverlay.TabBox.y + 78
+	local m = LogOverlayLayout.trainerDetailsPartyMetrics()
+	local partyListX = m.partyListX
+	local partyListStartY = m.partyListStartY
 	local nameLine = Constants.SCREEN.LINESPACING - 2
-	local startX, startY = LogOverlay.TabBox.x + 58, LogOverlay.TabBox.y + 2
+	local startX, startY = m.movesX, m.movesY
 	local rowOffset = 40
 	local moveLineSpacing = Constants.SCREEN.LINESPACING - 2
 	local itemAdjustY = 0
@@ -257,15 +258,16 @@ function LogTabTrainerDetails.drawTab()
 	end
 
 	-- GYM LEADER BADGE
+	local partyLayout = LogOverlayLayout.trainerDetailsPartyMetrics()
 	if data.x.gymNumber ~= nil then
 		local badgePrefix = GameSettings.badgePrefix or "FRLG"
 		local badgeName = badgePrefix .. "_badge" .. data.x.gymNumber
 		local badgeImage = FileManager.buildImagePath(FileManager.Folders.Badges, badgeName, FileManager.Extensions.BADGE)
-		Drawing.drawImage(badgeImage, LogOverlay.TabBox.x + 44, LogOverlay.TabBox.y + 2)
+		Drawing.drawImage(badgeImage, partyLayout.badgeX, partyLayout.badgeY)
 	end
 
 	-- TRAINER NAME & ICON
-	Drawing.drawImage(data.t.filename, LogOverlay.TabBox.x, LogOverlay.TabBox.y + 20)
+	Drawing.drawImage(data.t.filename, partyLayout.portraitX, partyLayout.portraitY)
 	local classText = data.t.class
 	local nameText = data.t.name
 	if Options["Use Custom Trainer Names"] then
@@ -277,6 +279,6 @@ function LogTabTrainerDetails.drawTab()
 	if isGrunt[TrainerData.getTrainerInfo(data.t.id).class or false] then
 		nameText = string.format("%s #%s", nameText, data.t.id)
 	end
-	Drawing.drawTransparentTextbox(LogOverlay.TabBox.x + 2, LogOverlay.TabBox.y + 1, Utils.toUpperUTF8(classText), highlightColor, fillColor, shadowcolor)
-	Drawing.drawTransparentTextbox(LogOverlay.TabBox.x + 2, LogOverlay.TabBox.y + 10, Utils.toUpperUTF8(nameText), highlightColor, fillColor, shadowcolor)
+	Drawing.drawTransparentTextbox(partyLayout.nameX, partyLayout.classY, Utils.toUpperUTF8(classText), highlightColor, fillColor, shadowcolor)
+	Drawing.drawTransparentTextbox(partyLayout.nameX, partyLayout.nameY, Utils.toUpperUTF8(nameText), highlightColor, fillColor, shadowcolor)
 end

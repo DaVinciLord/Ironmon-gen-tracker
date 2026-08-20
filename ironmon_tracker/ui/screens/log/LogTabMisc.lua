@@ -15,13 +15,14 @@ LogTabMisc = {
 }
 
 local columnOffsetX = 100
+-- Button boxes are filled by LogOverlayLayout.applyMiscButtonBoxes() on sync/initialize.
 LogTabMisc.Buttons = {
 	UnlearnableTMsSettingButton = {
 		type = Constants.ButtonTypes.CHECKBOX,
 		optionKey = "Show unlearnable Gym TMs",
 		getText = function(self) return Resources.LogOverlay.CheckboxShowUnlearnableGymTMs end,
-		clickableArea = { LogOverlay.TabBox.x + 5, LogOverlay.TabBox.y + 5, 90, 10, },
-		box = { LogOverlay.TabBox.x + 5, LogOverlay.TabBox.y + 5, 8, 8, },
+		clickableArea = { 0, 0, 90, 10 },
+		box = { 0, 0, 8, 8 },
 		toggleState = Options["Show unlearnable Gym TMs"],
 		updateSelf = function(self) self.toggleState = (Options[self.optionKey] == true) end,
 		onClick = function(self)
@@ -33,8 +34,8 @@ LogTabMisc.Buttons = {
 		type = Constants.ButtonTypes.CHECKBOX,
 		optionKey = "Show Pre Evolutions",
 		getText = function(self) return Resources.LogOverlay.CheckboxShowPreEvolutions end,
-		clickableArea = { LogOverlay.TabBox.x + 5, LogOverlay.TabBox.y + 17, 90, 10, },
-		box = { LogOverlay.TabBox.x + 5, LogOverlay.TabBox.y + 17, 8, 8, },
+		clickableArea = { 0, 0, 90, 10 },
+		box = { 0, 0, 8, 8 },
 		toggleState = Options["Show Pre Evolutions"],
 		updateSelf = function(self) self.toggleState = (Options[self.optionKey] == true) end,
 		onClick = function(self)
@@ -46,8 +47,8 @@ LogTabMisc.Buttons = {
 		type = Constants.ButtonTypes.CHECKBOX,
 		optionKey = "Use Custom Trainer Names",
 		getText = function(self) return Resources.LogOverlay.CheckboxCustomTrainerNames end,
-		clickableArea = { LogOverlay.TabBox.x + 5, LogOverlay.TabBox.y + 29, 90, 10, },
-		box = { LogOverlay.TabBox.x + 5, LogOverlay.TabBox.y + 29, 8, 8, },
+		clickableArea = { 0, 0, 90, 10 },
+		box = { 0, 0, 8, 8 },
 		toggleState = Options["Use Custom Trainer Names"],
 		updateSelf = function(self) self.toggleState = (Options[self.optionKey] == true) end,
 		onClick = function(self)
@@ -58,7 +59,7 @@ LogTabMisc.Buttons = {
 	ShareRandomizer = {
 		type = Constants.ButtonTypes.FULL_BORDER,
 		getText = function(self) return Resources.LogOverlay.ButtonShareSeed end,
-		box = { Constants.SCREEN.WIDTH - LogOverlay.TabBox.x - 56, LogOverlay.TabBox.y + 4, 52, 11 },
+		box = { 0, 0, 52, 11 },
 		onClick = function(self) LogTabMisc.openRandomizerShareWindow() end,
 	},
 	PokemonGame = {
@@ -66,7 +67,7 @@ LogTabMisc.Buttons = {
 		getText = function(self) return Resources.LogOverlay.LabelPokemonGame .. ":" end,
 		getValue = function(self) return RandomizerLog.Data.Settings.Game or Constants.BLANKLINE end,
 		index = 1,
-		box = { LogOverlay.TabBox.x + 3, LogOverlay.TabBox.y + 55, 100, 11 },
+		box = { 0, 0, 100, 11 },
 		draw = function(self, shadowcolor)
 			Drawing.drawText(self.box[1] + columnOffsetX, self.box[2], self:getValue(), Theme.COLORS[self.textColor], shadowcolor)
 		end,
@@ -76,7 +77,7 @@ LogTabMisc.Buttons = {
 		getText = function(self) return Resources.LogOverlay.LabelRandomizerVersion .. ":" end,
 		getValue = function(self) return RandomizerLog.Data.Settings.Version or Constants.BLANKLINE end,
 		index = 2,
-		box = { LogOverlay.TabBox.x + 3, LogOverlay.TabBox.y + 67, 100, 11 },
+		box = { 0, 0, 100, 11 },
 		draw = function(self, shadowcolor)
 			Drawing.drawText(self.box[1] + columnOffsetX, self.box[2], self:getValue(), Theme.COLORS[self.textColor], shadowcolor)
 		end,
@@ -86,7 +87,7 @@ LogTabMisc.Buttons = {
 		getText = function(self) return Resources.LogOverlay.LabelRandomSeed .. ":" end,
 		getValue = function(self) return RandomizerLog.Data.Settings.RandomSeed or Constants.BLANKLINE end,
 		index = 3,
-		box = { LogOverlay.TabBox.x + 3, LogOverlay.TabBox.y + 79, 100, 11 },
+		box = { 0, 0, 100, 11 },
 		draw = function(self, shadowcolor)
 			Drawing.drawText(self.box[1] + columnOffsetX, self.box[2], self:getValue(), Theme.COLORS[self.textColor], shadowcolor)
 		end,
@@ -96,7 +97,7 @@ LogTabMisc.Buttons = {
 		getText = function(self) return Resources.LogOverlay.LabelSettingsString .. ":" end,
 		getValue = function(self) return RandomizerLog.Data.Settings.SettingsString or Constants.BLANKLINE end,
 		index = 4,
-		box = { LogOverlay.TabBox.x + 3, LogOverlay.TabBox.y + 91, 100, 11 },
+		box = { 0, 0, 100, 11 },
 		draw = function(self, shadowcolor)
 			local settingsString = self:getValue()
 			local offsetY = self.box[2] + Constants.SCREEN.LINESPACING
@@ -123,6 +124,7 @@ function LogTabMisc.initialize()
 		end
 	end
 
+	LogOverlayLayout.applyMiscButtonBoxes()
 	LogTabMisc.refreshButtons()
 end
 

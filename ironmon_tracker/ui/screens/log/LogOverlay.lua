@@ -321,6 +321,7 @@ end
 function LogOverlay.syncLayout()
 	LogOverlayLayout.rebuild()
 	LogOverlayLayout.applyToOverlay()
+	LogOverlayLayout.applyMiscButtonBoxes()
 
 	local box = LogOverlay.TabBox
 	local xRight = box.x + box.width

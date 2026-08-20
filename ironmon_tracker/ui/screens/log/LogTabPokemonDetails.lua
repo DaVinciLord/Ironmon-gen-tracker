@@ -103,14 +103,14 @@ end
 -- Same skeleton with or without evolutions. On GB the evo/icon row sits
 -- above the stats (left column only) so it cannot overlap the move list.
 function LogTabPokemonDetails.getLayout(hasEvo)
-	local box = LogOverlay.TabBox
-	local overlayRight = box.x + box.width
+	local box = LogOverlayLayout.get().tabBox
+	local overlayRight = box.x + box.w
 	local statCount = #Constants.OrderedLists.STATSTAGES
 	local arrowW = 10
 	local gap = 3
 	local minLabelW = 16
 	local minStatW = statCount * minLabelW
-	local preferredStatW = (box.width < 200) and minStatW or 103
+	local preferredStatW = (box.w < 200) and minStatW or 103
 	local statX = box.x + 4
 	local statW = math.min(preferredStatW, overlayRight - statX - arrowW - gap - 56)
 	statW = math.max(statW, math.min(minStatW, overlayRight - statX - 60))
@@ -121,7 +121,7 @@ function LogTabPokemonDetails.getLayout(hasEvo)
 		statW = overlayRight - arrowW - gap - movesW - statX
 		movesX = statX + statW + gap
 	end
-	local narrow = box.width < 200
+	local narrow = box.w < 200
 	local iconSize = narrow and 24 or 32
 	-- Always reserve the icon/name row above stats (with or without evos).
 	local reservedTop = narrow and (iconSize + 8) or 42
@@ -137,12 +137,12 @@ function LogTabPokemonDetails.getLayout(hasEvo)
 	end
 	local graphY = showBtnBox[2] + showBtnBox[4] + 2
 	local graphLabelH = 20
-	local graphH = math.max(36, (box.y + box.height) - graphY - graphLabelH)
+	local graphH = math.max(36, (box.y + box.h) - graphY - graphLabelH)
 	local lineH = Constants.SCREEN.LINESPACING or 11
 	local headerH = 13
 	local function movesThatFit(rowY)
 		local firstMoveY = rowY + headerH
-		local bottom = box.y + box.height - 1
+		local bottom = box.y + box.h - 1
 		return math.max(4, math.floor((bottom - firstMoveY) / lineH))
 	end
 	return {

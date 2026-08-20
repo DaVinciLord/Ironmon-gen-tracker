@@ -93,10 +93,11 @@ function LogTabRoutes.buildPagedButtons()
 
 	-- Build grid header icons/labels
 	for i, col in ipairs(routeBar.cols) do
+		local headerX, headerY = LogOverlayLayout.routesHeaderCell(col.x)
 		local button = {
 			type = Constants.ButtonTypes.NO_BORDER,
 			textColor = LogTabRoutes.Colors.highlight,
-			box = { LogOverlay.TabBox.x + col.x + 3, LogOverlay.TabBox.y + 1, 16, 16 },
+			box = { headerX, headerY, 16, 16 },
 			draw = function(self, shadowcolor)
 				local x, y = self.box[1], self.box[2]
 				local w, h = self.box[3], self.box[4]
@@ -104,8 +105,6 @@ function LogTabRoutes.buildPagedButtons()
 					local adjustedX = x + (w - (col.icon.w or 0)) / 2 + 1
 					local adjustedY = y + (col.icon.y or 0) + (h - (col.icon.h or 12)) - 1
 					Drawing.drawImage(col.icon.image, adjustedX, adjustedY)
-					-- local centeredX = (w - (col.icon.w or 0)) / 2 + 2
-					-- Drawing.drawImage(col.icon.image, x + centeredX, y + 1)
 				end
 				if type(col.getText) == "function" then
 					local adjustedX = x + 3
@@ -291,12 +290,7 @@ function LogTabRoutes.realignGrid(gridFilter, sortFunc, startingPage)
 
 	table.sort(LogTabRoutes.PagedButtons, sortFunc)
 
-	local x = LogOverlay.TabBox.x + 3
-	local y = LogOverlay.TabBox.y + 17
-	local colSpacer = 999
-	local rowSpacer = 0
-	local maxWidth = LogOverlay.TabBox.width + LogOverlay.TabBox.x
-	local maxHeight = LogOverlay.TabBox.height + LogOverlay.TabBox.y
+	local x, y, colSpacer, rowSpacer, maxWidth, maxHeight = LogOverlayLayout.routesGridMetrics()
 
 	LogOverlay.Windower.filterGrid = gridFilter
 	LogOverlay.Windower.totalPages = Utils.gridAlign(LogTabRoutes.PagedButtons, x, y, colSpacer, rowSpacer, true, maxWidth, maxHeight)

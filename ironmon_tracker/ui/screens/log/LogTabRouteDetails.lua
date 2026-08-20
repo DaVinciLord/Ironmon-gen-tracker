@@ -60,7 +60,7 @@ function LogTabRouteDetails.buildZoomButtons(mapId)
 		type = Constants.ButtonTypes.NO_BORDER,
 		getText = function(self) return routeName end,
 		textColor = LogTabRouteDetails.Colors.highlight,
-		box = { LogOverlay.TabBox.x + 3, LogOverlay.TabBox.y + 2, 120, 12 },
+		box = LogOverlayLayout.routeDetailsTitleBox(),
 	}
 	table.insert(LogTabRouteDetails.TemporaryButtons, routeNameButton)
 	-- Currentl unused, doesn't quite fit
@@ -95,8 +95,8 @@ function LogTabRouteDetails.buildZoomButtons(mapId)
 	end
 
 	-- ROUTE TAB NAVIGATION
-	local navX = LogOverlay.TabBox.x + LogOverlay.TabBox.width - 69 + 3
-	local navY = 62
+	local navX, encLabelY, navHeaderY = LogOverlayLayout.routeDetailsSideNav()
+	local navY = navHeaderY
 
 	local navHeaderButton = {
 		type = Constants.ButtonTypes.NO_BORDER,
@@ -112,7 +112,7 @@ function LogTabRouteDetails.buildZoomButtons(mapId)
 		getEncText = function(self) return Resources.LogOverlay[self.resourceKey] or "" end,
 		resourceKey = "",
 		textColor = LogTabRouteDetails.Colors.highlight,
-		box = { navX, LogOverlay.TabBox.y + 7, 64, 11 },
+		box = { navX, encLabelY, 64, 11 },
 		draw = function(self, shadowcolor)
 			if self.image then
 				local x, y = self.box[1] + 23, self.box[2] + 14
@@ -436,12 +436,7 @@ function LogTabRouteDetails.realignTrainerGrid(gridFilter, sortFunc, startingPag
 
 	table.sort(LogTabRouteDetails.PagedButtons, sortFunc)
 
-	local x = LogOverlay.TabBox.x + 7
-	local y = LogOverlay.TabBox.y + 28
-	local colSpacer = 24
-	local rowSpacer = 32
-	local maxWidth = LogOverlay.TabBox.width + LogOverlay.TabBox.x - 69
-	local maxHeight = LogOverlay.TabBox.height + LogOverlay.TabBox.y
+	local x, y, colSpacer, rowSpacer, maxWidth, maxHeight = LogOverlayLayout.routeDetailsGridMetrics(true)
 
 	LogOverlay.Windower.filterGrid = gridFilter or LogTabRouteDetails.Tabs.Trainers
 	local totalPages = Utils.gridAlign(LogTabRouteDetails.PagedButtons, x, y, colSpacer, rowSpacer, false, maxWidth, maxHeight)
@@ -457,12 +452,7 @@ function LogTabRouteDetails.realignPokemonGrid(gridFilter, sortFunc, startingPag
 
 	table.sort(LogTabRouteDetails.PagedButtons, sortFunc)
 
-	local x = LogOverlay.TabBox.x + 7
-	local y = LogOverlay.TabBox.y + 21
-	local colSpacer = 24
-	local rowSpacer = 32
-	local maxWidth = LogOverlay.TabBox.width + LogOverlay.TabBox.x - 69
-	local maxHeight = LogOverlay.TabBox.height + LogOverlay.TabBox.y
+	local x, y, colSpacer, rowSpacer, maxWidth, maxHeight = LogOverlayLayout.routeDetailsGridMetrics(false)
 
 	LogOverlay.Windower.filterGrid = gridFilter or LogOverlay.Windower.filterGrid
 	local totalPages = Utils.gridAlign(LogTabRouteDetails.PagedButtons, x, y, colSpacer, rowSpacer, false, maxWidth, maxHeight)

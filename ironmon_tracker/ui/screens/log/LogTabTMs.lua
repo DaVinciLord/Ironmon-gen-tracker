@@ -54,9 +54,7 @@ function LogTabTMs.rebuild()
 end
 
 function LogTabTMs.buildNavigation()
-	local navHeaderX = LogOverlay.TabBox.x + 2
-	local navHeaderY = LogOverlay.TabBox.y + 1
-	local navItemSpacer = 6
+	local navHeaderX, navHeaderY, navItemSpacer = LogOverlayLayout.tmsNavMetrics()
 	local filterLabelSize = Utils.calcWordPixelLength(Resources.LogOverlay.LabelFilterBy)
 	local nextNavX = navHeaderX + filterLabelSize + navItemSpacer
 
@@ -68,7 +66,7 @@ function LogTabTMs.buildNavigation()
 			getText = function(self) return navFilter:getText() end,
 			textColor = LogTabTMs.Colors.text,
 			isSelected = false,
-			box = { LogOverlay.TabBox.x + nextNavX, navHeaderY, navLabelWidth, 11 },
+			box = { nextNavX, navHeaderY, navLabelWidth, 11 },
 			updateSelf = function(self)
 				self.isSelected = (LogOverlay.Windower.filterGrid == navFilter.group and Utils.isNilOrEmpty(LogSearchScreen.searchText))
 				self.textColor = Utils.inlineIf(self.isSelected, LogTabTMs.Colors.highlight, LogTabTMs.Colors.text)
@@ -228,19 +226,7 @@ function LogTabTMs.realignGrid(gridFilter, sortFunc, startingPage)
 
 	table.sort(LogTabTMs.PagedButtons, sortFunc)
 
-	local x = LogOverlay.TabBox.x + 25
-	local y = LogOverlay.TabBox.y + 14
-	local colSpacer = 17
-	local rowSpacer = 2
-	local maxWidth = LogOverlay.TabBox.width + LogOverlay.TabBox.x
-	local maxHeight = LogOverlay.TabBox.height + LogOverlay.TabBox.y
-
-	-- Single column for fancy Gym TM display
-	if gridFilter == "Gym TMs" then
-		x = LogOverlay.TabBox.x + 20
-		colSpacer = 200
-		rowSpacer = 5
-	end
+	local x, y, colSpacer, rowSpacer, maxWidth, maxHeight = LogOverlayLayout.tmsGridMetrics(gridFilter == "Gym TMs")
 
 	LogOverlay.Windower.filterGrid = gridFilter
 	LogOverlay.Windower.totalPages = Utils.gridAlign(LogTabTMs.PagedButtons, x, y, colSpacer, rowSpacer, true, maxWidth, maxHeight)
